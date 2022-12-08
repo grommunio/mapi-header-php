@@ -9,7 +9,7 @@
 [![code with love by grommunio](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-grommunio-ff1414.svg)](https://grommunio.com)
 [![twitter](https://img.shields.io/twitter/follow/grommunio?style=social)](https://twitter.com/grommunio)
 
-**grommunio MAPI headers (PHP) provide the central repository for PHP-based MAPI applications. These MAPI header files are used by [https://github.com/grommunio/grommunio-web](grommunio Web), [https://github.com/grommunio/grommunio-sync](grommunio Sync) and [https://github.com/grommunio/grommunio-dav](grommunio Dav), eliminating the independent maintenance of these header files thereof.**
+**grommunio MAPI headers (PHP) provide the central repository for PHP-based MAPI applications. These MAPI header files are used by [grommunio Web](https://github.com/grommunio/grommunio-web), [grommunio Sync](https://github.com/grommunio/grommunio-sync) and [grommunio Dav](https://github.com/grommunio/grommunio-dav), eliminating the independent maintenance of these header files thereof.**
 
 <details open="open">
 <summary>Overview</summary>
