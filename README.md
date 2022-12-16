@@ -9,7 +9,7 @@
 [![code with love by grommunio](https://img.shields.io/badge/%3C%2F%3E%20with%20%E2%99%A5%20by-grommunio-ff1414.svg)](https://grommunio.com)
 [![twitter](https://img.shields.io/twitter/follow/grommunio?style=social)](https://twitter.com/grommunio)
 
-**grommunio MAPI headers (PHP) provide the central repository for PHP-based MAPI applications. These MAPI header files are used by [grommunio Web](https://github.com/grommunio/grommunio-web), [grommunio Sync](https://github.com/grommunio/grommunio-sync) and [grommunio Dav](https://github.com/grommunio/grommunio-dav), eliminating the independent maintenance of these header files thereof.**
+grommunio MAPI headers (PHP) provide the central repository for PHP-based MAPI applications. These MAPI header files are used by [grommunio Web](https://github.com/grommunio/grommunio-web), [grommunio Sync](https://github.com/grommunio/grommunio-sync) and [grommunio Dav](https://github.com/grommunio/grommunio-dav), eliminating the independent maintenance of these header files thereof.
 
 <details open="open">
 <summary>Overview</summary>
@@ -37,7 +37,7 @@
 
 ### Compatible with
 
-- PHP **7.4+**, PHP **8.0** and **8.1**
+- PHP 7.4+, PHP 8.0 and 8.1
 
 ## Getting Started
 
@@ -49,24 +49,24 @@
 
 ## Support
 
-- Support is available through **[grommunio GmbH](https://grommunio.com)** and its partners.
-- grommunio Web community is available here: **[grommunio Community](https://community.grommunio.com)**
+- Support is available through [grommunio GmbH](https://grommunio.com) and its partners.
+- grommunio Web community is available here: [grommunio Community](https://community.grommunio.com)
 
 For direct contact to the maintainers (for example to supply information about a security-related responsible disclosure), you can contact grommunio directly at [dev@grommunio.com](mailto:dev@grommunio.com)
 
 ## Project assistance
 
-If you want to say **thank you** or/and support active development of grommunio Web:
+If you want to say thank you or/and support active development of grommunio Web:
 
 - Add a [GitHub Star](https://github.com/grommunio/mapi-header-php) to the project.
 - Tweet about grommunio Web.
 - Write interesting articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com/), your personal blog or any medium you feel comfortable with.
 
-Together, we can make grommunio Web **better**!
+Together, we can make grommunio Web better!
 
 ## Contributing
 
-First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
+First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are greatly appreciated.
 
 If you have found an issue and want to report an issue, either reach out to us in our [community](https://community.grommunio.com), or, if you have a subscription, open up a [support case](https://grommunio.com/).
 
@@ -91,7 +91,7 @@ or
 ## Security
 
 grommunio Web follows good practices of security. grommunio constantly monitors security-related issues.
-grommunio Web is provided **"as is"** without any **warranty**. For professional support options through subscriptions, head over to [grommunio](https://grommunio.com).
+grommunio Web is provided "as is" without any warranty. For professional support options through subscriptions, head over to [grommunio](https://grommunio.com).
 
 ## Development
 
@@ -101,6 +101,6 @@ This repository follows a customized coding style. The coding style can be valid
 
 ## License
 
-This project is licensed under the **GNU Affero General Public License v3**.
+This project is licensed under the GNU Affero General Public License v3.
 
 See [LICENSE.txt](LICENSE.txt) for more information.
