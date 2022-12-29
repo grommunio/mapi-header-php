@@ -107,8 +107,7 @@ class BaseException extends Exception {
 	}
 
 	/**
-	 * @return string returns title that should be sent to client to display as a message box
-	 *                title
+	 * @return null|string returns title that should be sent to client to display as a message box title
 	 */
 	public function getTitle() {
 		return $this->title;
