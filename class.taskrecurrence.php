@@ -106,6 +106,8 @@
 
 		/**
 		 * Sets task object to first occurrence if startdate/duedate of task object is different from first occurrence.
+		 *
+		 * @return void
 		 */
 		public function setFirstOccurrence() {
 			// Check if it is already the first occurrence
@@ -319,6 +321,7 @@
 		 * @param int $tz the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 		 * @param bool $reminderonly If TRUE, only add the item if the reminder is set
 		 *
+		 * @return void
 		 */
 		public function processOccurrenceItem(&$items, $start, $end, $basedate, $startocc, $endocc, $tz, $reminderonly) {
 			if ($basedate > $start) {
@@ -362,7 +365,7 @@
 		 *
 		 * @param mixed $nextOccurrence properties of next occurrence
 		 */
-		public function setReminder($nextOccurrence) {
+		public function setReminder($nextOccurrence): void {
 			$props = [];
 			if (!empty($nextOccurrence)) {
 				// Check if reminder is reset. Default is 'false'

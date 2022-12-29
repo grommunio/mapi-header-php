@@ -22,13 +22,11 @@ mapi_load_mapidefs(1);
  *  } GUID;.
  *
  * A GUID is normally represented in the following form:
- * 	{00062008-0000-0000-C000-000000000046}
+ *  {00062008-0000-0000-C000-000000000046}
  *
  * @param string $guid
- *
- * @return false|string
  */
-function makeGuid($guid) {
+function makeGuid($guid): string {
 	return pack("vvvv", hexdec(substr($guid, 5, 4)), hexdec(substr($guid, 1, 4)), hexdec(substr($guid, 10, 4)), hexdec(substr($guid, 15, 4))) . hex2bin(substr($guid, 20, 4)) . hex2bin(substr($guid, 25, 12));
 }
 
@@ -191,8 +189,10 @@ function propIsError($property, $propArray) {
  * @param array    $propsrequested Array of properties to return
  *
  * @return array
+ *
+ * @psalm-return list<mixed>
  */
-function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested) {
+function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested): array {
 	$result = [];
 	$properties = getPropIdsFromStrings($store, [
 		"duedate" => "PT_SYSTIME:PSETID_Appointment:" . PidLidAppointmentEndWhole,

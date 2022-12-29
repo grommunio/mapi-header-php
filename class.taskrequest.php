@@ -344,8 +344,10 @@ class TaskRequest {
 	 * - Task accept (task history is marked as accepted)
 	 * - Task decline (task history is marked as declined)
 	 * - Task update (updates completion %, etc).
+	 *
+	 * @return true
 	 */
-	public function processTaskResponse() {
+	public function processTaskResponse(): bool {
 		$messageProps = mapi_getprops($this->message, [PR_PROCESSED, $this->props["taskupdates"], PR_MESSAGE_TO_ME]);
 		if (isset($messageProps[PR_PROCESSED]) && $messageProps[PR_PROCESSED]) {
 			return true;
@@ -521,8 +523,10 @@ class TaskRequest {
 	 * be pre-existing. The task request will be sent to all recipients.
 	 *
 	 * @param string $prefix
+	 *
+	 * @return true
 	 */
-	public function sendTaskRequest($prefix) {
+	public function sendTaskRequest($prefix): bool {
 		// Generate a TaskGlobalObjectId
 		$taskid = $this->createTGOID();
 		$messageprops = mapi_getprops($this->message, [PR_SUBJECT]);
@@ -588,7 +592,7 @@ class TaskRequest {
 	 *
 	 * Must be called before each update to increase counter.
 	 */
-	public function updateTaskRequest() {
+	public function updateTaskRequest(): void {
 		$messageprops = mapi_getprops($this->message, [$this->props['updatecount']]);
 
 		if (isset($messageprops)) {
@@ -846,8 +850,9 @@ class TaskRequest {
 	 *
 	 * @param mixed $store MAPI store object
 	 *
-	 * @return array|bool if store is not mail box owner entryid then
-	 *                    return false else prepare the sent representing props and return it
+	 * @return array[][][][][]|false if store is not mail box owner entryid then return false else prepare the sent representing props and return it
+	 *
+	 * @psalm-return array<array<array<array<array<array<never, never>>>>>>|false
 	 */
 	public function getSentReprProps($store) {
 		$storeprops = mapi_getprops($store, [PR_MAILBOX_OWNER_ENTRYID]);
@@ -994,7 +999,7 @@ class TaskRequest {
 	 *
 	 * Just 16 bytes of random data
 	 */
-	public function createTGOID() {
+	public function createTGOID(): string {
 		$goid = "";
 		for ($i = 0; $i < 16; ++$i) {
 			$goid .= chr(rand(0, 255));
@@ -1049,7 +1054,7 @@ class TaskRequest {
 	 * Sets the user name who has last used this task. Update the
 	 * tasklastdelegate and task_assigned_time.
 	 */
-	public function setLastUser() {
+	public function setLastUser(): void {
 		$delegatestore = $this->getDefaultStore();
 		$taskstore = $this->getTaskFolderStore();
 
@@ -1082,7 +1087,7 @@ class TaskRequest {
 	 * Assignee becomes the owner when a user/assignor assigns any task to someone.
 	 * There can be more than one assignee.
 	 */
-	public function setOwnerForAssignor() {
+	public function setOwnerForAssignor(): void {
 		$recipTable = mapi_message_getrecipienttable($this->message);
 		$recips = mapi_table_queryallrows($recipTable, [PR_DISPLAY_NAME]);
 
@@ -1106,7 +1111,7 @@ class TaskRequest {
 	 *
 	 * @param mixed $task assignee's copy of task
 	 */
-	public function setAssignorInRecipients($task) {
+	public function setAssignorInRecipients($task): void {
 		$recipTable = mapi_message_getrecipienttable($task);
 
 		// Delete all MAPI_TO recipients
@@ -1169,6 +1174,8 @@ class TaskRequest {
 	 * Deletes incoming task request from Inbox.
 	 *
 	 * @returns array|bool PR_ENTRYID, PR_STORE_ENTRYID and PR_PARENT_ENTRYID of the deleted task request
+	 *
+	 * @return array|false
 	 */
 	public function deleteReceivedTR() {
 		$store = $this->getTaskFolderStore();
@@ -1218,7 +1225,7 @@ class TaskRequest {
 	 * @param mixed $outgoing     outgoing mapi message
 	 * @param int   $responseType response type (tdmtTaskAcc, tdmtTaskDec, tdmtTaskUpd)
 	 */
-	public function setRecipientsForResponse($outgoing, $responseType) {
+	public function setRecipientsForResponse($outgoing, $responseType): bool {
 		// Clear recipients from outgoing msg
 		$this->deleteAllRecipients($outgoing);
 
@@ -1275,7 +1282,7 @@ class TaskRequest {
 	 *
 	 * @param mixed $message MAPI message from which recipients are to be removed
 	 */
-	public function deleteAllRecipients($message) {
+	public function deleteAllRecipients($message): void {
 		$recipTable = mapi_message_getrecipienttable($message);
 		$recipRows = mapi_table_queryallrows($recipTable, [PR_ROWID]);
 
@@ -1323,7 +1330,7 @@ class TaskRequest {
 	 *
 	 * @param string $taskCommentsInfo info about task request comments along with message body
 	 */
-	public function setTaskCommentsInfo($taskCommentsInfo) {
+	public function setTaskCommentsInfo($taskCommentsInfo): void {
 		$this->taskCommentsInfo = $taskCommentsInfo;
 	}
 

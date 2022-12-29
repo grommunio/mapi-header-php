@@ -61,7 +61,7 @@ class BaseException extends Exception {
 	/**
 	 * @return string returns file name and line number combined where exception occurred
 	 */
-	public function getFileLine() {
+	public function getFileLine(): string {
 		return $this->getBaseFile() . ':' . $this->getLine();
 	}
 
@@ -82,7 +82,7 @@ class BaseException extends Exception {
 	 *
 	 * @param string $message display message
 	 */
-	public function setDisplayMessage($message) {
+	public function setDisplayMessage($message): void {
 		$this->displayMessage = $message . " (" . mapi_strerror($this->getCode()) . ")";
 	}
 
@@ -92,7 +92,7 @@ class BaseException extends Exception {
 	 *
 	 * @param string $title title of an exception
 	 */
-	public function setTitle($title) {
+	public function setTitle($title): void {
 		$this->title = $title;
 	}
 
@@ -109,7 +109,7 @@ class BaseException extends Exception {
 	 * so if it is caught again in the top level of function stack then we have to silently
 	 * ignore it.
 	 */
-	public function setHandled() {
+	public function setHandled(): void {
 		$this->isHandled = true;
 	}
 
@@ -127,9 +127,9 @@ class BaseException extends Exception {
 	/**
 	 * Name of the class of exception.
 	 *
-	 * @return string
+	 * @return get-class-of<$this, BaseException&static>
 	 */
-	public function getName() {
+	public function getName(): string {
 		return get_class($this);
 	}
 

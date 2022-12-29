@@ -108,7 +108,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param array $exception_recips list of recipients
 	 * @param mixed $copy_attach_from mapi message from which attachments should be copied
 	 */
-	public function createException($exception_props, $base_date, $delete = false, $exception_recips = [], $copy_attach_from = false) {
+	public function createException($exception_props, $base_date, $delete = false, $exception_recips = [], $copy_attach_from = false): bool {
 		$baseday = $this->dayStartOf($base_date);
 		$basetime = $baseday + $this->recur["startocc"] * 60;
 
@@ -216,7 +216,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed $exception_recips
 	 * @param mixed $copy_attach_from
 	 */
-	public function modifyException($exception_props, $base_date, $exception_recips = [], $copy_attach_from = false) {
+	public function modifyException($exception_props, $base_date, $exception_recips = [], $copy_attach_from = false): bool {
 		if (isset($exception_props[$this->proptags["startdate"]]) && !$this->isValidExceptionDate($base_date, $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]))) {
 			return false;
 		}
@@ -330,7 +330,7 @@ class Recurrence extends BaseRecurrence {
 	// 2) The exception to be created doesn't 'jump' over another occurrence (which may be an exception itself!)
 	//
 	// Both $basedate and $start are in LOCAL time
-	public function isValidExceptionDate($basedate, $start) {
+	public function isValidExceptionDate($basedate, $start): bool {
 		// The way we do this is to look at the days that we're 'moving' the item in the exception. Each
 		// of these days may only contain the item that we're modifying. Any other item violates the rules.
 
@@ -370,9 +370,10 @@ class Recurrence extends BaseRecurrence {
 	 * @param date   $basedate        the base date of the exception (LOCAL time of non-exception occurrence)
 	 * @param string $reminderminutes reminder minutes which is set of the item
 	 * @param date   $startdate       the startdate of the selected item
+	 *
 	 * @returns boolean if the reminder minutes value valid (FALSE if either of the rules above are FALSE)
 	 */
-	public function isValidReminderTime($basedate, $reminderminutes, $startdate) {
+	public function isValidReminderTime($basedate, $reminderminutes, $startdate): bool {
 		// get all occurrence items before the selected items occurrence starttime
 		$occitems = $this->getItems($this->messageprops[$this->proptags["startdate"]], $this->toGMT($this->tz, $basedate));
 
@@ -405,7 +406,7 @@ class Recurrence extends BaseRecurrence {
 		return true;
 	}
 
-	public function setRecurrence($tz, $recur) {
+	public function setRecurrence($tz, $recur): void {
 		// only reset timezone if specified
 		if ($tz) {
 			$this->tz = $tz;
@@ -501,8 +502,10 @@ class Recurrence extends BaseRecurrence {
 	 * @param $propsrequested array Array of properties to return
 	 * @param $rows array Array of rowdata as if they were returned directly from mapi_table_queryrows. Each recurring item is
 	 *                    expanded so that it seems that there are only many single appointments in the table.
+	 *
+	 * @psalm-param list{0: mixed, 1: mixed, 2?: mixed} $propsrequested
 	 */
-	public static function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested) {
+	public static function getCalendarItems($store, $calendar, $viewstart, $viewend, array $propsrequested) {
 		return getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested);
 	}
 
@@ -514,7 +517,7 @@ class Recurrence extends BaseRecurrence {
 	/**
 	 * Generates and stores recurrence pattern string to recurring_pattern property.
 	 */
-	public function saveRecurrencePattern() {
+	public function saveRecurrencePattern(): void {
 		// Start formatting the properties in such a way we can apply
 		// them directly into the recurrence pattern.
 		$type = $this->recur['type'];
@@ -685,7 +688,7 @@ class Recurrence extends BaseRecurrence {
 	/*
 	 * Remove an exception by base_date. This is the base date in local daystart time
 	 */
-	public function deleteException($base_date) {
+	public function deleteException($base_date): void {
 		// Remove all exceptions on $base_date from the deleted and changed occurrences lists
 
 		// Remove all items in $todelete from deleted_occurrences
@@ -718,10 +721,8 @@ class Recurrence extends BaseRecurrence {
 	 * @param array        $exception_props  the exception data (like any other MAPI appointment)
 	 * @param array        $exception_recips list of recipients
 	 * @param mapi_message $copy_attach_from mapi message from which attachments should be copied
-	 *
-	 * @return array properties of the exception
 	 */
-	public function createExceptionAttachment($exception_props, $exception_recips = [], $copy_attach_from = false) {
+	public function createExceptionAttachment($exception_props, $exception_recips = [], $copy_attach_from = false): void {
 		// Create new attachment.
 		$attachment = mapi_message_createattach($this->message);
 		$props = [];
@@ -778,7 +779,7 @@ class Recurrence extends BaseRecurrence {
 	 *                         actually saves the real time of the original date, so we have
 	 *                         to check whether it's on the same day.
 	 */
-	public function deleteExceptionAttachment($base_date) {
+	public function deleteExceptionAttachment($base_date): void {
 		$attachments = mapi_message_getattachmenttable($this->message);
 		// Retrieve only exceptions which are stored as embedded messages
 		$attach_res = [
@@ -806,7 +807,7 @@ class Recurrence extends BaseRecurrence {
 	/**
 	 * Function which deletes all attachments of a message.
 	 */
-	public function deleteAttachments() {
+	public function deleteAttachments(): void {
 		$attachments = mapi_message_getattachmenttable($this->message);
 		$attachTable = mapi_table_queryallrows($attachments, [PR_ATTACH_NUM, PR_ATTACHMENT_HIDDEN]);
 
@@ -870,6 +871,8 @@ class Recurrence extends BaseRecurrence {
 	 * @param int   $endocc       end of occurrence since beginning of day in minutes
 	 * @param mixed $tz           the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 	 * @param bool  $reminderonly If TRUE, only add the item if the reminder is set
+	 *
+	 * @return false|null
 	 */
 	public function processOccurrenceItem(&$items, $start, $end, $basedate, $startocc, $endocc, $tz, $reminderonly) {
 		$exception = $this->isException($basedate);
@@ -919,7 +922,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param date  $start start of timeframe in GMT TIME
 	 * @param date  $end   end of timeframe in GMT TIME
 	 */
-	public function processExceptionItems(&$items, $start, $end) {
+	public function processExceptionItems(&$items, $start, $end): void {
 		$limit = 0;
 		foreach ($this->recur["changed_occurrences"] as $exception) {
 			// Convert to GMT
@@ -963,7 +966,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function isDeleteException($basedate) {
+	public function isDeleteException($basedate): bool {
 		// Check if the occurrence is deleted on the specified date
 		foreach ($this->recur["deleted_occurrences"] as $deleted) {
 			if ($this->isSameDay($deleted, $basedate)) {
@@ -1022,7 +1025,7 @@ class Recurrence extends BaseRecurrence {
 	 *                                   message to the attachment by default. False if only the $exception_recips changes should
 	 *                                   be applied.
 	 */
-	public function setExceptionRecipients($message, $exception_recips, $copy_orig_recips = true) {
+	public function setExceptionRecipients($message, $exception_recips, $copy_orig_recips = true): void {
 		if (isset($exception_recips['add']) || isset($exception_recips['remove']) || isset($exception_recips['modify'])) {
 			$this->setDeltaExceptionRecipients($message, $exception_recips, $copy_orig_recips);
 		}
@@ -1046,7 +1049,7 @@ class Recurrence extends BaseRecurrence {
 	 *                                   be applied.
 	 * @param mixed    $exception
 	 */
-	public function setDeltaExceptionRecipients($exception, $exception_recips, $copy_orig_recips) {
+	public function setDeltaExceptionRecipients($exception, $exception_recips, $copy_orig_recips): void {
 		// Check if the recipients from the original message should be copied,
 		// if so, open the recipient table of the parent message and apply all
 		// rows on the target recipient.
@@ -1098,7 +1101,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param resource $message          exception attachment of recurring item
 	 * @param array    $exception_recips list of recipients
 	 */
-	public function setAllExceptionRecipients($message, $exception_recips) {
+	public function setAllExceptionRecipients($message, $exception_recips): void {
 		$deletedRecipients = [];
 		$useMessageRecipients = false;
 
@@ -1176,9 +1179,9 @@ class Recurrence extends BaseRecurrence {
 	/**
 	 * Function returns basedates of all changed occurrences.
 	 *
-	 * @return array|bool array(
-	 *                    0 => 123459321
-	 *                    )
+	 * @return array|false array( 0 => 123459321 )
+	 *
+	 * @psalm-return false|list<mixed>
 	 */
 	public function getAllExceptions() {
 		if (!empty($this->recur["changed_occurrences"])) {
@@ -1194,14 +1197,14 @@ class Recurrence extends BaseRecurrence {
 	}
 
 	/**
-	 *  Function which adds organizer to recipient list which is passed.
-	 *  This function also checks if it has organizer.
+	 * Function which adds organizer to recipient list which is passed.
+	 * This function also checks if it has organizer.
 	 *
 	 * @param array $messageProps message properties
 	 * @param array $recipients   recipients list of message
 	 * @param bool  $isException  true if we are processing recipient of exception
 	 */
-	public function addOrganizer($messageProps, &$recipients, $isException = false) {
+	public function addOrganizer($messageProps, &$recipients, $isException = false): void {
 		$hasOrganizer = false;
 		// Check if meeting already has an organizer.
 		foreach ($recipients as $key => $recipient) {

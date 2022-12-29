@@ -76,7 +76,7 @@
 			return $this->recur;
 		}
 
-		public function getFullRecurrenceBlob() {
+		public function getFullRecurrenceBlob(): void {
 			$message = mapi_msgstore_openentry($this->store, $this->messageprops[PR_ENTRYID]);
 
 			$recurrBlob = '';
@@ -100,49 +100,51 @@
 		 *
 		 * Returns a structure containing the data:
 		 *
-		 * type		- type of recurrence: day=10, week=11, month=12, year=13
-		 * subtype	- type of day recurrence: 2=monthday (ie 21st day of month), 3=nday'th weekdays (ie. 2nd Tuesday and Wednesday)
-		 * start	- unix timestamp of first occurrence
-		 * end		- unix timestamp of last occurrence (up to and including), so when start == end -> occurrences = 1
+		 * type  - type of recurrence: day=10, week=11, month=12, year=13
+		 * subtype - type of day recurrence: 2=monthday (ie 21st day of month), 3=nday'th weekdays (ie. 2nd Tuesday and Wednesday)
+		 * start - unix timestamp of first occurrence
+		 * end  - unix timestamp of last occurrence (up to and including), so when start == end -> occurrences = 1
 		 * numoccur     - occurrences (may be very large when there is no end data)
 		 *
 		 * then, for each type:
 		 *
 		 * Daily:
-		 *  everyn	- every [everyn] days in minutes
-		 *  regen	- regenerating event (like tasks)
+		 *  everyn - every [everyn] days in minutes
+		 *  regen - regenerating event (like tasks)
 		 *
 		 * Weekly:
-		 *  everyn	- every [everyn] weeks in weeks
-		 *  regen	- regenerating event (like tasks)
+		 *  everyn - every [everyn] weeks in weeks
+		 *  regen - regenerating event (like tasks)
 		 *  weekdays - bitmask of week days, where each bit is one weekday (weekdays & 1 = Sunday, weekdays & 2 = Monday, etc)
 		 *
 		 * Monthly:
-		 *  everyn	- every [everyn] months
-		 *  regen	- regenerating event (like tasks)
-		 *
-		 *  subtype 2:
-		 *	  monthday - on day [monthday] of the month
-		 *
-		 *  subtype 3:
-		 *	  weekdays - bitmask of week days, where each bit is one weekday (weekdays & 1 = Sunday, weekdays & 2 = Monday, etc)
-		 *   nday	- on [nday]'th [weekdays] of the month
-		 *
-		 * Yearly:
-		 *  everyn	- every [everyn] months (12, 24, 36, ...)
-		 *  month	- in month [month] (although the month is encoded in minutes since the startning of the year ........)
-		 *  regen	- regenerating event (like tasks)
+		 *  everyn - every [everyn] months
+		 *  regen - regenerating event (like tasks)
 		 *
 		 *  subtype 2:
 		 *   monthday - on day [monthday] of the month
 		 *
 		 *  subtype 3:
 		 *   weekdays - bitmask of week days, where each bit is one weekday (weekdays & 1 = Sunday, weekdays & 2 = Monday, etc)
-		 *	  nday	- on [nday]'th [weekdays] of the month [month]
+		 *   nday - on [nday]'th [weekdays] of the month
+		 *
+		 * Yearly:
+		 *  everyn - every [everyn] months (12, 24, 36, ...)
+		 *  month - in month [month] (although the month is encoded in minutes since the startning of the year ........)
+		 *  regen - regenerating event (like tasks)
+		 *
+		 *  subtype 2:
+		 *   monthday - on day [monthday] of the month
+		 *
+		 *  subtype 3:
+		 *   weekdays - bitmask of week days, where each bit is one weekday (weekdays & 1 = Sunday, weekdays & 2 = Monday, etc)
+		 *   nday - on [nday]'th [weekdays] of the month [month]
 		 *
 		 * @param string $rdata Binary string
 		 *
-		 * @return array recurrence data
+		 * @return (((false|int|mixed|string)[]|int)[]|int|mixed)[]|null recurrence data
+		 *
+		 * @psalm-return array{changed_occurrences: array<int, array{basedate: false|int, start: int, end: int, bitmask: mixed, subject?: false|string, remind_before?: mixed, reminder_set?: mixed, location?: false|string, busystatus?: mixed, alldayevent?: mixed, label?: mixed, ex_start_datetime?: mixed, ex_end_datetime?: mixed, ex_orig_date?: mixed}>, deleted_occurrences: list<int>, type?: int|mixed, subtype?: mixed, month?: mixed, everyn?: mixed, regen?: mixed, monthday?: mixed, weekdays?: 0|mixed, nday?: mixed, term?: int|mixed, numoccur?: mixed, numexcept?: mixed, numexceptmod?: mixed, start?: int, end?: int, startocc?: mixed, endocc?: mixed}|null
 		 */
 		public function parseRecurrence($rdata) {
 			if (strlen($rdata) < 10) {
@@ -587,9 +589,9 @@
 		/**
 		 * Saves the recurrence data to the recurrence property.
 		 *
-		 * @return string binary string
+		 * @return void binary string
 		 */
-		public function saveRecurrence() {
+		public function saveRecurrence(): void {
 			// Only save if a message was passed
 			if (!isset($this->message)) {
 				return;
@@ -1432,7 +1434,7 @@
 		 *
 		 * @param int $date the date which will be converted
 		 *
-		 * @return int the converted date in minutes
+		 * @return float|int the converted date in minutes
 		 */
 		public function unixDataToRecurData($date) {
 			return ($date / 60) + 194074560;
@@ -1444,6 +1446,8 @@
 		 * @author Steve Hardy
 		 *
 		 * @param mixed $ts
+		 *
+		 * @return float|int
 		 */
 		public function GetTZOffset($ts) {
 			$Offset = date("O", $ts);
@@ -1472,11 +1476,11 @@
 			return localtime($t_time, 1);
 		}
 
-		public function isLeapYear($year) {
+		public function isLeapYear($year): bool {
 			return $year % 4 == 0 && ($year % 100 != 0 || $year % 400 == 0);
 		}
 
-		public function getMonthInSeconds($year, $month) {
+		public function getMonthInSeconds($year, $month): int {
 			if (in_array($month, [1, 3, 5, 7, 8, 10, 12])) {
 				$day = 31;
 			}
@@ -1572,6 +1576,8 @@
 		 * getWeekNr() returns the week nr of the month (ie first week of february is 1).
 		 *
 		 * @param mixed $date
+		 *
+		 * @return float|int
 		 */
 		public function getWeekNr($date) {
 			$gmdate = gmtime($date);
@@ -1586,6 +1592,8 @@
 		 * offset (GMT +2:00 -> -120).
 		 *
 		 * @param mixed $data
+		 *
+		 * @return array|false|null
 		 */
 		public function parseTimezone($data) {
 			if (strlen($data) < 48) {
@@ -1595,6 +1603,9 @@
 			return unpack("ltimezone/lunk/ltimezonedst/lunk/ldstendmonth/vdstendweek/vdstendhour/lunk/lunk/vunk/ldststartmonth/vdststartweek/vdststarthour/lunk/vunk", $data);
 		}
 
+		/**
+		 * @return false|string
+		 */
 		public function getTimezoneData($tz) {
 			return pack("lllllvvllvlvvlv", $tz["timezone"], 0, $tz["timezonedst"], 0, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendhour"], 0, 0, 0, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststarthour"], 0, 0);
 		}
@@ -1605,6 +1616,8 @@
 		 * $tz is an array with the timezone data.
 		 *
 		 * @param mixed $tz
+		 *
+		 * @return false|string
 		 */
 		public function createTimezone($tz) {
 			return pack(
@@ -1695,9 +1708,11 @@
 		 * @param mixed  $limit
 		 * @param mixed  $remindersonly
 		 *
-		 * @return array
+		 * @return (array|mixed)[]
+		 *
+		 * @psalm-return array<int, T|array>
 		 */
-		public function getItems($start, $end, $limit = 0, $remindersonly = false) {
+		public function getItems($start, $end, $limit = 0, $remindersonly = false): array {
 			$items = [];
 
 			if (isset($this->recur)) {
@@ -1951,7 +1966,7 @@
 			return $items;
 		}
 
-		public function sortStarttime($a, $b) {
+		public function sortStarttime($a, $b): int {
 			$aTime = $a[$this->proptags["startdate"]];
 			$bTime = $b[$this->proptags["startdate"]];
 
@@ -1970,7 +1985,7 @@
 		 *                    of days in the month
 		 * @param int $months number of months you want to know the number of days in
 		 *
-		 * @return int Number of days in the specified amount of months.
+		 * @return float|int Number of days in the specified amount of months.
 		 */
 		public function daysInMonth($date, $months) {
 			$days = 0;
@@ -1993,7 +2008,7 @@
 			return $dtime["tm_mon"];
 		}
 
-		public function sortExceptionStart($a, $b) {
+		public function sortExceptionStart($a, $b): int {
 			return $a["start"] == $b["start"] ? 0 : ($a["start"] > $b["start"] ? 1 : -1);
 		}
 
@@ -2002,9 +2017,11 @@
 		 *
 		 * @param mixed $exception
 		 *
-		 * @return array associative array of properties for the exception, compatible with
+		 * @return (mixed|true)[] associative array of properties for the exception, compatible with
+		 *
+		 * @psalm-return array<mixed|true>
 		 */
-		public function getExceptionProperties($exception) {
+		public function getExceptionProperties($exception): array {
 			// Exception has same properties as main object, with some properties overridden:
 			$item = $this->messageprops;
 
@@ -2049,5 +2066,9 @@
 			return $item;
 		}
 
-		abstract public function processOccurrenceItem(&$items, $start, $end, $basedate, $startocc, $endocc, $tz, $reminderonly);
+		/**
+		 * @param false|int $start
+		 * @param false|int $basedate
+		 */
+		abstract public function processOccurrenceItem(array &$items, $start, int $end, $basedate, $startocc, $endocc, $tz, $reminderonly);
 	}
