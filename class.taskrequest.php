@@ -688,7 +688,7 @@ class TaskRequest {
 	 * Copies the task to the user's task folder, sets it to accepted, and sends the acceptation
 	 * message back to the organizer. The caller is responsible for removing the message.
 	 *
-	 * @return array|bool PR_ENTRYID, PR_STORE_ENTRYID and PR_PARENT_ENTRYID of the task
+	 * @return array|false PR_ENTRYID, PR_STORE_ENTRYID and PR_PARENT_ENTRYID of the task
 	 */
 	public function doAccept() {
 		$prefix = _("Task Accepted:") . " ";
@@ -738,7 +738,7 @@ class TaskRequest {
 	 *
 	 * Sends the decline message back to the organizer. The caller is responsible for removing the message.
 	 *
-	 * @return array|bool TRUE on success, FALSE on failure
+	 * @return array|false TRUE on success, FALSE on failure
 	 */
 	public function doDecline() {
 		$prefix = _("Task Declined:") . " ";

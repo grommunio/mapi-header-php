@@ -1524,9 +1524,9 @@ class Meetingrequest {
 	 * @param mixed $modifiedRecips
 	 * @param mixed $deletedRecips
 	 *
-	 * @return array|true
+	 * @return (int|mixed)[]|true
 	 *
-	 * @psalm-return array{error: mixed, displayname: mixed}|true
+	 * @psalm-return array{error: 1|3|4, displayname: mixed}|true
 	 */
 	public function sendMeetingRequest($cancel, $prefix = false, $basedate = false, $modifiedRecips = false, $deletedRecips = false) {
 		$this->includesResources = false;
@@ -3866,7 +3866,7 @@ class Meetingrequest {
 	 * Function returns extra info about meeting timing along with message body
 	 * which will be included in body while sending meeting request/response.
 	 *
-	 * @return bool|string $meetingTimeInfo info about meeting timing along with message body
+	 * @return false|string $meetingTimeInfo info about meeting timing along with message body
 	 */
 	public function getMeetingTimeInfo() {
 		return $this->meetingTimeInfo;

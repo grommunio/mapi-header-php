@@ -1486,6 +1486,8 @@
 		/**
 		 * @param float|string $year
 		 * @param int|string $month
+		 *
+		 * @return int
 		 */
 		public function getMonthInSeconds($year, $month): int {
 			if (in_array($month, [1, 3, 5, 7, 8, 10, 12])) {
@@ -1973,6 +1975,11 @@
 			return $items;
 		}
 
+		/**
+		 * @return int
+		 *
+		 * @psalm-return -1|0|1
+		 */
 		public function sortStarttime($a, $b): int {
 			$aTime = $a[$this->proptags["startdate"]];
 			$bTime = $b[$this->proptags["startdate"]];
@@ -2015,6 +2022,11 @@
 			return $dtime["tm_mon"];
 		}
 
+		/**
+		 * @return int
+		 *
+		 * @psalm-return -1|0|1
+		 */
 		public function sortExceptionStart($a, $b): int {
 			return $a["start"] == $b["start"] ? 0 : ($a["start"] > $b["start"] ? 1 : -1);
 		}
@@ -2024,7 +2036,7 @@
 		 *
 		 * @param mixed $exception
 		 *
-		 * @return (mixed|true)[] associative array of properties for the exception, compatible with
+		 * @return (mixed|true)[] associative array of properties for the exception
 		 *
 		 * @psalm-return array<mixed|true>
 		 */
