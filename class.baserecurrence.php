@@ -1476,6 +1476,9 @@
 			return localtime($t_time, 1);
 		}
 
+		/**
+		 * @param float|string $year
+		 */
 		public function isLeapYear($year): bool {
 			return $year % 4 == 0 && ($year % 100 != 0 || $year % 400 == 0);
 		}
