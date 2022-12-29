@@ -688,6 +688,9 @@ class Recurrence extends BaseRecurrence {
 	/*
 	 * Remove an exception by base_date. This is the base date in local daystart time
 	 */
+	/**
+	 * @param false|int $base_date
+	 */
 	public function deleteException($base_date): void {
 		// Remove all exceptions on $base_date from the deleted and changed occurrences lists
 

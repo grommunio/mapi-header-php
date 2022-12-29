@@ -732,6 +732,7 @@ class Meetingrequest {
 
 	/**
 	 * @param (float|mixed|true)[] $proposeNewTimeProps
+	 * @param resource $calFolder
 	 *
 	 * @psalm-param array<float|mixed|true> $proposeNewTimeProps
 	 */

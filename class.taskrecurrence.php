@@ -194,7 +194,7 @@
 		/**
 		 * Function which return properties of next occurrence.
 		 *
-		 * @return array|bool startdate/enddate of next occurrence
+		 * @return T|array|false|null startdate/enddate of next occurrence
 		 */
 		public function getNextOccurrence() {
 			if ($this->recur) {

@@ -1480,6 +1480,10 @@
 			return $year % 4 == 0 && ($year % 100 != 0 || $year % 400 == 0);
 		}
 
+		/**
+		 * @param float|string $year
+		 * @param int|string $month
+		 */
 		public function getMonthInSeconds($year, $month): int {
 			if (in_array($month, [1, 3, 5, 7, 8, 10, 12])) {
 				$day = 31;
