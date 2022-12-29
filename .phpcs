@@ -22,7 +22,7 @@ return $config->
 	])->
 	setFinder(
 		PhpCsFixer\Finder::create()->
-			exclude(['vendor', 'language', 'phpfastcache'])->
+			exclude(['vendor'])->
 			in(__DIR__)
 	)
 ;
