@@ -188,8 +188,6 @@ function propIsError($property, $propArray) {
  * @param int      $viewend        Timestamp of end of view window
  * @param array    $propsrequested Array of properties to return
  *
- * @return array
- *
  * @psalm-return list<mixed>
  */
 function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested): array {
@@ -318,9 +316,9 @@ function getGoidFromUid($uid) {
 
 /**
  * Returns zero terminated goid. It is required for backwards compatibility.
- * 
  *
  * @param string $icalUid an appointment uid as HEX
+ * @param mixed  $uid
  *
  * @return string an OL compatible GlobalObjectID
  */

@@ -22,7 +22,7 @@ class FreeBusy {
 	 *
 	 * @param mixed $store (optional) user's store
 	 *
-	 * @return resource|bool local freebusy message, otherwise false if message not found
+	 * @return bool|resource local freebusy message, otherwise false if message not found
 	 */
 	public static function getLocalFreeBusyMessage($store = false) {
 		if (!$store) {
@@ -87,7 +87,7 @@ class FreeBusy {
 	 *
 	 * @param mixed $store (optional) user's store
 	 *
-	 * @return resource|bool freebusy folder
+	 * @return bool|resource freebusy folder
 	 */
 	public static function getLocalFreeBusyFolder($store = false) {
 		if (!$store) {

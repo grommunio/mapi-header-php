@@ -98,7 +98,7 @@ class Meetingrequest {
 	 * Indication whether the setting of resources in a Meeting Request is success (false) or if it
 	 * has failed (integer).
 	 *
-	 * @var false|int|null
+	 * @var null|false|int
 	 *
 	 * @psalm-var 1|3|4|false|null
 	 */
@@ -116,7 +116,7 @@ class Meetingrequest {
 	private $enableDirectBooking;
 
 	/**
-	 * @var bool|null
+	 * @var null|bool
 	 */
 	private $includesResources;
 	private $nonAcceptingResources;
@@ -369,7 +369,7 @@ class Meetingrequest {
 	 * @param mixed    $basedate     if present the create an exception
 	 * @param array    $messageprops contains message properties
 	 *
-	 * @return false|null
+	 * @return null|false
 	 */
 	public function processResponse($store, $calendarItem, $basedate, $messageprops) {
 		$senderentryid = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
@@ -745,6 +745,9 @@ class Meetingrequest {
 	/**
 	 * @param (float|mixed|true)[] $proposeNewTimeProps
 	 * @param resource $calFolder
+	 * @param mixed    $body
+	 * @param mixed    $store
+	 * @param mixed    $basedate
 	 *
 	 * @psalm-param array<float|mixed|true> $proposeNewTimeProps
 	 */
@@ -1300,7 +1303,7 @@ class Meetingrequest {
 	 *
 	 * @param mixed $basedate if specified contains starttime of day of an occurrence
 	 *
-	 * @return false|null
+	 * @return null|false
 	 */
 	public function doRemoveFromCalendar($basedate) {
 		if ($this->isLocalOrganiser()) {
@@ -1385,6 +1388,7 @@ class Meetingrequest {
 	 * Should only be called from meeting object from calendar.
 	 *
 	 * @param mixed $basedate (optional) basedate of occurrence which should be cancelled
+	 *
 	 * @FIXME cancellation mail is also sent to attendee which has declined the meeting
 	 * @FIXME don't send canellation mail when cancelling meeting from past
 	 */
@@ -3490,8 +3494,6 @@ class Meetingrequest {
 	 * @param mixed $isRecurrenceChanged for change in recurrence pattern.
 	 *                                   true means Recurrence pattern has been changed,
 	 *                                   so clear all attendees response
-	 *
-	 * @return void
 	 */
 	public function checkSignificantChanges($oldProps, $basedate, $isRecurrenceChanged = false) {
 		$message = null;
@@ -3672,7 +3674,7 @@ class Meetingrequest {
 	 *
 	 * @param false|resource $message
 	 * @param false|resource $userStore
-	 * @param mixed $calFolder calendar folder for conflict checking
+	 * @param mixed          $calFolder calendar folder for conflict checking
 	 *
 	 * @return bool|int
 	 *

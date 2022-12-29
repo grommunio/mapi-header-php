@@ -16,40 +16,40 @@ define('RESOURCE_ATTACHMENT', 'MAPI Attachment');
 
 /* Object type */
 
-define('MAPI_STORE', 0x00000001);    /* Message Store */
-define('MAPI_ADDRBOOK', 0x00000002);    /* Address Book */
+define('MAPI_STORE', 0x00000001);     /* Message Store */
+define('MAPI_ADDRBOOK', 0x00000002);  /* Address Book */
 define('MAPI_FOLDER', 0x00000003);    /* Folder */
 define('MAPI_ABCONT', 0x00000004);    /* Address Book Container */
-define('MAPI_MESSAGE', 0x00000005);    /* Message */
-define('MAPI_MAILUSER', 0x00000006);    /* Individual Recipient */
+define('MAPI_MESSAGE', 0x00000005);   /* Message */
+define('MAPI_MAILUSER', 0x00000006);  /* Individual Recipient */
 define('MAPI_ATTACH', 0x00000007);    /* Attachment */
-define('MAPI_DISTLIST', 0x00000008);    /* Distribution List Recipient */
-define('MAPI_PROFSECT', 0x00000009);    /* Profile Section */
+define('MAPI_DISTLIST', 0x00000008);  /* Distribution List Recipient */
+define('MAPI_PROFSECT', 0x00000009);  /* Profile Section */
 define('MAPI_STATUS', 0x0000000A);    /* Status Object */
-define('MAPI_SESSION', 0x0000000B);    /* Session */
-define('MAPI_FORMINFO', 0x0000000C);    /* Form Information */
+define('MAPI_SESSION', 0x0000000B);   /* Session */
+define('MAPI_FORMINFO', 0x0000000C);  /* Form Information */
 
 define('MV_FLAG', 0x1000);
 define('MV_INSTANCE', 0x2000);
 define('MVI_FLAG', MV_FLAG | MV_INSTANCE);
 
-define('PT_UNSPECIFIED', 0);    /* (Reserved for interface use) type doesn't matter to caller */
-define('PT_NULL', 1);    /* NULL property value */
-define('PT_I2', 2);    /* Signed 16-bit value */
-define('PT_LONG', 3);    /* Signed 32-bit value */
-define('PT_R4', 4);    /* 4-byte floating point */
-define('PT_DOUBLE', 5);    /* Floating point double */
-define('PT_CURRENCY', 6);    /* Signed 64-bit int (decimal w/    4 digits right of decimal pt) */
-define('PT_APPTIME', 7);    /* Application time */
-define('PT_ERROR', 10);    /* 32-bit error value */
-define('PT_BOOLEAN', 11);    /* 16-bit boolean (non-zero true) */
-define('PT_OBJECT', 13);    /* Embedded object in a property */
-define('PT_I8', 20);    /* 8-byte signed integer */
-define('PT_STRING8', 30);    /* Null terminated 8-bit character string */
-define('PT_UNICODE', 31);    /* Null terminated Unicode string */
-define('PT_SYSTIME', 64);    /* FILETIME 64-bit int w/ number of 100ns periods since Jan 1,1601 */
-define('PT_CLSID', 72);    /* OLE GUID */
-define('PT_BINARY', 258);   /* Uninterpreted (counted byte array) */
+define('PT_UNSPECIFIED', 0);  /* (Reserved for interface use) type doesn't matter to caller */
+define('PT_NULL', 1);         /* NULL property value */
+define('PT_I2', 2);           /* Signed 16-bit value */
+define('PT_LONG', 3);         /* Signed 32-bit value */
+define('PT_R4', 4);           /* 4-byte floating point */
+define('PT_DOUBLE', 5);       /* Floating point double */
+define('PT_CURRENCY', 6);     /* Signed 64-bit int (decimal w/4 digits right of decimal pt) */
+define('PT_APPTIME', 7);      /* Application time */
+define('PT_ERROR', 10);       /* 32-bit error value */
+define('PT_BOOLEAN', 11);     /* 16-bit boolean (non-zero true) */
+define('PT_OBJECT', 13);      /* Embedded object in a property */
+define('PT_I8', 20);          /* 8-byte signed integer */
+define('PT_STRING8', 30);     /* Null terminated 8-bit character string */
+define('PT_UNICODE', 31);     /* Null terminated Unicode string */
+define('PT_SYSTIME', 64);     /* FILETIME 64-bit int w/ number of 100ns periods since Jan 1,1601 */
+define('PT_CLSID', 72);       /* OLE GUID */
+define('PT_BINARY', 258);     /* Uninterpreted (counted byte array) */
 /* Changes are likely to these numbers, and to their structures. */
 
 /* Alternate property type names for ease of use */
@@ -61,25 +61,25 @@ define('PT_LONGLONG', PT_I8);
 
 define('PT_TSTRING', PT_STRING8);
 
-define('PT_MV_I2', (MV_FLAG | PT_I2));
-define('PT_MV_LONG', (MV_FLAG | PT_LONG));
-define('PT_MV_R4', (MV_FLAG | PT_R4));
-define('PT_MV_DOUBLE', (MV_FLAG | PT_DOUBLE));
-define('PT_MV_CURRENCY', (MV_FLAG | PT_CURRENCY));
-define('PT_MV_APPTIME', (MV_FLAG | PT_APPTIME));
-define('PT_MV_SYSTIME', (MV_FLAG | PT_SYSTIME));
-define('PT_MV_STRING8', (MV_FLAG | PT_STRING8));
-define('PT_MV_BINARY', (MV_FLAG | PT_BINARY));
-define('PT_MV_UNICODE', (MV_FLAG | PT_UNICODE));
-define('PT_MV_CLSID', (MV_FLAG | PT_CLSID));
-define('PT_MV_I8', (MV_FLAG | PT_I8));
+define('PT_MV_I2', MV_FLAG | PT_I2);
+define('PT_MV_LONG', MV_FLAG | PT_LONG);
+define('PT_MV_R4', MV_FLAG | PT_R4);
+define('PT_MV_DOUBLE', MV_FLAG | PT_DOUBLE);
+define('PT_MV_CURRENCY', MV_FLAG | PT_CURRENCY);
+define('PT_MV_APPTIME', MV_FLAG | PT_APPTIME);
+define('PT_MV_SYSTIME', MV_FLAG | PT_SYSTIME);
+define('PT_MV_STRING8', MV_FLAG | PT_STRING8);
+define('PT_MV_BINARY', MV_FLAG | PT_BINARY);
+define('PT_MV_UNICODE', MV_FLAG | PT_UNICODE);
+define('PT_MV_CLSID', MV_FLAG | PT_CLSID);
+define('PT_MV_I8', MV_FLAG | PT_I8);
 
 define('PT_MV_TSTRING', PT_MV_STRING8);
 /* bit 0: set if descending, clear if ascending */
 
-define('TABLE_SORT_ASCEND', (0x00000000));
-define('TABLE_SORT_DESCEND', (0x00000001));
-define('TABLE_SORT_COMBINE', (0x00000002));
+define('TABLE_SORT_ASCEND', 0x00000000);
+define('TABLE_SORT_DESCEND', 0x00000001);
+define('TABLE_SORT_COMBINE', 0x00000002);
 
 /* Bookmarks in Table */
 define('BOOKMARK_BEGINNING', 0); /* Before first row */
@@ -190,14 +190,14 @@ define('FLDSTATUS_DELMARKED', 0x00000008);
 
 /* Values for PR_RESOURCE_TYPE, _METHODS, _FLAGS */
 
-define('MAPI_STORE_PROVIDER', 33);    /* Message Store */
-define('MAPI_AB', 34);    /* Address Book */
-define('MAPI_AB_PROVIDER', 35);    /* Address Book Provider */
-define('MAPI_TRANSPORT_PROVIDER', 36);    /* Transport Provider */
-define('MAPI_SPOOLER', 37);    /* Message Spooler */
-define('MAPI_PROFILE_PROVIDER', 38);    /* Profile Provider */
-define('MAPI_SUBSYSTEM', 39);    /* Overall Subsystem Status */
-define('MAPI_HOOK_PROVIDER', 40);    /* Spooler Hook */
+define('MAPI_STORE_PROVIDER', 33);     /* Message Store */
+define('MAPI_AB', 34);                 /* Address Book */
+define('MAPI_AB_PROVIDER', 35);        /* Address Book Provider */
+define('MAPI_TRANSPORT_PROVIDER', 36); /* Transport Provider */
+define('MAPI_SPOOLER', 37);            /* Message Spooler */
+define('MAPI_PROFILE_PROVIDER', 38);   /* Profile Provider */
+define('MAPI_SUBSYSTEM', 39);          /* Overall Subsystem Status */
+define('MAPI_HOOK_PROVIDER', 40);      /* Spooler Hook */
 define('STATUS_VALIDATE_STATE', 0x00000001);
 define('STATUS_SETTINGS_DIALOG', 0x00000002);
 define('STATUS_CHANGE_PASSWORD', 0x00000004);
@@ -243,10 +243,10 @@ define('MODRECIP_ADD', 0x00000002);
 define('MODRECIP_MODIFY', 0x00000004);
 define('MODRECIP_REMOVE', 0x00000008);
 
-define('MAPI_ORIG', 0);          /* Recipient is message originator */
-define('MAPI_TO', 1);          /* Recipient is a primary recipient */
-define('MAPI_CC', 2);          /* Recipient is a copy recipient */
-define('MAPI_BCC', 3);          /* Recipient is blind copy recipient */
+define('MAPI_ORIG', 0);    /* Recipient is message originator */
+define('MAPI_TO', 1);      /* Recipient is a primary recipient */
+define('MAPI_CC', 2);      /* Recipient is a copy recipient */
+define('MAPI_BCC', 3);     /* Recipient is blind copy recipient */
 
 /* IAttach Interface ------------------------------------------------------- */
 
@@ -307,26 +307,26 @@ define('MAPI_ACCESS_CREATE_ASSOCIATED', 0x00000020);
 define('MAPI_SEND_NO_RICH_INFO', 0x00010000);
 
 /* flags for PR_STORE_SUPPORT_MASK */
-define('STORE_ANSI_OK', 0x00020000); // The message store supports properties containing ANSI (8-bit) characters.
-define('STORE_ATTACH_OK', 0x00000020); // The message store supports attachments (OLE or non-OLE) to messages.
-define('STORE_CATEGORIZE_OK', 0x00000400); // The message store supports categorized views of tables.
-define('STORE_CREATE_OK', 0x00000010); // The message store supports creation of new messages.
-define('STORE_ENTRYID_UNIQUE', 0x00000001); // Entry identifiers for the objects in the message store are unique, that is, never reused during the life of the store.
-define('STORE_HTML_OK', 0x00010000); // The message store supports Hypertext Markup Language (HTML) messages, stored in the PR_BODY_HTML property. Note that STORE_HTML_OK is not defined in versions of MAPIDEFS.H included with Microsoft� Exchange 2000 Server and earlier. If your development environment uses a MAPIDEFS.H file that does not include STORE_HTML_OK, use the value 0x00010000 instead.
-define('STORE_LOCALSTORE', 0x00080000); // This flag is reserved and should not be used.
-define('STORE_MODIFY_OK', 0x00000008); // The message store supports modification of its existing messages.
-define('STORE_MV_PROPS_OK', 0x00000200); // The message store supports multivalued properties, guarantees the stability of value order in a multivalued property throughout a save operation, and supports instantiation of multivalued properties in tables.
-define('STORE_NOTIFY_OK', 0x00000100); // The message store supports notifications.
-define('STORE_OLE_OK', 0x00000040); // The message store supports OLE attachments. The OLE data is accessible through an IStorage interface, such as that available through the PR_ATTACH_DATA_OBJ property.
-define('STORE_PUBLIC_FOLDERS', 0x00004000); // The folders in this store are public (multi-user), not private (possibly multi-instance but not multi-user).
-define('STORE_READONLY', 0x00000002); // All interfaces for the message store have a read-only access level.
-define('STORE_RESTRICTION_OK', 0x00001000); // The message store supports restrictions.
-define('STORE_RTF_OK', 0x00000800); // The message store supports Rich Text Format (RTF) messages, usually stored compressed, and the store itself keeps PR_BODY and PR_RTF_COMPRESSED synchronized.
-define('STORE_SEARCH_OK', 0x00000004); // The message store supports search-results folders.
-define('STORE_SORT_OK', 0x00002000); // The message store supports sorting views of tables.
-define('STORE_SUBMIT_OK', 0x00000080); // The message store supports marking a message for submission.
+define('STORE_ANSI_OK', 0x00020000);          // The message store supports properties containing ANSI (8-bit) characters.
+define('STORE_ATTACH_OK', 0x00000020);        // The message store supports attachments (OLE or non-OLE) to messages.
+define('STORE_CATEGORIZE_OK', 0x00000400);    // The message store supports categorized views of tables.
+define('STORE_CREATE_OK', 0x00000010);        // The message store supports creation of new messages.
+define('STORE_ENTRYID_UNIQUE', 0x00000001);   // Entry identifiers for the objects in the message store are unique, that is, never reused during the life of the store.
+define('STORE_HTML_OK', 0x00010000);          // The message store supports Hypertext Markup Language (HTML) messages, stored in the PR_BODY_HTML property. Note that STORE_HTML_OK is not defined in versions of MAPIDEFS.H included with Microsoft� Exchange 2000 Server and earlier. If your development environment uses a MAPIDEFS.H file that does not include STORE_HTML_OK, use the value 0x00010000 instead.
+define('STORE_LOCALSTORE', 0x00080000);       // This flag is reserved and should not be used.
+define('STORE_MODIFY_OK', 0x00000008);        // The message store supports modification of its existing messages.
+define('STORE_MV_PROPS_OK', 0x00000200);      // The message store supports multivalued properties, guarantees the stability of value order in a multivalued property throughout a save operation, and supports instantiation of multivalued properties in tables.
+define('STORE_NOTIFY_OK', 0x00000100);        // The message store supports notifications.
+define('STORE_OLE_OK', 0x00000040);           // The message store supports OLE attachments. The OLE data is accessible through an IStorage interface, such as that available through the PR_ATTACH_DATA_OBJ property.
+define('STORE_PUBLIC_FOLDERS', 0x00004000);   // The folders in this store are public (multi-user), not private (possibly multi-instance but not multi-user).
+define('STORE_READONLY', 0x00000002);         // All interfaces for the message store have a read-only access level.
+define('STORE_RESTRICTION_OK', 0x00001000);   // The message store supports restrictions.
+define('STORE_RTF_OK', 0x00000800);           // The message store supports Rich Text Format (RTF) messages, usually stored compressed, and the store itself keeps PR_BODY and PR_RTF_COMPRESSED synchronized.
+define('STORE_SEARCH_OK', 0x00000004);        // The message store supports search-results folders.
+define('STORE_SORT_OK', 0x00002000);          // The message store supports sorting views of tables.
+define('STORE_SUBMIT_OK', 0x00000080);        // The message store supports marking a message for submission.
 define('STORE_UNCOMPRESSED_RTF', 0x00008000); // The message store supports storage of Rich Text Format (RTF) messages in uncompressed form. An uncompressed RTF stream is identified by the value dwMagicUncompressedRTF in the stream header. The dwMagicUncompressedRTF value is defined in the RTFLIB.H file.
-define('STORE_UNICODE_OK', 0x00040000); // The message store supports properties containing Unicode characters.
+define('STORE_UNICODE_OK', 0x00040000);       // The message store supports properties containing Unicode characters.
 
 /*  PR_DISPLAY_TYPEs */
 /*  For address book contents tables */
@@ -441,21 +441,21 @@ define('BMR_NEZ', 0x00000001);
 /* array index values of restrictions -- same values are used in php-ext/main.cpp::PHPArraytoSRestriction() */
 define('VALUE', 0);        // propval
 define('RELOP', 1);        // compare method
-define('FUZZYLEVEL', 2);        // string search flags
-define('CB', 3);        // size restriction
-define('ULTYPE', 4);        // bit mask restriction type BMR_xxx
-define('ULMASK', 5);        // bitmask
-define('ULPROPTAG', 6);        // property
-define('ULPROPTAG1', 7);        // RES_COMPAREPROPS 1st property
-define('ULPROPTAG2', 8);        // RES_COMPAREPROPS 2nd property
+define('FUZZYLEVEL', 2);   // string search flags
+define('CB', 3);           // size restriction
+define('ULTYPE', 4);       // bit mask restriction type BMR_xxx
+define('ULMASK', 5);       // bitmask
+define('ULPROPTAG', 6);    // property
+define('ULPROPTAG1', 7);   // RES_COMPAREPROPS 1st property
+define('ULPROPTAG2', 8);   // RES_COMPAREPROPS 2nd property
 define('PROPS', 9);        // RES_COMMENT properties
-define('RESTRICTION', 10);        // RES_COMMENT and RES_SUBRESTRICTION restriction
+define('RESTRICTION', 10); // RES_COMMENT and RES_SUBRESTRICTION restriction
 
 /* GUID's for PR_MDB_PROVIDER */
-define("ZARAFA_SERVICE_GUID", makeGuid("{C0A19454-7F29-1B10-A587-08002B2A2517}"));    // default store
-define("ZARAFA_STORE_PUBLIC_GUID", makeGuid("{70FAB278-F7AF-CD11-9BC8-00AA002FC45A}"));    // public store
-define("ZARAFA_STORE_DELEGATE_GUID", makeGuid("{0077B49E-E474-CE11-8C5E-00AA004254E2}"));    // other store
-define('ZARAFA_STORE_ARCHIVER_GUID', makeGuid("{BC8953AD-2E3F-4172-9404-896FF459870F}"));    // archive store
+define("ZARAFA_SERVICE_GUID", makeGuid("{C0A19454-7F29-1B10-A587-08002B2A2517}"));        // default store
+define("ZARAFA_STORE_PUBLIC_GUID", makeGuid("{70FAB278-F7AF-CD11-9BC8-00AA002FC45A}"));   // public store
+define("ZARAFA_STORE_DELEGATE_GUID", makeGuid("{0077B49E-E474-CE11-8C5E-00AA004254E2}")); // other store
+define('ZARAFA_STORE_ARCHIVER_GUID', makeGuid("{BC8953AD-2E3F-4172-9404-896FF459870F}")); // archive store
 
 /* global profile section guid */
 define('pbGlobalProfileSectionGuid', makeGuid("{C8B0DB13-05AA-1A10-9BB0-00AA002FC45A}"));
@@ -516,7 +516,7 @@ define('ROWLIST_REPLACE', 0x0001);
 define('ROW_ADD', 0x0001);
 define('ROW_MODIFY', 0x0002);
 define('ROW_REMOVE', 0x0004);
-define('ROW_EMPTY', (ROW_ADD | ROW_REMOVE));
+define('ROW_EMPTY', ROW_ADD | ROW_REMOVE);
 
 // new property types
 define('PT_SRESTRICTION', 0x00FD);
@@ -586,38 +586,38 @@ define('SYNC_ONLY_SPECIFIED_PROPS', 0x80);
 define('SYNC_NO_FOREIGN_KEYS', 0x100);
 define('SYNC_LIMITED_IMESSAGE', 0x200);
 define('SYNC_CATCHUP', 0x400);
-define('SYNC_NEW_MESSAGE', 0x800);         // only applicable to ImportMessageChange()
-define('SYNC_MSG_SELECTIVE', 0x1000);        // Used internally.      Will reject if used by clients.
+define('SYNC_NEW_MESSAGE', 0x800);               // only applicable to ImportMessageChange()
+define('SYNC_MSG_SELECTIVE', 0x1000);            // Used internally. Will reject if used by clients.
 define('SYNC_BEST_BODY', 0x2000);
 define('SYNC_IGNORE_SPECIFIED_ON_ASSOCIATED', 0x4000);
-define('SYNC_PROGRESS_MODE', 0x8000);        // AirMapi progress mode
+define('SYNC_PROGRESS_MODE', 0x8000);            // AirMapi progress mode
 define('SYNC_FXRECOVERMODE', 0x10000);
 define('SYNC_DEFER_CONFIG', 0x20000);
-define('SYNC_FORCE_UNICODE', 0x40000);       // Forces server to return Unicode properties
-define('SYNC_STATE_READONLY', 0x80000);       // Server will not update the states in the DB, setting up exporter with this flag states are read only
+define('SYNC_FORCE_UNICODE', 0x40000);           // Forces server to return Unicode properties
+define('SYNC_STATE_READONLY', 0x80000);          // Server will not update the states in the DB, setting up exporter with this flag states are read only
 
-define('EMS_AB_ADDRESS_LOOKUP', 0x00000001);    // Flag for resolvename to resolve only exact matches
+define('EMS_AB_ADDRESS_LOOKUP', 0x00000001);     // Flag for resolvename to resolve only exact matches
 
-define('TBL_BATCH', 0x00000002);    // Batch multiple table commands
+define('TBL_BATCH', 0x00000002);                 // Batch multiple table commands
 
 /* Flags for recipients in exceptions */
-define('recipSendable', 0x00000001);    // sendable attendee.
-define('recipOrganizer', 0x00000002);    // meeting organizer
-define('recipExceptionalResponse', 0x00000010);    // attendee gave a response for the exception
-define('recipExceptionalDeleted', 0x00000020);    // recipientRow exists, but it is treated as if the corresponding recipient is deleted from meeting
-define('recipOriginal', 0x00000100);    // recipient is an original Attendee
+define('recipSendable', 0x00000001);             // sendable attendee.
+define('recipOrganizer', 0x00000002);            // meeting organizer
+define('recipExceptionalResponse', 0x00000010);  // attendee gave a response for the exception
+define('recipExceptionalDeleted', 0x00000020);   // recipientRow exists, but it is treated as if the corresponding recipient is deleted from meeting
+define('recipOriginal', 0x00000100);             // recipient is an original Attendee
 define('recipReserved', 0x00000200);
 
 /* Flags which indicates type of Meeting Object */
-define('mtgEmpty', 0x00000000);    // Unspecified.
-define('mtgRequest', 0x00000001);    // Initial meeting request.
-define('mtgFull', 0x00010000);    // Full update.
-define('mtgInfo', 0x00020000);    // Informational update.
-define('mtgOutOfDate', 0x00080000);    // A newer Meeting Request object or Meeting Update object was received after this one.
-define('mtgDelegatorCopy', 0x00100000);    // This is set on the delegator's copy when a delegate will handle meeting-related objects.
+define('mtgEmpty', 0x00000000);                  // Unspecified.
+define('mtgRequest', 0x00000001);                // Initial meeting request.
+define('mtgFull', 0x00010000);                   // Full update.
+define('mtgInfo', 0x00020000);                   // Informational update.
+define('mtgOutOfDate', 0x00080000);              // A newer Meeting Request object or Meeting Update object was received after this one.
+define('mtgDelegatorCopy', 0x00100000);          // This is set on the delegator's copy when a delegate will handle meeting-related objects.
 
-define('MAPI_ONE_OFF_UNICODE', 0x8000);        // the flag that defines whether the embedded strings are Unicode in one off entryids.
-define('MAPI_ONE_OFF_NO_RICH_INFO', 0x0001);        // the flag that specifies whether the recipient gets TNEF or not.
+define('MAPI_ONE_OFF_UNICODE', 0x8000);          // the flag that defines whether the embedded strings are Unicode in one off entryids.
+define('MAPI_ONE_OFF_NO_RICH_INFO', 0x0001);     // the flag that specifies whether the recipient gets TNEF or not.
 
 /* Mask flags for mapi_msgstore_advise */
 define('fnevCriticalError', 0x00000001);
@@ -634,22 +634,21 @@ define('fnevReservedForMapi', 0x40000000);
 define('fnevExtended', 0x80000000);
 
 /* PersistBlockType values PR_ADDITIONAL_REN_ENTRYIDS_EX / PR_ADDITIONAL_REN_ENTRYIDS_EX PersistIDs */
-define('PERSIST_SENTINEL', 0x0000); // Indicates that the PersistData structure is the last one contained in the PidTagAdditionalRenEntryIdsEx property
-define('RSF_PID_RSS_SUBSCRIPTION', 0x8001); // Indicates that the structure contains data for the RSS Feeds folder
-define('RSF_PID_SEND_AND_TRACK', 0x8002); // Indicates that the structure contains data for the Tracked Mail Processing folder
-define('RSF_PID_TODO_SEARCH', 0x8004); // Indicates that the structure contains data for the To-Do folder
-define('RSF_PID_CONV_ACTIONS', 0x8006); // Indicates that the structure contains data for the Conversation Action Settings folder
-define('RSF_PID_COMBINED_ACTIONS', 0x8007); // This value is reserved.
-define('RSF_PID_SUGGESTED_CONTACTS', 0x8008); // Indicates that the structure contains data for the Suggested Contacts folder.
-define('RSF_PID_CONTACT_SEARCH', 0x8009); // Indicates that the structure contains data for the Contacts Search folder.
-define('RSF_PID_BUDDYLIST_PDLS', 0x800A); // Indicates that the structure contains data for the IM Contacts List folder.
-define('RSF_PID_BUDDYLIST_CONTACTS', 0x800B); // Indicates that the structure contains data for the Quick Contacts folder.
+define('PERSIST_SENTINEL', 0x0000);            // Indicates that the PersistData structure is the last one contained in the PidTagAdditionalRenEntryIdsEx property
+define('RSF_PID_RSS_SUBSCRIPTION', 0x8001);    // Indicates that the structure contains data for the RSS Feeds folder
+define('RSF_PID_SEND_AND_TRACK', 0x8002);      // Indicates that the structure contains data for the Tracked Mail Processing folder
+define('RSF_PID_TODO_SEARCH', 0x8004);         // Indicates that the structure contains data for the To-Do folder
+define('RSF_PID_CONV_ACTIONS', 0x8006);        // Indicates that the structure contains data for the Conversation Action Settings folder
+define('RSF_PID_COMBINED_ACTIONS', 0x8007);    // This value is reserved.
+define('RSF_PID_SUGGESTED_CONTACTS', 0x8008);  // Indicates that the structure contains data for the Suggested Contacts folder.
+define('RSF_PID_CONTACT_SEARCH', 0x8009);      // Indicates that the structure contains data for the Contacts Search folder.
+define('RSF_PID_BUDDYLIST_PDLS', 0x800A);      // Indicates that the structure contains data for the IM Contacts List folder.
+define('RSF_PID_BUDDYLIST_CONTACTS', 0x800B);  // Indicates that the structure contains data for the Quick Contacts folder.
 
 /* PersistElementType Values ElementIDs for persist data of PR_ADDITIONAL_REN_ENTRYIDS_EX / PR_ADDITIONAL_REN_ENTRYIDS_EX */
-define('ELEMENT_SENTINEL', 0x0000); // 0 bytes Indicates that the PersistElement structure is the last one contained in the DataElements field of the PersistData structure.
-define('RSF_ELID_ENTRYID', 0x0001); // variable Indicates that the ElementData field contains the entry ID of the special folder
-														   // that is of the type indicated by the value of the PersistID field of the PersistData structure.
-define('RSF_ELID_HEADER', 0x0002); // 4 bytes Indicates that the ElementData field contains a 4-byte header value equal to 0x00000000.
+define('ELEMENT_SENTINEL', 0x0000);            // 0 bytes Indicates that the PersistElement structure is the last one contained in the DataElements field of the PersistData structure.
+define('RSF_ELID_ENTRYID', 0x0001);            // variable Indicates that the ElementData field contains the entry ID of the special folder that is of the type indicated by the value of the PersistID field of the PersistData structure.
+define('RSF_ELID_HEADER', 0x0002);             // 4 bytes Indicates that the ElementData field contains a 4-byte header value equal to 0x00000000.
 
 define('STGM_DIRECT', 0x00000000);
 define('STGM_TRANSACTED', 0x00010000);

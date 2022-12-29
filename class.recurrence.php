@@ -875,7 +875,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed $tz           the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 	 * @param bool  $reminderonly If TRUE, only add the item if the reminder is set
 	 *
-	 * @return false|null
+	 * @return null|false
 	 */
 	public function processOccurrenceItem(&$items, $start, $end, $basedate, $startocc, $endocc, $tz, $reminderonly) {
 		$exception = $this->isException($basedate);
