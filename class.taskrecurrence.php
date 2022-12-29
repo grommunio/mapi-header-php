@@ -8,6 +8,8 @@
 	class TaskRecurrence extends BaseRecurrence {
 		/**
 		 * Timezone info which is always false for task.
+		 *
+		 * @var false
 		 */
 		public $tz = false;
 

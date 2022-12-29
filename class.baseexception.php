@@ -20,26 +20,36 @@
 class BaseException extends Exception {
 	/**
 	 * Base name of the file, so we don't have to use static path of the file.
+	 *
+	 * @var null|string
 	 */
 	private $baseFile;
 
 	/**
 	 * Flag to check if exception is already handled or not.
+	 *
+	 * @var bool
 	 */
 	public $isHandled = false;
 
 	/**
 	 * The exception message to show at client side.
+	 *
+	 * @var null|string
 	 */
 	public $displayMessage;
 
 	/**
 	 * Flag for allow to exception details message or not.
+	 *
+	 * @var false
 	 */
 	public $allowToShowDetailsMessage = false;
 
 	/**
 	 * The exception title to show as a message box title at client side.
+	 *
+	 * @var null|string
 	 */
 	public $title;
 

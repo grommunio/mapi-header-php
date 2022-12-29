@@ -97,6 +97,10 @@ class Meetingrequest {
 	/**
 	 * Indication whether the setting of resources in a Meeting Request is success (false) or if it
 	 * has failed (integer).
+	 *
+	 * @var false|int|null
+	 *
+	 * @psalm-var 1|3|4|false|null
 	 */
 	public $errorSetResource;
 
@@ -104,8 +108,16 @@ class Meetingrequest {
 	private $store;
 	public $message;
 	private $session;
+
+	/**
+	 * @var false|string
+	 */
 	private $meetingTimeInfo;
 	private $enableDirectBooking;
+
+	/**
+	 * @var bool|null
+	 */
 	private $includesResources;
 	private $nonAcceptingResources;
 	private $recipientDisplayname;

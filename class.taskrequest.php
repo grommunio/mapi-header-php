@@ -79,9 +79,25 @@ define('ICON_TASK_ASSIGNER', 0x00000503);
 
 class TaskRequest {
 	private $props;
+
+	/**
+	 * @var resource
+	 */
 	private $store;
+
+	/**
+	 * @var resource
+	 */
 	private $message;
+
+	/**
+	 * @var resource
+	 */
 	private $session;
+
+	/**
+	 * @var string
+	 */
 	private $taskCommentsInfo;
 
 	// All recipient properties
