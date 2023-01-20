@@ -751,7 +751,7 @@ class Meetingrequest {
 	 *
 	 * @psalm-param array<float|mixed|true> $proposeNewTimeProps
 	 */
-	public function accept(bool $tentative, bool $sendresponse, bool $move, array $proposeNewTimeProps = [], $body = false, bool $userAction = false, $store, $calFolder, $basedate = false) {
+	public function accept(bool $tentative, bool $sendresponse, bool $move, array $proposeNewTimeProps, $body, bool $userAction, $store, $calFolder, $basedate = false) {
 		$messageprops = mapi_getprops($this->message);
 		$isDelegate = isset($messageprops[PR_RCVD_REPRESENTING_NAME]);
 
@@ -1971,7 +1971,7 @@ class Meetingrequest {
 	 * @param mixed $basedate            date of occurrence which attendee has responded
 	 * @param mixed $calFolder
 	 */
-	public function createResponse($status, $proposeNewTimeProps = [], $body = false, $store, $basedate = false, $calFolder): void {
+	public function createResponse($status, $proposeNewTimeProps, $body, $store, $basedate, $calFolder): void {
 		$messageprops = mapi_getprops($this->message, [
 			PR_SENT_REPRESENTING_ENTRYID,
 			PR_SENT_REPRESENTING_EMAIL_ADDRESS,
@@ -2829,7 +2829,7 @@ class Meetingrequest {
 	 * @param resource $store          user store
 	 * @param bool     $isDelegate     true if delegate is processing this meeting request
 	 */
-	public function acceptException(&$recurringItem, &$occurrenceItem, $basedate, $move = false, $tentative, $userAction = false, $store, $isDelegate = false): void {
+	public function acceptException(&$recurringItem, &$occurrenceItem, $basedate, $move, $tentative, $userAction, $store, $isDelegate = false): void {
 		$recurr = new Recurrence($store, $recurringItem);
 
 		// Copy properties from meeting request
