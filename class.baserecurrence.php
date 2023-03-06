@@ -618,7 +618,7 @@ abstract class BaseRecurrence {
 			return;
 		}
 
-		$rdata = pack("vvvvv", 0x3004, 0x3004, $rtype, (int) $this->recur["subtype"], CAL_DEFAULT);
+		$rdata = pack("vvvvv", 0x3004, 0x3004, $rtype, (int) $this->recur["subtype"], MAPI_CAL_DEFAULT);
 		$weekstart = 1; // monday
 		$forwardcount = 0;
 		$restocc = 0;
