@@ -770,9 +770,6 @@ class Meetingrequest {
 		 * If user is responding from calendar then item is opened and properties are set such as meetingstatus, responsestatus, busystatus etc.
 		 */
 		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS])) {
-			// While processing the item mark it as read.
-			mapi_message_setreadflag($this->message, SUPPRESS_RECEIPT);
-
 			// This meeting request item is recurring, so find all occurrences and saves them all as exceptions to this meeting request item.
 			if (isset($messageprops[$this->proptags['recurring']]) && $messageprops[$this->proptags['recurring']] == true) {
 				$calendarItem = false;
