@@ -32,3 +32,5 @@ define('MUIDZCSAB', makeguid("{30047F72-92E3-DA4F-B86A-E52A7FE46571}"));
 define('MUIDEMSAB', makeguid("{C840A7DC-42C0-1A10-B4B9-08002B2FE182}"));
 
 define('PSETID_AirSync', makeguid("{71035549-0739-4DCB-9163-00F0580DBBDF}"));
+
+define('PSETID_CustomerLocation', makeguid("{A719E259-2A9A-4FB8-BAB3-3A9F02970E4B}"));
