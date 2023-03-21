@@ -3579,8 +3579,11 @@ class Meetingrequest {
 			return false;
 		}
 
+		// there is no goid - no items can be found - aborting
+		if (empty($props[$this->proptags['goid']])) {
+			return false;
+		}
 		$globalId = $props[$this->proptags['goid']];
-		$cleanGlobalId = $props[$this->proptags['goid2']];
 
 		// If Delegate is processing Meeting Request/Response for Delegator then retrieve Delegator's store and calendar.
 		if (isset($props[PR_RCVD_REPRESENTING_ENTRYID])) {
@@ -3609,7 +3612,11 @@ class Meetingrequest {
 		 */
 		$entryids = $this->findCalendarItems($globalId, $calFolder);
 		if ($basedate !== false && empty($entryids)) {
-			$entryids = $this->findCalendarItems($cleanGlobalId, $calFolder, true);
+			// only search if a goid2 is available
+			if (!empty($props[$this->proptags['goid2']])) {
+				$cleanGlobalId = $props[$this->proptags['goid2']];
+				$entryids = $this->findCalendarItems($cleanGlobalId, $calFolder, true);
+			}
 		}
 
 		// there should be only one item returned
