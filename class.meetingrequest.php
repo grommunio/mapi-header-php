@@ -92,6 +92,7 @@ class Meetingrequest {
 		PR_ROWID,
 		PR_OBJECT_TYPE,
 		PR_SEARCH_KEY,
+		PR_SMTP_ADDRESS,
 	];
 
 	/**
@@ -900,7 +901,8 @@ class Meetingrequest {
 					// open wastebasket of currently logged in user and move the meeting request to it
 					// for delegates this will be delegate's wastebasket folder
 					$wastebasket = $this->openDefaultWastebasket($this->openDefaultStore());
-					mapi_folder_copymessages($calFolder, [$props[PR_ENTRYID]], $wastebasket, MESSAGE_MOVE);
+					$sourcefolder = $this->openParentFolder();
+					mapi_folder_copymessages($sourcefolder, [$props[PR_ENTRYID]], $wastebasket, MESSAGE_MOVE);
 				}
 
 				$entryid = $props[PR_ENTRYID];
@@ -1020,6 +1022,7 @@ class Meetingrequest {
 							PR_SENT_REPRESENTING_EMAIL_ADDRESS,
 							PR_SENT_REPRESENTING_ADDRTYPE,
 							PR_SENT_REPRESENTING_SEARCH_KEY,
+							PR_SENT_REPRESENTING_SMTP_ADDRESS,
 						]);
 
 						// add owner to recipient table
@@ -2330,7 +2333,7 @@ class Meetingrequest {
 		if (!$hasOrganizer) {
 			// Create organizer.
 			$organizer = [];
-			$organizer[PR_ENTRYID] = $messageProps[PR_SENT_REPRESENTING_ENTRYID];
+			$organizer[PR_ENTRYID] = $organizer[PR_RECIPIENT_ENTRYID] = $messageProps[PR_SENT_REPRESENTING_ENTRYID];
 			$organizer[PR_DISPLAY_NAME] = $messageProps[PR_SENT_REPRESENTING_NAME];
 			$organizer[PR_EMAIL_ADDRESS] = $messageProps[PR_SENT_REPRESENTING_EMAIL_ADDRESS];
 			$organizer[PR_RECIPIENT_TYPE] = MAPI_TO;
@@ -2339,6 +2342,7 @@ class Meetingrequest {
 			$organizer[PR_RECIPIENT_TRACKSTATUS] = olRecipientTrackStatusNone;
 			$organizer[PR_RECIPIENT_FLAGS] = recipSendable | recipOrganizer;
 			$organizer[PR_SEARCH_KEY] = $messageProps[PR_SENT_REPRESENTING_SEARCH_KEY];
+			$organizer[PR_SMTP_ADDRESS] = $messageProps[PR_SENT_REPRESENTING_SMTP_ADDRESS] ?? $messageProps[PR_SENT_REPRESENTING_EMAIL_ADDRESS];
 
 			// Add organizer to recipients list.
 			array_unshift($recipients, $organizer);
