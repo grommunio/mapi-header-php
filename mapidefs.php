@@ -488,6 +488,8 @@ define('ecRightsCreateSubfolder', 0x00000080);
 define('ecRightsFolderAccess', 0x00000100);
 define('ecRightsContact', 0x00000200);
 define('ecRightsFolderVisible', 0x00000400);
+define('ecRightsFreeBusySimple', 0x00000800);
+define('ecRightsFreeBusyDetailed', 0x00001000);
 
 define('ecRightsAll', ecRightsReadAny | ecRightsCreate | ecRightsEditOwned | ecRightsDeleteOwned | ecRightsEditAny | ecRightsDeleteAny | ecRightsCreateSubfolder | ecRightsFolderAccess | ecRightsFolderVisible);
 define('ecRightsSecretary', ecRightsReadAny | ecRightsCreate | ecRightsEditOwned | ecRightsDeleteOwned | ecRightsEditAny | ecRightsDeleteAny | ecRightsFolderVisible);
