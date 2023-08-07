@@ -54,6 +54,11 @@ class BaseException extends Exception {
 	public $title;
 
 	/**
+	 * The notification type by which exception needs to be shown at client side.
+	 */
+	public $notificationType = "";
+
+	/**
 	 * Construct the exception.
 	 *
 	 * @param string    $errorMessage
@@ -140,6 +145,22 @@ class BaseException extends Exception {
 	 */
 	public function getName(): string {
 		return get_class($this);
+	}
+
+	/**
+	 * Function sets a type of notification by which exception needs to be shown at client side.
+	 *
+	 * @param string $notificationType type of notification to show an exception
+	 */
+	public function setNotificationType($notificationType) {
+		$this->notificationType = $notificationType;
+	}
+
+	/**
+	 * @return string a type of notification to show an exception
+	 */
+	public function getNotificationType() {
+		return $this->notificationType;
 	}
 
 	/**
