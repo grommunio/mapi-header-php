@@ -1,7 +1,7 @@
 <?php
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
- * SPDX-FileCopyrightText: Copyright 2020-2023 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2023 grommunio GmbH
  *
  * Performs several actions against a KeyCloak server.
  */
