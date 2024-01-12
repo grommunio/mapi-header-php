@@ -1,0 +1,45 @@
+# Author: grommunio Dev <dev@grommunio.com>
+
+#include <tunables/global>
+profile php-fpm /usr/sbin/php-fpm flags=(attach_disconnected) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/openssl>
+  #include <abstractions/php>
+  #include <abstractions/ssl_certs>
+
+  capability chown,
+  capability kill,
+  capability net_admin,
+  capability setgid,
+  capability setuid,
+
+  /etc/php*/fpm/* r,
+  /etc/php*/fpm/php-fpm.d/ r,
+  /etc/php*/fpm/php-fpm.d/* r,
+
+  /proc/@{pid}/attr/current rw,
+
+  /var/log/php-fpm.log rw,
+
+  @{run}/php{,-fpm}/php*-fpm.pid rw,
+  @{run}/php{,-fpm}/php*-fpm.sock rwlk,
+  @{run}/php*-fpm.pid rw,
+
+  # gromox specific
+  @{run}/gromox/*.pid rw,
+  @{run}/gromox/*.sock rwlk,
+
+  # grommunio component specific
+  @{run}/php{,-fpm}/php*-fpm.pid rw,
+  @{run}/php{,-fpm}/php*-fpm.sock rwlk,
+
+  deny / rw,
+
+  signal (send) peer=php-fpm//*,
+
+  change_profile -> php-fpm//*,
+
+  #include <php-fpm.d>
+  #include <local/usr.sbin.php-fpm>
+}
