@@ -289,7 +289,7 @@ define('STREAM_SEEK_END', 2);
 
 define('SHOW_SOFT_DELETES', 0x00000002);
 define('DELETE_HARD_DELETE', 0x00000010);
-define('ZC_DELMSG_NOTIFY_UNREAD', 0x40000000);
+define('GX_DELMSG_NOTIFY_UNREAD', 0x40000000);
 
 /*
  *    The following flags are used to indicate to the client what access
