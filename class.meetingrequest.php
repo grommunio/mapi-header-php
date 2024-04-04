@@ -2,7 +2,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2022 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
  */
 
 class Meetingrequest {
@@ -657,7 +657,8 @@ class Meetingrequest {
 		$messageprops = mapi_getprops($this->message, [PR_ENTRYID, PR_MESSAGE_CLASS, $this->proptags['goid'], $this->proptags['updatecounter'], PR_PROCESSED, PR_RCVD_REPRESENTING_ENTRYID, PR_SENDER_ENTRYID, PR_SENT_REPRESENTING_ENTRYID, PR_RECEIVED_BY_ENTRYID]);
 
 		// If this meeting request is received by a delegate then open delegator's store.
-		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
+		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID]) &&
+		    !compareEntryIds($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
 
 			$store = $delegatorStore['store'];
@@ -772,13 +773,13 @@ class Meetingrequest {
 		 */
 		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS])) {
 			// This meeting request item is recurring, so find all occurrences and saves them all as exceptions to this meeting request item.
-			if (isset($messageprops[$this->proptags['recurring']]) && $messageprops[$this->proptags['recurring']] == true) {
+			if (isset($messageprops[$this->proptags['recurring']]) && $messageprops[$this->proptags['recurring']] == true && $basedate == false) {
 				$calendarItem = false;
 
 				// Find main recurring item based on GlobalID (0x3)
 				$items = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder);
 				if (is_array($items)) {
-					foreach ($items as $key => $entryid) {
+					foreach ($items as $entryid) {
 						$calendarItem = mapi_msgstore_openentry($store, $entryid);
 					}
 				}
@@ -920,7 +921,7 @@ class Meetingrequest {
 					// Find main recurring item from CleanGlobalID of this meeting request
 					$items = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder);
 					if (is_array($items)) {
-						foreach ($items as $key => $entryid) {
+						foreach ($items as $entryid) {
 							$calendarItem = mapi_msgstore_openentry($store, $entryid);
 						}
 					}

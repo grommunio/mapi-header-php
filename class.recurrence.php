@@ -2,7 +2,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2022 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
  */
 
 /**
@@ -158,7 +158,7 @@ class Recurrence extends BaseRecurrence {
 
 			$changed_item = [];
 
-			$changed_item["basedate"] = $baseday;
+			$changed_item["basedate"] = $basetime;
 			$changed_item["start"] = $this->fromGMT($this->tz, $props[$this->proptags["startdate"]]);
 			$changed_item["end"] = $this->fromGMT($this->tz, $props[$this->proptags["duedate"]]);
 
@@ -1124,7 +1124,7 @@ class Recurrence extends BaseRecurrence {
 		}
 
 		if (!empty($exception_recips)) {
-			foreach ($recipientRows as $key => $recipient) {
+			foreach ($recipientRows as $recipient) {
 				$found = false;
 				foreach ($exception_recips as $excep_recip) {
 					if (isset($recipient[PR_SEARCH_KEY], $excep_recip[PR_SEARCH_KEY]) && $recipient[PR_SEARCH_KEY] == $excep_recip[PR_SEARCH_KEY]) {
@@ -1137,7 +1137,7 @@ class Recurrence extends BaseRecurrence {
 					// Look if the $recipient is in the list of deleted recipients
 					if (!empty($deletedRecipients)) {
 						foreach ($deletedRecipients as $recip) {
-							if ($recip[PR_SEARCH_KEY] == $recipient[PR_SEARCH_KEY]) {
+							if (isset($recipient[PR_SEARCH_KEY], $excep_recip[PR_SEARCH_KEY]) && $recip[PR_SEARCH_KEY] == $recipient[PR_SEARCH_KEY]) {
 								$foundInDeletedRecipients = true;
 								break;
 							}
