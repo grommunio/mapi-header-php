@@ -2,7 +2,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2022 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
  */
 
 /**
@@ -1006,7 +1006,7 @@ abstract class BaseRecurrence {
 		$items = $deleted_items;
 
 		foreach ($changed_items as $changed_item) {
-			array_push($items, $changed_item["basedate"]);
+			array_push($items, $this->dayStartOf($changed_item["basedate"]));
 		}
 
 		sort($items);
