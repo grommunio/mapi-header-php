@@ -495,17 +495,15 @@ class Recurrence extends BaseRecurrence {
 	 * is <08:00 - 14:00>, the item [6:00 - 8:00> is NOT included, nor is the item [14:00 - 16:00>. However, the item
 	 * [7:00 - 9:00> is included as a whole, and is NOT capped to [8:00 - 9:00>.
 	 *
-	 * @param $store resource The store in which the calendar resides
-	 * @param $calendar resource The calendar to get the items from
-	 * @param $viewstart int Timestamp of beginning of view window
-	 * @param $viewend int Timestamp of end of view window
+	 * @param $store          resource The store in which the calendar resides
+	 * @param $calendar       resource The calendar to get the items from
+	 * @param $viewstart      int Timestamp of beginning of view window
+	 * @param $viewend        int Timestamp of end of view window
 	 * @param $propsrequested array Array of properties to return
-	 * @param $rows array Array of rowdata as if they were returned directly from mapi_table_queryrows. Each recurring item is
-	 *                    expanded so that it seems that there are only many single appointments in the table.
 	 *
 	 * @psalm-param list{0: mixed, 1: mixed, 2?: mixed} $propsrequested
 	 */
-	public static function getCalendarItems($store, $calendar, $viewstart, $viewend, array $propsrequested) {
+	public static function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested) {
 		return getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested);
 	}
 
@@ -549,6 +547,7 @@ class Recurrence extends BaseRecurrence {
 					$occSingleDayRank = false;
 				}
 				break;
+
 				// Weekly
 			case 0x0B:
 				if ($everyn == 1) {
@@ -560,6 +559,7 @@ class Recurrence extends BaseRecurrence {
 					$occSingleDayRank = false;
 				}
 				break;
+
 				// Monthly
 			case 0x0C:
 				if ($everyn == 1) {
@@ -571,6 +571,7 @@ class Recurrence extends BaseRecurrence {
 					$occSingleDayRank = false;
 				}
 				break;
+
 				// Yearly
 			case 0x0D:
 				if ($everyn <= 12) {
@@ -999,8 +1000,6 @@ class Recurrence extends BaseRecurrence {
 	/**
 	 * Function to see if two dates are on the same day.
 	 *
-	 * @param date  $time1 date 1
-	 * @param date  $time2 date 2
 	 * @param mixed $date1
 	 * @param mixed $date2
 	 *
@@ -1045,12 +1044,11 @@ class Recurrence extends BaseRecurrence {
 	 *  - "remove": This contains an array of recipients which must be removed
 	 *  - "modify": This contains an array of recipients which must be modified
 	 *
-	 * @param resource $message          exception attachment of recurring item
-	 * @param array    $exception_recips list of recipients
-	 * @param bool     $copy_orig_recips True to copy all recipients which are on the original
-	 *                                   message to the attachment by default. False if only the $exception_recips changes should
-	 *                                   be applied.
-	 * @param mixed    $exception
+	 * @param mixed $exception
+	 * @param array $exception_recips list of recipients
+	 * @param bool  $copy_orig_recips True to copy all recipients which are on the original
+	 *                                message to the attachment by default. False if only the $exception_recips changes should
+	 *                                be applied.
 	 */
 	public function setDeltaExceptionRecipients($exception, $exception_recips, $copy_orig_recips): void {
 		// Check if the recipients from the original message should be copied,

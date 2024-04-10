@@ -2,7 +2,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2022 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
  */
 
 /*
@@ -387,6 +387,7 @@ class TaskRequest {
 		$isCreateAssociatedTask = false;
 		$isAllowUpdateAssociatedTask = $subProps[$this->props["taskupdates"]];
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
+
 		// Set correct taskmode and taskhistory depending on response type
 		switch ($props[PR_MESSAGE_CLASS]) {
 			case 'IPM.TaskRequest.Accept':
