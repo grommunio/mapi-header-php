@@ -2,7 +2,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2022 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
  */
 
 /**
@@ -61,12 +61,12 @@ class BaseException extends Exception {
 	/**
 	 * Construct the exception.
 	 *
-	 * @param string    $errorMessage
-	 * @param int       $code
-	 * @param Exception $previous
-	 * @param string    $displayMessage
+	 * @param string $errorMessage
+	 * @param int    $code
+	 * @param Throwable $previous
+	 * @param string $displayMessage
 	 */
-	public function __construct($errorMessage, $code = 0, Exception $previous = null, $displayMessage = null) {
+	public function __construct($errorMessage, $code = 0, $previous = null, $displayMessage = null) {
 		// assign display message
 		$this->displayMessage = $displayMessage;
 

@@ -2,7 +2,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2022 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
  */
 
 define('NOERROR', 0);
@@ -317,8 +317,7 @@ function getGoidFromUid($uid) {
 /**
  * Returns zero terminated goid. It is required for backwards compatibility.
  *
- * @param string $icalUid an appointment uid as HEX
- * @param mixed  $uid
+ * @param mixed $uid
  *
  * @return string an OL compatible GlobalObjectID
  */
@@ -344,6 +343,7 @@ function getUidFromGoid($goid) {
 	if ($uid !== false) {
 		// get the length of the ical id - go back 4 position from where "vCal-Uid" was found
 		$begin = unpack("V", substr($goid, strlen($uid) * (-1) - 4, 4));
+
 		// remove "vCal-Uid" and packed "1" and use the ical id length
 		return trim(substr($uid, 12, $begin[1] - 12));
 	}

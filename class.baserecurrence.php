@@ -141,7 +141,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @param string $rdata Binary string
 	 *
-	 * @return (((false|int|mixed|string)[]|int)[]|int|mixed)[]|null recurrence data
+	 * @return null|(((false|int|mixed|string)[]|int)[]|int|mixed)[] recurrence data
 	 *
 	 * @psalm-return array{changed_occurrences: array<int, array{basedate: false|int, start: int, end: int, bitmask: mixed, subject?: false|string, remind_before?: mixed, reminder_set?: mixed, location?: false|string, busystatus?: mixed, alldayevent?: mixed, label?: mixed, ex_start_datetime?: mixed, ex_end_datetime?: mixed, ex_orig_date?: mixed}>, deleted_occurrences: list<int>, type?: int|mixed, subtype?: mixed, month?: mixed, everyn?: mixed, regen?: mixed, monthday?: mixed, weekdays?: 0|mixed, nday?: mixed, term?: int|mixed, numoccur?: mixed, numexcept?: mixed, numexceptmod?: mixed, start?: int, end?: int, startocc?: mixed, endocc?: mixed}|null
 	 */
@@ -974,6 +974,7 @@ abstract class BaseRecurrence {
 			case IDC_RCEV_PAT_ERB_END:
 				$rdata .= pack("V", 10);
 				break;
+
 				// After a number of times
 			case IDC_RCEV_PAT_ERB_AFTERNOCCUR:
 				if (!isset($this->recur["numoccur"])) {
@@ -982,6 +983,7 @@ abstract class BaseRecurrence {
 
 				$rdata .= pack("V", (int) $this->recur["numoccur"]);
 				break;
+
 				// Never ends
 			case IDC_RCEV_PAT_ERB_NOEND:
 				$rdata .= pack("V", 0);
@@ -1041,6 +1043,7 @@ abstract class BaseRecurrence {
 			case IDC_RCEV_PAT_ERB_END:
 				$rdata .= pack("V", $this->unixDataToRecurData((int) $this->recur["end"]));
 				break;
+
 				// After a number of times
 			case IDC_RCEV_PAT_ERB_AFTERNOCCUR:
 				// @todo: calculate enddate with intval($this->recur["startocc"]) + intval($this->recur["duration"]) > 24 hour
@@ -1190,6 +1193,7 @@ abstract class BaseRecurrence {
 
 				$rdata .= pack("V", $this->unixDataToRecurData((int) $this->recur["end"]));
 				break;
+
 				// Never ends
 			case IDC_RCEV_PAT_ERB_NOEND:
 			default:
@@ -1400,7 +1404,8 @@ abstract class BaseRecurrence {
 			if ($this->tz["timezone"] != 0) {
 				// Create user readable timezone information
 				$timezone = sprintf(
-					"(GMT %s%02d:%02d)",-$this->tz["timezone"] > 0 ? "+" : "-",
+					"(GMT %s%02d:%02d)",
+					-$this->tz["timezone"] > 0 ? "+" : "-",
 					abs($this->tz["timezone"] / 60),
 					abs($this->tz["timezone"] % 60)
 				);
