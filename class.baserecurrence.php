@@ -1582,20 +1582,6 @@ abstract class BaseRecurrence {
 	}
 
 	/**
-	 * getWeekNr() returns the week nr of the month (ie first week of february is 1).
-	 *
-	 * @param mixed $date
-	 *
-	 * @return float|int
-	 */
-	public function getWeekNr($date) {
-		$gmdate = gmtime($date);
-		$gmdate["tm_mday"] = 0;
-
-		return strftime("%W", $date) - strftime("%W", gmmktime($gmdate)) + 1;
-	}
-
-	/**
 	 * parseTimezone parses the timezone as specified in named property 0x8233
 	 * in Outlook calendar messages. Returns the timezone in minutes negative
 	 * offset (GMT +2:00 -> -120).
