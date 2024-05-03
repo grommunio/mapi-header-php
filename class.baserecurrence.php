@@ -1608,29 +1608,6 @@ abstract class BaseRecurrence {
 	}
 
 	/**
-	 * createTimezone creates the timezone as specified in the named property 0x8233
-	 * see also parseTimezone()
-	 * $tz is an array with the timezone data.
-	 *
-	 * @param mixed $tz
-	 *
-	 * @return false|string
-	 */
-	public function createTimezone($tz) {
-		return pack(
-			"lxxxxlxxxxlvvxxxxxxxxxxlvvxxxxxx",
-			$tz["timezone"],
-			array_key_exists("timezonedst", $tz) ? $tz["timezonedst"] : 0,
-			array_key_exists("dstendmonth", $tz) ? $tz["dstendmonth"] : 0,
-			array_key_exists("dstendweek", $tz) ? $tz["dstendweek"] : 0,
-			array_key_exists("dstendhour", $tz) ? $tz["dstendhour"] : 0,
-			array_key_exists("dststartmonth", $tz) ? $tz["dststartmonth"] : 0,
-			array_key_exists("dststartweek", $tz) ? $tz["dststartweek"] : 0,
-			array_key_exists("dststarthour", $tz) ? $tz["dststarthour"] : 0
-		);
-	}
-
-	/**
 	 * toGMT returns a timestamp in GMT time for the time and timezone given.
 	 *
 	 * @param mixed $tz
