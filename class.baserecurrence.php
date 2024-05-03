@@ -1404,8 +1404,8 @@ abstract class BaseRecurrence {
 			if ($this->tz["timezone"] != 0) {
 				// Create user readable timezone information
 				$timezone = sprintf(
-					"(GMT %s%02d:%02d)",
-					-$this->tz["timezone"] > 0 ? "+" : "-",
+					"(GMT %s%02d:%02d)",-
+					$this->tz["timezone"] > 0 ? "+" : "-",
 					abs($this->tz["timezone"] / 60),
 					abs($this->tz["timezone"] % 60)
 				);
