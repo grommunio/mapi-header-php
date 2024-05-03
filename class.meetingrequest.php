@@ -658,7 +658,7 @@ class Meetingrequest {
 
 		// If this meeting request is received by a delegate then open delegator's store.
 		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID]) &&
-		    !compareEntryIds($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID])) {
+			!compareEntryIds($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
 
 			$store = $delegatorStore['store'];
@@ -746,10 +746,10 @@ class Meetingrequest {
 
 	/**
 	 * @param (float|mixed|true)[] $proposeNewTimeProps
-	 * @param resource $calFolder
-	 * @param mixed    $body
-	 * @param mixed    $store
-	 * @param mixed    $basedate
+	 * @param resource             $calFolder
+	 * @param mixed                $body
+	 * @param mixed                $store
+	 * @param mixed                $basedate
 	 *
 	 * @psalm-param array<float|mixed|true> $proposeNewTimeProps
 	 */
@@ -885,7 +885,7 @@ class Meetingrequest {
 					}
 				}
 
-				if(!isset($props[$this->proptags["recurring_pattern"]])) {
+				if (!isset($props[$this->proptags["recurring_pattern"]])) {
 					$recurr = new Recurrence($store, $calendarItem);
 					$recurr->saveRecurrencePattern();
 				}

@@ -61,10 +61,10 @@ class BaseException extends Exception {
 	/**
 	 * Construct the exception.
 	 *
-	 * @param string $errorMessage
-	 * @param int    $code
+	 * @param string    $errorMessage
+	 * @param int       $code
 	 * @param Throwable $previous
-	 * @param string $displayMessage
+	 * @param string    $displayMessage
 	 */
 	public function __construct($errorMessage, $code = 0, $previous = null, $displayMessage = null) {
 		// assign display message
