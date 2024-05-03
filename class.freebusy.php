@@ -79,7 +79,17 @@ class FreeBusy {
 
 				return mapi_msgstore_openentry($store, $localFreeBusyEntryids[self::DELEGATE_PROPERTIES]);
 			}
+
+			// Ensure to return false if an exception occurs
+			error_log("getLocalFreeBusyMessage: unhandled MAPIException " . $e->getMessage());
+		        return false;
+
 		}
+
+		// Fallback, should not typically reach here.
+		error_log("getLocalFreeBusyMessage: reached unexpected code path");
+		return false;
+
 	}
 
 	/**
