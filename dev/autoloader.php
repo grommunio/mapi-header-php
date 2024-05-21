@@ -1,5 +1,616 @@
 <?php
 
+class Resource {}
+
+/**
+ * @param ?int $level
+ */
+function mapi_load_mapidefs(?int $level): void {}
+
+function mapi_last_hresult(): int {
+	return 0;
+}
+
+function mapi_prop_type(int $proptag): false|int {
+	return 0;
+}
+
+function mapi_prop_id(int $proptag): false|int {
+	return 0;
+}
+
+function mapi_is_error(int $errcode): bool|false {
+	return false;
+}
+
+function mapi_make_scode(int $sev, int $code): false|int {
+	return 0;
+}
+
+function mapi_prop_tag(int $proptype, int $propid): false|int {
+	return 0;
+}
+
+/**
+ * @param ?string $displayname
+ * @param ?int    $flags
+ */
+function mapi_createoneoff(?string $displayname, string $type, string $address, ?int $flags = 0): false|string {
+	return '';
+}
+
+function mapi_parseoneoff(string $entryid): array|false {
+	return [];
+}
+
+/**
+ * @param ?string $server
+ * @param ?string $sslcert
+ * @param ?string $sslpass
+ * @param ?int    $flags
+ * @param ?string $wa_version
+ * @param ?string $misc_version
+ */
+function mapi_logon_zarafa(string $username, string $password, ?string $server = null, ?string $sslcert = null, ?string $sslpass = null, ?int $flags = 0, ?string $wa_version = null, ?string $misc_version = null): false|Resource {
+	return null;
+}
+
+function mapi_logon_ex(string $username, string $password, int $flags): false|Resource {
+	return null;
+}
+
+function mapi_logon_token(string $token): false|Resource {
+	return null;
+}
+
+function mapi_getmsgstorestable(Resource $session): false|Resource {
+	return null;
+}
+
+function mapi_openmsgstore(Resource $ses, string $entryid): false|Resource {
+	return null;
+}
+
+function mapi_openprofilesection(Resource $ses, string $uid): false|Resource {
+	return null;
+}
+
+function mapi_openaddressbook(Resource $session): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?string $entryid
+ * @param ?int    $flags
+ */
+function mapi_openentry(Resource $ses, ?string $entryid = null, ?int $flags = 0): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?string $entryid
+ * @param ?int    $flags
+ */
+function mapi_ab_openentry(Resource $abk, ?string $entryid = null, ?int $flags = 0): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_ab_resolvename(Resource $abk, array $names, ?int $flags = 0): mixed {
+	return null;
+}
+
+function mapi_ab_getdefaultdir(Resource $abk): false|string {
+	return '';
+}
+
+function mapi_msgstore_createentryid(Resource $store, string $mailbox_dn): false|string {
+	return '';
+}
+
+function mapi_msgstore_getarchiveentryid(Resource $store, string $user, string $server): bool {
+	return false;
+}
+
+/**
+ * @param ?string $entryid
+ * @param ?int    $flags
+ */
+function mapi_msgstore_openentry(Resource $store, ?string $entryid = null, ?int $flags = 0): false|Resource {
+	return null;
+}
+
+function mapi_msgstore_getreceivefolder(Resource $store): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?string $sk_msg
+ */
+function mapi_msgstore_entryidfromsourcekey(Resource $store, string $sk_fld, ?string $sk_msg = null): false|string {
+	return '';
+}
+
+function mapi_msgstore_advise(Resource $store, string $entryid, int $event_mask, Resource $sink): false|int {
+	return 0;
+}
+
+function mapi_msgstore_unadvise(Resource $store, int $sub_id): bool {
+	return false;
+}
+
+/**
+ * @param ?Resource $store
+ * @param ?string   $entryid
+ */
+function mapi_msgstore_abortsubmit(?Resource $store, ?string $entryid = null): true {
+	return null;
+}
+
+function mapi_sink_create(): false|Resource {
+	return null;
+}
+
+function mapi_sink_timedwait(Resource $sink, int $time): mixed {
+	return null;
+}
+
+/**
+ * @param ?array $proptags
+ * @param ?array $restrict
+ */
+function mapi_table_queryallrows(Resource $table, ?array $proptags = null, ?array $restrict = null): mixed {
+	return null;
+}
+
+/**
+ * @param ?array $proptags
+ * @param ?int   $start
+ * @param ?int   $limit
+ */
+function mapi_table_queryrows(Resource $table, ?array $proptags = null, ?int $start = 0, ?int $limit = 0): mixed {
+	return null;
+}
+
+function mapi_table_getrowcount(Resource $table): false|int {
+	return 0;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_table_setcolumns(Resource $table, array $columns, ?int $flags = 0): bool {
+	return false;
+}
+
+function mapi_table_seekrow(Resource $table, int $bookmark, int $rowcount): false|int {
+	return 0;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_table_sort(Resource $table, array $sortcrit, ?int $flags = 0): bool {
+	return false;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_table_restrict(Resource $table, array $restrict, ?int $flags = 0): bool {
+	return false;
+}
+
+/**
+ * @param ?int $bookmark
+ * @param ?int $flags
+ */
+function mapi_table_findrow(Resource $table, array $restrict, ?int $bookmark = 0, ?int $flags = 0): false|int {
+	return 0;
+}
+
+function mapi_table_createbookmark(Resource $table): false|int {
+	return 0;
+}
+
+function mapi_table_freebookmark(Resource $table, int $bookmark): bool {
+	return false;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_gethierarchytable(Resource $fld, ?int $flags = 0): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_getcontentstable(Resource $fld, ?int $flags = 0): false|Resource {
+	return null;
+}
+
+function mapi_folder_getrulestable(Resource $fld): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_createmessage(Resource $fld, ?int $flags = 0): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?string $comment
+ * @param ?int    $flags
+ * @param ?int    $folder_type
+ */
+function mapi_folder_createfolder(Resource $fld, string $fname, ?string $comment = null, ?int $flags = 0, ?int $folder_type = 0): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_deletemessages(Resource $fld, array $entryids, ?int $flags = 0): bool {
+	return false;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_copymessages(Resource $srcfld, array $entryids, Resource $dstfld, ?int $flags = 0): bool {
+	return false;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_emptyfolder(Resource $fld, ?int $flags = 0): bool {
+	return false;
+}
+
+/**
+ * @param ?string $name
+ * @param ?int    $flags
+ */
+function mapi_folder_copyfolder(Resource $srcfld, string $entryid, Resource $dstfld, ?string $name, ?int $flags = 0): bool {
+	return false;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_deletefolder(Resource $fld, string $entryid, ?int $flags = 0): bool {
+	return false;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_setreadflags(Resource $fld, array $entryids, ?int $flags = 0): bool {
+	return false;
+}
+
+function mapi_folder_setsearchcriteria(Resource $fld, array $restriction, array $folderlist, int $flags): bool {
+	return false;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_getsearchcriteria(Resource $fld, ?int $flags = 0): mixed {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_folder_modifyrules(Resource $fld, array $rows, ?int $flags = 0): bool {
+	return false;
+}
+
+function mapi_message_getattachmenttable(Resource $msg): false|Resource {
+	return null;
+}
+
+function mapi_message_getrecipienttable(Resource $msg): false|Resource {
+	return null;
+}
+
+function mapi_message_openattach(Resource $msg, int $id): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_message_createattach(Resource $msg, ?int $flags = 0): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_message_deleteattach(Resource $msg, int $id = 0, ?int $flags = 0): bool {
+	return false;
+}
+
+function mapi_message_modifyrecipients(Resource $msg, int $flags, array $adrlist): bool {
+	return false;
+}
+
+function mapi_message_submitmessage(Resource $msg): bool {
+	return false;
+}
+
+function mapi_message_setreadflag(Resource $msg, int $flags): bool {
+	return false;
+}
+
+/**
+ * @param ?int    $flags
+ * @param ?string $guid
+ */
+function mapi_openpropertytostream(Resource $any, int $proptag, ?int $flags = 0, ?string $guid = null): false|Resource {
+	return null;
+}
+
+function mapi_stream_write(Resource $stream, string $data): false|int {
+	return 0;
+}
+
+function mapi_stream_read(Resource $stream, int $size): false|string {
+	return '';
+}
+
+function mapi_stream_stat(Resource $stream): array|false {
+	return [];
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_stream_seek(Resource $stream, int $offset, ?int $flags = 0): bool {
+	return false;
+}
+
+function mapi_stream_commit(Resource $stream): bool {
+	return false;
+}
+
+function mapi_stream_setsize(Resource $stream, int $size): bool {
+	return false;
+}
+
+function mapi_stream_create(): false|Resource {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_attach_openobj(Resource $attach, ?int $flags = 0): bool|Resource {
+	return null;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_savechanges(Resource $any, ?int $flags = 0): bool {
+	return false;
+}
+
+/**
+ * @param ?array $proptags
+ */
+function mapi_getprops(Resource $any, ?array $proptags = null): mixed {
+	return null;
+}
+
+function mapi_setprops(Resource $any, array $propvals): bool {
+	return false;
+}
+
+/**
+ * @param ?int $flags
+ */
+function mapi_copyto(Resource $src, array $excliid, array $exclprop, Resource $dst, ?int $flags = 0): bool {
+	return false;
+}
+
+function mapi_openproperty(Resource $any, int $proptag /* [more] */): false|Resource {
+	return null;
+}
+
+function mapi_deleteprops(Resource $any, array $proptags): bool {
+	return false;
+}
+
+/**
+ * @param ?array $names
+ */
+function mapi_getnamesfromids(Resource $any, ?array $names = null): array|false {
+	return [];
+}
+
+/**
+ * @param ?array $guids
+ */
+function mapi_getidsfromnames(Resource $store, array $names, ?array $guids = null): array|false {
+	return [];
+}
+
+function mapi_decompressrtf(string $data): false|string {
+	return '';
+}
+
+function mapi_zarafa_getpermissionrules(Resource $any, int $type): array|false {
+	return [];
+}
+
+function mapi_zarafa_setpermissionrules(Resource $any, array $perms): bool {
+	return false;
+}
+
+function mapi_getuserfreebusy(Resource $ses, string $entryid, int $start, int $end): array|false {
+	return [];
+}
+
+function mapi_getuserfreebusyical(Resource $ses, string $entryid, int $start, int $end): false|string {
+	return '';
+}
+
+function mapi_exportchanges_config(Resource $e, Resource $stream, int $flags, mixed $i, mixed $restrict, mixed $inclprop, mixed $exclprop, int $bufsize): bool {
+	return false;
+}
+
+function mapi_exportchanges_synchronize(Resource $x): mixed {
+	return null;
+}
+
+function mapi_exportchanges_updatestate(Resource $e, Resource $stream): bool {
+	return false;
+}
+
+function mapi_exportchanges_getchangecount(Resource $r): false|int {
+	return 0;
+}
+
+function mapi_importcontentschanges_config(Resource $i, Resource $stream, int $flags): bool {
+	return false;
+}
+
+/**
+ * @param ?Resource $stream
+ */
+function mapi_importcontentschanges_updatestate(Resource $i, ?Resource $stream = null): bool {
+	return false;
+}
+
+function mapi_importcontentschanges_importmessagechange(Resource $i, array $props, int $flags, mixed &$msg): bool {
+	return false;
+}
+
+function mapi_importcontentschanges_importmessagedeletion(Resource $i, int $flags, array $msgs): bool {
+	return false;
+}
+
+function mapi_importcontentschanges_importperuserreadstatechange(Resource $i, array $readst): bool {
+	return false;
+}
+
+function mapi_importcontentschanges_importmessagemove(Resource $r, string $a, string $b, string $c, string $d, string $e): bool {
+	return false;
+}
+
+function mapi_importhierarchychanges_config(Resource $i, Resource $stream, int $flags): bool {
+	return false;
+}
+
+/**
+ * @param ?Resource $stream
+ */
+function mapi_importhierarchychanges_updatestate(Resource $i, ?Resource $stream): bool {
+	return false;
+}
+
+function mapi_importhierarchychanges_importfolderchange(Resource $i, array $props): bool {
+	return false;
+}
+
+function mapi_importhierarchychanges_importfolderdeletion(Resource $i, int $flags, array $folders): bool {
+	return false;
+}
+
+function mapi_wrap_importcontentschanges(object &$object): false|Resource {
+	return null;
+}
+
+function mapi_wrap_importhierarchychanges(object &$object): false|Resource {
+	return null;
+}
+
+function mapi_inetmapi_imtoinet(Resource $ses, Resource $abk, Resource $msg, array $opts): false|Resource {
+	return null;
+}
+
+function mapi_inetmapi_imtomapi(Resource $ses, Resource $store, Resource $abk, Resource $msg, string $str, array $opts): bool {
+	return false;
+}
+
+function mapi_icaltomapi(Resource $ses, Resource $store, Resource $abk, Resource $msg, string $str, bool $norecip): bool {
+	return false;
+}
+
+function mapi_icaltomapi2(Resource $abk, Resource $fld, string $ics): array|false {
+	return [];
+}
+
+function mapi_mapitoical(Resource $ses, Resource $abk, Resource $msg, array $opts): false|string {
+	return '';
+}
+
+function mapi_vcftomapi(Resource $ses, Resource $store, Resource $msg, string $str): bool {
+	return false;
+}
+
+function mapi_vcftomapi2(Resource $fld, string $vcard): array|false {
+	return [];
+}
+
+function mapi_mapitovcf(Resource $ses, Resource $abk, Resource $msg, array $opts): false|string {
+	return '';
+}
+
+function mapi_enable_exceptions(string $cls): bool {
+	return false;
+}
+
+function mapi_feature(string $ft): bool {
+	return false;
+}
+
+function kc_session_save(Resource $ses, string &$data): int {
+	return 0;
+}
+
+function kc_session_restore(mixed $data, mixed &$res): int {
+	return 0;
+}
+
+function nsp_getuserinfo(string $username): array|false {
+	return [];
+}
+
+function nsp_setuserpasswd(string $username, string $oldpass, string $newpass): bool {
+	return false;
+}
+
+function nsp_essdn_to_username(string $essdn): false|string {
+	return '';
+}
+
+/**
+ * @param ?string $srcheid
+ * @param ?string $msgeid
+ */
+function mapi_linkmessage(Resource $ses, ?string $srcheid = null, ?string $msgeid = null): mixed {
+	return null;
+}
+
+function mapi_ianatz_to_tzdef(string $tz): false|string {
+	return '';
+}
+
+function mapi_strerror(int $code): string {
+	return '';
+}
+
 if (!defined('MAPIDEFS_LOADED')) {
 	define('MAPIDEFS_LOADED', 1);
 }
