@@ -1712,6 +1712,7 @@ abstract class BaseRecurrence {
 	 */
 	public function getItems($start, $end, $limit = 0, $remindersonly = false): array {
 		$items = [];
+		$firstday = 0;
 
 		if (isset($this->recur)) {
 			// Optimization: remindersonly and default reminder is off; since only exceptions with reminder set will match, just look which
