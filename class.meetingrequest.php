@@ -838,7 +838,7 @@ class Meetingrequest {
 					else {
 						$props[$this->proptags['busystatus']] = $props[$this->proptags['intendedbusystatus']];
 					}
-				// we already have intendedbusystatus value in $props so no need to copy it
+					// we already have intendedbusystatus value in $props so no need to copy it
 				}
 				else {
 					$props[$this->proptags['busystatus']] = $tentative ? fbTentative : fbBusy;
@@ -1091,7 +1091,7 @@ class Meetingrequest {
 							else {
 								$props[$this->proptags['busystatus']] = $props[$this->proptags['intendedbusystatus']];
 							}
-						// we already have intendedbusystatus value in $props so no need to copy it
+							// we already have intendedbusystatus value in $props so no need to copy it
 						}
 						else {
 							$props[$this->proptags['busystatus']] = $tentative ? fbTentative : fbBusy;
@@ -2885,7 +2885,7 @@ class Meetingrequest {
 			else {
 				$exception_props[$this->proptags['busystatus']] = $exception_props[$this->proptags['intendedbusystatus']];
 			}
-		// we already have intendedbusystatus value in $exception_props so no need to copy it
+			// we already have intendedbusystatus value in $exception_props so no need to copy it
 		}
 		else {
 			$exception_props[$this->proptags['busystatus']] = $tentative ? fbTentative : fbBusy;
