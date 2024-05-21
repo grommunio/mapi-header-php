@@ -4,609 +4,1115 @@ class Resource {}
 
 /**
  * @param ?int $level
+ * @return void
  */
-function mapi_load_mapidefs(?int $level): void {}
+function mapi_load_mapidefs(?int $level): void {
+	return ;
+}
 
+/**
+ * @return int
+ */
 function mapi_last_hresult(): int {
 	return 0;
 }
 
-function mapi_prop_type(int $proptag): false|int {
+/**
+ * @param int $proptag
+ * @return int|false
+ */
+function mapi_prop_type(int $proptag): int|false {
 	return 0;
 }
 
-function mapi_prop_id(int $proptag): false|int {
+/**
+ * @param int $proptag
+ * @return int|false
+ */
+function mapi_prop_id(int $proptag): int|false {
 	return 0;
 }
 
+/**
+ * @param int $errcode
+ * @return bool|false
+ */
 function mapi_is_error(int $errcode): bool|false {
 	return false;
 }
 
-function mapi_make_scode(int $sev, int $code): false|int {
+/**
+ * @param int $sev
+ * @param int $code
+ * @return int|false
+ */
+function mapi_make_scode(int $sev, int $code): int|false {
 	return 0;
 }
 
-function mapi_prop_tag(int $proptype, int $propid): false|int {
+/**
+ * @param int $proptype
+ * @param int $propid
+ * @return int|false
+ */
+function mapi_prop_tag(int $proptype, int $propid): int|false {
 	return 0;
 }
 
 /**
  * @param ?string $displayname
- * @param ?int    $flags
+ * @param string $type
+ * @param string $address
+ * @param ?int $flags
+ * @return string|false
  */
-function mapi_createoneoff(?string $displayname, string $type, string $address, ?int $flags = 0): false|string {
+function mapi_createoneoff(?string $displayname, string $type, string $address, ?int $flags = 0): string|false {
 	return '';
 }
 
+/**
+ * @param string $entryid
+ * @return array|false
+ */
 function mapi_parseoneoff(string $entryid): array|false {
 	return [];
 }
 
 /**
+ * @param string $username
+ * @param string $password
  * @param ?string $server
  * @param ?string $sslcert
  * @param ?string $sslpass
- * @param ?int    $flags
+ * @param ?int $flags
  * @param ?string $wa_version
  * @param ?string $misc_version
+ * @return Resource|false
  */
-function mapi_logon_zarafa(string $username, string $password, ?string $server = null, ?string $sslcert = null, ?string $sslpass = null, ?int $flags = 0, ?string $wa_version = null, ?string $misc_version = null): false|Resource {
-	return null;
-}
-
-function mapi_logon_ex(string $username, string $password, int $flags): false|Resource {
-	return null;
-}
-
-function mapi_logon_token(string $token): false|Resource {
-	return null;
-}
-
-function mapi_getmsgstorestable(Resource $session): false|Resource {
-	return null;
-}
-
-function mapi_openmsgstore(Resource $ses, string $entryid): false|Resource {
-	return null;
-}
-
-function mapi_openprofilesection(Resource $ses, string $uid): false|Resource {
-	return null;
-}
-
-function mapi_openaddressbook(Resource $session): false|Resource {
+function mapi_logon_zarafa(string $username, string $password, ?string $server = null, ?string $sslcert = null, ?string $sslpass = null, ?int $flags = 0, ?string $wa_version = null, ?string $misc_version = null): Resource|false {
 	return null;
 }
 
 /**
+ * @param string $username
+ * @param string $password
+ * @param int $flags
+ * @return Resource|false
+ */
+function mapi_logon_ex(string $username, string $password, int $flags): Resource|false {
+	return null;
+}
+
+/**
+ * @param string $token
+ * @return Resource|false
+ */
+function mapi_logon_token(string $token): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $session
+ * @return Resource|false
+ */
+function mapi_getmsgstorestable(Resource $session): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $ses
+ * @param string $entryid
+ * @return Resource|false
+ */
+function mapi_openmsgstore(Resource $ses, string $entryid): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $ses
+ * @param string $uid
+ * @return Resource|false
+ */
+function mapi_openprofilesection(Resource $ses, string $uid): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $session
+ * @return Resource|false
+ */
+function mapi_openaddressbook(Resource $session): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $ses
  * @param ?string $entryid
- * @param ?int    $flags
- */
-function mapi_openentry(Resource $ses, ?string $entryid = null, ?int $flags = 0): false|Resource {
-	return null;
-}
-
-/**
- * @param ?string $entryid
- * @param ?int    $flags
- */
-function mapi_ab_openentry(Resource $abk, ?string $entryid = null, ?int $flags = 0): false|Resource {
-	return null;
-}
-
-/**
  * @param ?int $flags
+ * @return Resource|false
+ */
+function mapi_openentry(Resource $ses, ?string $entryid = null, ?int $flags = 0): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $abk
+ * @param ?string $entryid
+ * @param ?int $flags
+ * @return Resource|false
+ */
+function mapi_ab_openentry(Resource $abk, ?string $entryid = null, ?int $flags = 0): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $abk
+ * @param array $names
+ * @param ?int $flags
+ * @return mixed
  */
 function mapi_ab_resolvename(Resource $abk, array $names, ?int $flags = 0): mixed {
 	return null;
 }
 
-function mapi_ab_getdefaultdir(Resource $abk): false|string {
+/**
+ * @param Resource $abk
+ * @return string|false
+ */
+function mapi_ab_getdefaultdir(Resource $abk): string|false {
 	return '';
 }
 
-function mapi_msgstore_createentryid(Resource $store, string $mailbox_dn): false|string {
+/**
+ * @param Resource $store
+ * @param string $mailbox_dn
+ * @return string|false
+ */
+function mapi_msgstore_createentryid(Resource $store, string $mailbox_dn): string|false {
 	return '';
 }
 
+/**
+ * @param Resource $store
+ * @param string $user
+ * @param string $server
+ * @return bool
+ */
 function mapi_msgstore_getarchiveentryid(Resource $store, string $user, string $server): bool {
 	return false;
 }
 
 /**
+ * @param Resource $store
  * @param ?string $entryid
- * @param ?int    $flags
+ * @param ?int $flags
+ * @return Resource|false
  */
-function mapi_msgstore_openentry(Resource $store, ?string $entryid = null, ?int $flags = 0): false|Resource {
-	return null;
-}
-
-function mapi_msgstore_getreceivefolder(Resource $store): false|Resource {
+function mapi_msgstore_openentry(Resource $store, ?string $entryid = null, ?int $flags = 0): Resource|false {
 	return null;
 }
 
 /**
- * @param ?string $sk_msg
+ * @param Resource $store
+ * @return Resource|false
  */
-function mapi_msgstore_entryidfromsourcekey(Resource $store, string $sk_fld, ?string $sk_msg = null): false|string {
+function mapi_msgstore_getreceivefolder(Resource $store): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $store
+ * @param string $sk_fld
+ * @param ?string $sk_msg
+ * @return string|false
+ */
+function mapi_msgstore_entryidfromsourcekey(Resource $store, string $sk_fld, ?string $sk_msg = null): string|false {
 	return '';
 }
 
-function mapi_msgstore_advise(Resource $store, string $entryid, int $event_mask, Resource $sink): false|int {
+/**
+ * @param Resource $store
+ * @param string $entryid
+ * @param int $event_mask
+ * @param Resource $sink
+ * @return int|false
+ */
+function mapi_msgstore_advise(Resource $store, string $entryid, int $event_mask, Resource $sink): int|false {
 	return 0;
 }
 
+/**
+ * @param Resource $store
+ * @param int $sub_id
+ * @return bool
+ */
 function mapi_msgstore_unadvise(Resource $store, int $sub_id): bool {
 	return false;
 }
 
 /**
  * @param ?Resource $store
- * @param ?string   $entryid
+ * @param ?string $entryid
+ * @return true
  */
 function mapi_msgstore_abortsubmit(?Resource $store, ?string $entryid = null): true {
 	return null;
 }
 
-function mapi_sink_create(): false|Resource {
+/**
+ * @return Resource|false
+ */
+function mapi_sink_create(): Resource|false {
 	return null;
 }
 
+/**
+ * @param Resource $sink
+ * @param int $time
+ * @return mixed
+ */
 function mapi_sink_timedwait(Resource $sink, int $time): mixed {
 	return null;
 }
 
 /**
+ * @param Resource $table
  * @param ?array $proptags
  * @param ?array $restrict
+ * @return mixed
  */
 function mapi_table_queryallrows(Resource $table, ?array $proptags = null, ?array $restrict = null): mixed {
 	return null;
 }
 
 /**
+ * @param Resource $table
  * @param ?array $proptags
- * @param ?int   $start
- * @param ?int   $limit
+ * @param ?int $start
+ * @param ?int $limit
+ * @return mixed
  */
 function mapi_table_queryrows(Resource $table, ?array $proptags = null, ?int $start = 0, ?int $limit = 0): mixed {
 	return null;
 }
 
-function mapi_table_getrowcount(Resource $table): false|int {
+/**
+ * @param Resource $table
+ * @return int|false
+ */
+function mapi_table_getrowcount(Resource $table): int|false {
 	return 0;
 }
 
 /**
+ * @param Resource $table
+ * @param array $columns
  * @param ?int $flags
+ * @return bool
  */
 function mapi_table_setcolumns(Resource $table, array $columns, ?int $flags = 0): bool {
 	return false;
 }
 
-function mapi_table_seekrow(Resource $table, int $bookmark, int $rowcount): false|int {
+/**
+ * @param Resource $table
+ * @param int $bookmark
+ * @param int $rowcount
+ * @return int|false
+ */
+function mapi_table_seekrow(Resource $table, int $bookmark, int $rowcount): int|false {
 	return 0;
 }
 
 /**
+ * @param Resource $table
+ * @param array $sortcrit
  * @param ?int $flags
+ * @return bool
  */
 function mapi_table_sort(Resource $table, array $sortcrit, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
+ * @param Resource $table
+ * @param array $restrict
  * @param ?int $flags
+ * @return bool
  */
 function mapi_table_restrict(Resource $table, array $restrict, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
+ * @param Resource $table
+ * @param array $restrict
  * @param ?int $bookmark
  * @param ?int $flags
+ * @return int|false
  */
-function mapi_table_findrow(Resource $table, array $restrict, ?int $bookmark = 0, ?int $flags = 0): false|int {
+function mapi_table_findrow(Resource $table, array $restrict, ?int $bookmark = 0, ?int $flags = 0): int|false {
 	return 0;
 }
 
-function mapi_table_createbookmark(Resource $table): false|int {
+/**
+ * @param Resource $table
+ * @return int|false
+ */
+function mapi_table_createbookmark(Resource $table): int|false {
 	return 0;
 }
 
+/**
+ * @param Resource $table
+ * @param int $bookmark
+ * @return bool
+ */
 function mapi_table_freebookmark(Resource $table, int $bookmark): bool {
 	return false;
 }
 
 /**
+ * @param Resource $fld
  * @param ?int $flags
+ * @return Resource|false
  */
-function mapi_folder_gethierarchytable(Resource $fld, ?int $flags = 0): false|Resource {
+function mapi_folder_gethierarchytable(Resource $fld, ?int $flags = 0): Resource|false {
 	return null;
 }
 
 /**
+ * @param Resource $fld
  * @param ?int $flags
+ * @return Resource|false
  */
-function mapi_folder_getcontentstable(Resource $fld, ?int $flags = 0): false|Resource {
-	return null;
-}
-
-function mapi_folder_getrulestable(Resource $fld): false|Resource {
+function mapi_folder_getcontentstable(Resource $fld, ?int $flags = 0): Resource|false {
 	return null;
 }
 
 /**
- * @param ?int $flags
+ * @param Resource $fld
+ * @return Resource|false
  */
-function mapi_folder_createmessage(Resource $fld, ?int $flags = 0): false|Resource {
+function mapi_folder_getrulestable(Resource $fld): Resource|false {
 	return null;
 }
 
 /**
+ * @param Resource $fld
+ * @param ?int $flags
+ * @return Resource|false
+ */
+function mapi_folder_createmessage(Resource $fld, ?int $flags = 0): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $fld
+ * @param string $fname
  * @param ?string $comment
- * @param ?int    $flags
- * @param ?int    $folder_type
+ * @param ?int $flags
+ * @param ?int $folder_type
+ * @return Resource|false
  */
-function mapi_folder_createfolder(Resource $fld, string $fname, ?string $comment = null, ?int $flags = 0, ?int $folder_type = 0): false|Resource {
+function mapi_folder_createfolder(Resource $fld, string $fname, ?string $comment = null, ?int $flags = 0, ?int $folder_type = 0): Resource|false {
 	return null;
 }
 
 /**
+ * @param Resource $fld
+ * @param array $entryids
  * @param ?int $flags
+ * @return bool
  */
 function mapi_folder_deletemessages(Resource $fld, array $entryids, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
+ * @param Resource $srcfld
+ * @param array $entryids
+ * @param Resource $dstfld
  * @param ?int $flags
+ * @return bool
  */
 function mapi_folder_copymessages(Resource $srcfld, array $entryids, Resource $dstfld, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
+ * @param Resource $fld
  * @param ?int $flags
+ * @return bool
  */
 function mapi_folder_emptyfolder(Resource $fld, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
+ * @param Resource $srcfld
+ * @param string $entryid
+ * @param Resource $dstfld
  * @param ?string $name
- * @param ?int    $flags
+ * @param ?int $flags
+ * @return bool
  */
 function mapi_folder_copyfolder(Resource $srcfld, string $entryid, Resource $dstfld, ?string $name, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
+ * @param Resource $fld
+ * @param string $entryid
  * @param ?int $flags
+ * @return bool
  */
 function mapi_folder_deletefolder(Resource $fld, string $entryid, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
+ * @param Resource $fld
+ * @param array $entryids
  * @param ?int $flags
+ * @return bool
  */
 function mapi_folder_setreadflags(Resource $fld, array $entryids, ?int $flags = 0): bool {
 	return false;
 }
 
+/**
+ * @param Resource $fld
+ * @param array $restriction
+ * @param array $folderlist
+ * @param int $flags
+ * @return bool
+ */
 function mapi_folder_setsearchcriteria(Resource $fld, array $restriction, array $folderlist, int $flags): bool {
 	return false;
 }
 
 /**
+ * @param Resource $fld
  * @param ?int $flags
+ * @return mixed
  */
 function mapi_folder_getsearchcriteria(Resource $fld, ?int $flags = 0): mixed {
 	return null;
 }
 
 /**
+ * @param Resource $fld
+ * @param array $rows
  * @param ?int $flags
+ * @return bool
  */
 function mapi_folder_modifyrules(Resource $fld, array $rows, ?int $flags = 0): bool {
 	return false;
 }
 
-function mapi_message_getattachmenttable(Resource $msg): false|Resource {
-	return null;
-}
-
-function mapi_message_getrecipienttable(Resource $msg): false|Resource {
-	return null;
-}
-
-function mapi_message_openattach(Resource $msg, int $id): false|Resource {
-	return null;
-}
-
 /**
- * @param ?int $flags
+ * @param Resource $msg
+ * @return Resource|false
  */
-function mapi_message_createattach(Resource $msg, ?int $flags = 0): false|Resource {
+function mapi_message_getattachmenttable(Resource $msg): Resource|false {
 	return null;
 }
 
 /**
+ * @param Resource $msg
+ * @return Resource|false
+ */
+function mapi_message_getrecipienttable(Resource $msg): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $msg
+ * @param int $id
+ * @return Resource|false
+ */
+function mapi_message_openattach(Resource $msg, int $id): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $msg
  * @param ?int $flags
+ * @return Resource|false
+ */
+function mapi_message_createattach(Resource $msg, ?int $flags = 0): Resource|false {
+	return null;
+}
+
+/**
+ * @param Resource $msg
+ * @param int $id
+ * @param ?int $flags
+ * @return bool
  */
 function mapi_message_deleteattach(Resource $msg, int $id = 0, ?int $flags = 0): bool {
 	return false;
 }
 
+/**
+ * @param Resource $msg
+ * @param int $flags
+ * @param array $adrlist
+ * @return bool
+ */
 function mapi_message_modifyrecipients(Resource $msg, int $flags, array $adrlist): bool {
 	return false;
 }
 
+/**
+ * @param Resource $msg
+ * @return bool
+ */
 function mapi_message_submitmessage(Resource $msg): bool {
 	return false;
 }
 
+/**
+ * @param Resource $msg
+ * @param int $flags
+ * @return bool
+ */
 function mapi_message_setreadflag(Resource $msg, int $flags): bool {
 	return false;
 }
 
 /**
- * @param ?int    $flags
+ * @param Resource $any
+ * @param int $proptag
+ * @param ?int $flags
  * @param ?string $guid
+ * @return Resource|false
  */
-function mapi_openpropertytostream(Resource $any, int $proptag, ?int $flags = 0, ?string $guid = null): false|Resource {
+function mapi_openpropertytostream(Resource $any, int $proptag, ?int $flags = 0, ?string $guid = null): Resource|false {
 	return null;
 }
 
-function mapi_stream_write(Resource $stream, string $data): false|int {
+/**
+ * @param Resource $stream
+ * @param string $data
+ * @return int|false
+ */
+function mapi_stream_write(Resource $stream, string $data): int|false {
 	return 0;
 }
 
-function mapi_stream_read(Resource $stream, int $size): false|string {
+/**
+ * @param Resource $stream
+ * @param int $size
+ * @return string|false
+ */
+function mapi_stream_read(Resource $stream, int $size): string|false {
 	return '';
 }
 
+/**
+ * @param Resource $stream
+ * @return array|false
+ */
 function mapi_stream_stat(Resource $stream): array|false {
 	return [];
 }
 
 /**
+ * @param Resource $stream
+ * @param int $offset
  * @param ?int $flags
+ * @return bool
  */
 function mapi_stream_seek(Resource $stream, int $offset, ?int $flags = 0): bool {
 	return false;
 }
 
+/**
+ * @param Resource $stream
+ * @return bool
+ */
 function mapi_stream_commit(Resource $stream): bool {
 	return false;
 }
 
+/**
+ * @param Resource $stream
+ * @param int $size
+ * @return bool
+ */
 function mapi_stream_setsize(Resource $stream, int $size): bool {
 	return false;
 }
 
-function mapi_stream_create(): false|Resource {
-	return null;
-}
-
 /**
- * @param ?int $flags
+ * @return Resource|false
  */
-function mapi_attach_openobj(Resource $attach, ?int $flags = 0): bool|Resource {
+function mapi_stream_create(): Resource|false {
 	return null;
 }
 
 /**
+ * @param Resource $attach
  * @param ?int $flags
+ * @return Resource|bool
+ */
+function mapi_attach_openobj(Resource $attach, ?int $flags = 0): Resource|bool {
+	return null;
+}
+
+/**
+ * @param Resource $any
+ * @param ?int $flags
+ * @return bool
  */
 function mapi_savechanges(Resource $any, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
+ * @param Resource $any
  * @param ?array $proptags
+ * @return mixed
  */
 function mapi_getprops(Resource $any, ?array $proptags = null): mixed {
 	return null;
 }
 
+/**
+ * @param Resource $any
+ * @param array $propvals
+ * @return bool
+ */
 function mapi_setprops(Resource $any, array $propvals): bool {
 	return false;
 }
 
 /**
+ * @param Resource $src
+ * @param array $excliid
+ * @param array $exclprop
+ * @param Resource $dst
  * @param ?int $flags
+ * @return bool
  */
 function mapi_copyto(Resource $src, array $excliid, array $exclprop, Resource $dst, ?int $flags = 0): bool {
 	return false;
 }
 
-function mapi_openproperty(Resource $any, int $proptag /* [more] */): false|Resource {
+/**
+ * @param Resource $any
+ * @param int $proptag
+ * @return Resource|false
+ */
+function mapi_openproperty(Resource $any, int $proptag /* [more] */): Resource|false {
 	return null;
 }
 
+/**
+ * @param Resource $any
+ * @param array $proptags
+ * @return bool
+ */
 function mapi_deleteprops(Resource $any, array $proptags): bool {
 	return false;
 }
 
 /**
+ * @param Resource $any
  * @param ?array $names
+ * @return array|false
  */
 function mapi_getnamesfromids(Resource $any, ?array $names = null): array|false {
 	return [];
 }
 
 /**
+ * @param Resource $store
+ * @param array $names
  * @param ?array $guids
+ * @return array|false
  */
 function mapi_getidsfromnames(Resource $store, array $names, ?array $guids = null): array|false {
 	return [];
 }
 
-function mapi_decompressrtf(string $data): false|string {
+/**
+ * @param string $data
+ * @return string|false
+ */
+function mapi_decompressrtf(string $data): string|false {
 	return '';
 }
 
+/**
+ * @param Resource $any
+ * @param int $type
+ * @return array|false
+ */
 function mapi_zarafa_getpermissionrules(Resource $any, int $type): array|false {
 	return [];
 }
 
+/**
+ * @param Resource $any
+ * @param array $perms
+ * @return bool
+ */
 function mapi_zarafa_setpermissionrules(Resource $any, array $perms): bool {
 	return false;
 }
 
+/**
+ * @param Resource $ses
+ * @param string $entryid
+ * @param int $start
+ * @param int $end
+ * @return array|false
+ */
 function mapi_getuserfreebusy(Resource $ses, string $entryid, int $start, int $end): array|false {
 	return [];
 }
 
-function mapi_getuserfreebusyical(Resource $ses, string $entryid, int $start, int $end): false|string {
+/**
+ * @param Resource $ses
+ * @param string $entryid
+ * @param int $start
+ * @param int $end
+ * @return string|false
+ */
+function mapi_getuserfreebusyical(Resource $ses, string $entryid, int $start, int $end): string|false {
 	return '';
 }
 
+/**
+ * @param Resource $e
+ * @param Resource $stream
+ * @param int $flags
+ * @param mixed $i
+ * @param mixed $restrict
+ * @param mixed $inclprop
+ * @param mixed $exclprop
+ * @param int $bufsize
+ * @return bool
+ */
 function mapi_exportchanges_config(Resource $e, Resource $stream, int $flags, mixed $i, mixed $restrict, mixed $inclprop, mixed $exclprop, int $bufsize): bool {
 	return false;
 }
 
+/**
+ * @param Resource $x
+ * @return mixed
+ */
 function mapi_exportchanges_synchronize(Resource $x): mixed {
 	return null;
 }
 
+/**
+ * @param Resource $e
+ * @param Resource $stream
+ * @return bool
+ */
 function mapi_exportchanges_updatestate(Resource $e, Resource $stream): bool {
 	return false;
 }
 
-function mapi_exportchanges_getchangecount(Resource $r): false|int {
+/**
+ * @param Resource $r
+ * @return int|false
+ */
+function mapi_exportchanges_getchangecount(Resource $r): int|false {
 	return 0;
 }
 
+/**
+ * @param Resource $i
+ * @param Resource $stream
+ * @param int $flags
+ * @return bool
+ */
 function mapi_importcontentschanges_config(Resource $i, Resource $stream, int $flags): bool {
 	return false;
 }
 
 /**
+ * @param Resource $i
  * @param ?Resource $stream
+ * @return bool
  */
 function mapi_importcontentschanges_updatestate(Resource $i, ?Resource $stream = null): bool {
 	return false;
 }
 
+/**
+ * @param Resource $i
+ * @param array $props
+ * @param int $flags
+ * @param mixed &$msg
+ * @return bool
+ */
 function mapi_importcontentschanges_importmessagechange(Resource $i, array $props, int $flags, mixed &$msg): bool {
 	return false;
 }
 
+/**
+ * @param Resource $i
+ * @param int $flags
+ * @param array $msgs
+ * @return bool
+ */
 function mapi_importcontentschanges_importmessagedeletion(Resource $i, int $flags, array $msgs): bool {
 	return false;
 }
 
+/**
+ * @param Resource $i
+ * @param array $readst
+ * @return bool
+ */
 function mapi_importcontentschanges_importperuserreadstatechange(Resource $i, array $readst): bool {
 	return false;
 }
 
+/**
+ * @param Resource $r
+ * @param string $a
+ * @param string $b
+ * @param string $c
+ * @param string $d
+ * @param string $e
+ * @return bool
+ */
 function mapi_importcontentschanges_importmessagemove(Resource $r, string $a, string $b, string $c, string $d, string $e): bool {
 	return false;
 }
 
+/**
+ * @param Resource $i
+ * @param Resource $stream
+ * @param int $flags
+ * @return bool
+ */
 function mapi_importhierarchychanges_config(Resource $i, Resource $stream, int $flags): bool {
 	return false;
 }
 
 /**
+ * @param Resource $i
  * @param ?Resource $stream
+ * @return bool
  */
 function mapi_importhierarchychanges_updatestate(Resource $i, ?Resource $stream): bool {
 	return false;
 }
 
+/**
+ * @param Resource $i
+ * @param array $props
+ * @return bool
+ */
 function mapi_importhierarchychanges_importfolderchange(Resource $i, array $props): bool {
 	return false;
 }
 
+/**
+ * @param Resource $i
+ * @param int $flags
+ * @param array $folders
+ * @return bool
+ */
 function mapi_importhierarchychanges_importfolderdeletion(Resource $i, int $flags, array $folders): bool {
 	return false;
 }
 
-function mapi_wrap_importcontentschanges(object &$object): false|Resource {
+/**
+ * @param object &$object
+ * @return Resource|false
+ */
+function mapi_wrap_importcontentschanges(object &$object): Resource|false {
 	return null;
 }
 
-function mapi_wrap_importhierarchychanges(object &$object): false|Resource {
+/**
+ * @param object &$object
+ * @return Resource|false
+ */
+function mapi_wrap_importhierarchychanges(object &$object): Resource|false {
 	return null;
 }
 
-function mapi_inetmapi_imtoinet(Resource $ses, Resource $abk, Resource $msg, array $opts): false|Resource {
+/**
+ * @param Resource $ses
+ * @param Resource $abk
+ * @param Resource $msg
+ * @param array $opts
+ * @return Resource|false
+ */
+function mapi_inetmapi_imtoinet(Resource $ses, Resource $abk, Resource $msg, array $opts): Resource|false {
 	return null;
 }
 
+/**
+ * @param Resource $ses
+ * @param Resource $store
+ * @param Resource $abk
+ * @param Resource $msg
+ * @param string $str
+ * @param array $opts
+ * @return bool
+ */
 function mapi_inetmapi_imtomapi(Resource $ses, Resource $store, Resource $abk, Resource $msg, string $str, array $opts): bool {
 	return false;
 }
 
+/**
+ * @param Resource $ses
+ * @param Resource $store
+ * @param Resource $abk
+ * @param Resource $msg
+ * @param string $str
+ * @param bool $norecip
+ * @return bool
+ */
 function mapi_icaltomapi(Resource $ses, Resource $store, Resource $abk, Resource $msg, string $str, bool $norecip): bool {
 	return false;
 }
 
+/**
+ * @param Resource $abk
+ * @param Resource $fld
+ * @param string $ics
+ * @return array|false
+ */
 function mapi_icaltomapi2(Resource $abk, Resource $fld, string $ics): array|false {
 	return [];
 }
 
-function mapi_mapitoical(Resource $ses, Resource $abk, Resource $msg, array $opts): false|string {
-	return '';
-}
-
-function mapi_vcftomapi(Resource $ses, Resource $store, Resource $msg, string $str): bool {
-	return false;
-}
-
-function mapi_vcftomapi2(Resource $fld, string $vcard): array|false {
-	return [];
-}
-
-function mapi_mapitovcf(Resource $ses, Resource $abk, Resource $msg, array $opts): false|string {
-	return '';
-}
-
-function mapi_enable_exceptions(string $cls): bool {
-	return false;
-}
-
-function mapi_feature(string $ft): bool {
-	return false;
-}
-
-function kc_session_save(Resource $ses, string &$data): int {
-	return 0;
-}
-
-function kc_session_restore(mixed $data, mixed &$res): int {
-	return 0;
-}
-
-function nsp_getuserinfo(string $username): array|false {
-	return [];
-}
-
-function nsp_setuserpasswd(string $username, string $oldpass, string $newpass): bool {
-	return false;
-}
-
-function nsp_essdn_to_username(string $essdn): false|string {
+/**
+ * @param Resource $ses
+ * @param Resource $abk
+ * @param Resource $msg
+ * @param array $opts
+ * @return string|false
+ */
+function mapi_mapitoical(Resource $ses, Resource $abk, Resource $msg, array $opts): string|false {
 	return '';
 }
 
 /**
+ * @param Resource $ses
+ * @param Resource $store
+ * @param Resource $msg
+ * @param string $str
+ * @return bool
+ */
+function mapi_vcftomapi(Resource $ses, Resource $store, Resource $msg, string $str): bool {
+	return false;
+}
+
+/**
+ * @param Resource $fld
+ * @param string $vcard
+ * @return array|false
+ */
+function mapi_vcftomapi2(Resource $fld, string $vcard): array|false {
+	return [];
+}
+
+/**
+ * @param Resource $ses
+ * @param Resource $abk
+ * @param Resource $msg
+ * @param array $opts
+ * @return string|false
+ */
+function mapi_mapitovcf(Resource $ses, Resource $abk, Resource $msg, array $opts): string|false {
+	return '';
+}
+
+/**
+ * @param string $cls
+ * @return bool
+ */
+function mapi_enable_exceptions(string $cls): bool {
+	return false;
+}
+
+/**
+ * @param string $ft
+ * @return bool
+ */
+function mapi_feature(string $ft): bool {
+	return false;
+}
+
+/**
+ * @param Resource $ses
+ * @param string &$data
+ * @return int
+ */
+function kc_session_save(Resource $ses, string &$data): int {
+	return 0;
+}
+
+/**
+ * @param mixed $data
+ * @param mixed &$res
+ * @return int
+ */
+function kc_session_restore(mixed $data, mixed &$res): int {
+	return 0;
+}
+
+/**
+ * @param string $username
+ * @return array|false
+ */
+function nsp_getuserinfo(string $username): array|false {
+	return [];
+}
+
+/**
+ * @param string $username
+ * @param string $oldpass
+ * @param string $newpass
+ * @return bool
+ */
+function nsp_setuserpasswd(string $username, string $oldpass, string $newpass): bool {
+	return false;
+}
+
+/**
+ * @param string $essdn
+ * @return string|false
+ */
+function nsp_essdn_to_username(string $essdn): string|false {
+	return '';
+}
+
+/**
+ * @param Resource $ses
  * @param ?string $srcheid
  * @param ?string $msgeid
+ * @return mixed
  */
 function mapi_linkmessage(Resource $ses, ?string $srcheid = null, ?string $msgeid = null): mixed {
 	return null;
 }
 
-function mapi_ianatz_to_tzdef(string $tz): false|string {
+/**
+ * @param string $tz
+ * @return string|false
+ */
+function mapi_ianatz_to_tzdef(string $tz): string|false {
 	return '';
 }
 
+/**
+ * @param int $code
+ * @return string
+ */
 function mapi_strerror(int $code): string {
 	return '';
 }
@@ -4748,3 +5254,4 @@ if (!defined('ecZNullObject')) {
 if (!defined('ecZOutOfHandles')) {
 	define('ecZOutOfHandles', 4294966276);
 }
+?>
