@@ -384,6 +384,10 @@ class TaskRequest {
 
 		$isReceivedItem = $this->isReceivedItem($messageProps);
 
+		$taskHistory = 0;
+		$taskState = 0;
+		$taskAcceptanceState = 0;
+		$taskOwner = 0;
 		$isCreateAssociatedTask = false;
 		$isAllowUpdateAssociatedTask = $subProps[$this->props["taskupdates"]];
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
