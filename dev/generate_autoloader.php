@@ -13,13 +13,12 @@ function fetchAndGenerateStubs(string $url): string {
 	// Extract function definitions
 	preg_match_all('/function\s+(\w+)\s*\(([^)]*)\)\s*:\s*([\w|?\\\\]+)\s*{}/', $stubFileContents, $matches, PREG_SET_ORDER);
 
-	$stubFunctions = "";
-	$stubFunctions .= "class Resource {}\n\n";
+	$stubFunctions = "class resource {}\n\n";
 
 	foreach ($matches as $match) {
 		$functionName = $match[1];
-		$parameters = str_replace('resource', 'Resource', $match[2]);
-		$returnType = str_replace('resource', 'Resource', $match[3]);
+		$parameters = str_replace('resource', 'resource', $match[2]);
+		$returnType = str_replace('resource', 'resource', $match[3]);
 
 		// Generate the return value based on the return type
 		$returnValue = generateReturnValue($returnType);
@@ -61,9 +60,9 @@ function generateReturnValue(string $returnType) {
 		case 'mixed':
 			return 'null';
 
-		case 'Resource':
-		case 'Resource|false':
-			return 'null';
+		case 'resource':
+		case 'resource|false':
+			return 'fopen("php://memory", "r")';
 
 		default:
 			if (strpos($returnType, '|') !== false) {
@@ -84,6 +83,7 @@ function generatePHPDoc(string $parameters, string $returnType): string {
 			$param = trim($param);
 			if (strpos($param, ' ') !== false) {
 				[$type, $name] = explode(' ', $param);
+				$type = str_replace('resource', 'resource', $type); // Ensure type remains resource
 				$paramDocs[] = " * @param {$type} {$name}";
 			}
 			else {

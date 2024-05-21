@@ -1,6 +1,6 @@
 <?php
 
-class Resource {}
+class resource {}
 
 /**
  * @param ?int $level
@@ -87,654 +87,654 @@ function mapi_parseoneoff(string $entryid): array|false {
  * @param ?int $flags
  * @param ?string $wa_version
  * @param ?string $misc_version
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_logon_zarafa(string $username, string $password, ?string $server = null, ?string $sslcert = null, ?string $sslpass = null, ?int $flags = 0, ?string $wa_version = null, ?string $misc_version = null): Resource|false {
-	return null;
+function mapi_logon_zarafa(string $username, string $password, ?string $server = null, ?string $sslcert = null, ?string $sslpass = null, ?int $flags = 0, ?string $wa_version = null, ?string $misc_version = null): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
  * @param string $username
  * @param string $password
  * @param int $flags
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_logon_ex(string $username, string $password, int $flags): Resource|false {
-	return null;
+function mapi_logon_ex(string $username, string $password, int $flags): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
  * @param string $token
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_logon_token(string $token): Resource|false {
-	return null;
+function mapi_logon_token(string $token): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $session
- * @return Resource|false
+ * @param resource $session
+ * @return resource|false
  */
-function mapi_getmsgstorestable(Resource $session): Resource|false {
-	return null;
+function mapi_getmsgstorestable(resource $session): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $ses
+ * @param resource $ses
  * @param string $entryid
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_openmsgstore(Resource $ses, string $entryid): Resource|false {
-	return null;
+function mapi_openmsgstore(resource $ses, string $entryid): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $ses
+ * @param resource $ses
  * @param string $uid
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_openprofilesection(Resource $ses, string $uid): Resource|false {
-	return null;
+function mapi_openprofilesection(resource $ses, string $uid): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $session
- * @return Resource|false
+ * @param resource $session
+ * @return resource|false
  */
-function mapi_openaddressbook(Resource $session): Resource|false {
-	return null;
+function mapi_openaddressbook(resource $session): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $ses
+ * @param resource $ses
  * @param ?string $entryid
  * @param ?int $flags
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_openentry(Resource $ses, ?string $entryid = null, ?int $flags = 0): Resource|false {
-	return null;
+function mapi_openentry(resource $ses, ?string $entryid = null, ?int $flags = 0): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $abk
+ * @param resource $abk
  * @param ?string $entryid
  * @param ?int $flags
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_ab_openentry(Resource $abk, ?string $entryid = null, ?int $flags = 0): Resource|false {
-	return null;
+function mapi_ab_openentry(resource $abk, ?string $entryid = null, ?int $flags = 0): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $abk
+ * @param resource $abk
  * @param array $names
  * @param ?int $flags
  * @return mixed
  */
-function mapi_ab_resolvename(Resource $abk, array $names, ?int $flags = 0): mixed {
+function mapi_ab_resolvename(resource $abk, array $names, ?int $flags = 0): mixed {
 	return null;
 }
 
 /**
- * @param Resource $abk
+ * @param resource $abk
  * @return string|false
  */
-function mapi_ab_getdefaultdir(Resource $abk): string|false {
+function mapi_ab_getdefaultdir(resource $abk): string|false {
 	return '';
 }
 
 /**
- * @param Resource $store
+ * @param resource $store
  * @param string $mailbox_dn
  * @return string|false
  */
-function mapi_msgstore_createentryid(Resource $store, string $mailbox_dn): string|false {
+function mapi_msgstore_createentryid(resource $store, string $mailbox_dn): string|false {
 	return '';
 }
 
 /**
- * @param Resource $store
+ * @param resource $store
  * @param string $user
  * @param string $server
  * @return bool
  */
-function mapi_msgstore_getarchiveentryid(Resource $store, string $user, string $server): bool {
+function mapi_msgstore_getarchiveentryid(resource $store, string $user, string $server): bool {
 	return false;
 }
 
 /**
- * @param Resource $store
+ * @param resource $store
  * @param ?string $entryid
  * @param ?int $flags
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_msgstore_openentry(Resource $store, ?string $entryid = null, ?int $flags = 0): Resource|false {
-	return null;
+function mapi_msgstore_openentry(resource $store, ?string $entryid = null, ?int $flags = 0): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $store
- * @return Resource|false
+ * @param resource $store
+ * @return resource|false
  */
-function mapi_msgstore_getreceivefolder(Resource $store): Resource|false {
-	return null;
+function mapi_msgstore_getreceivefolder(resource $store): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $store
+ * @param resource $store
  * @param string $sk_fld
  * @param ?string $sk_msg
  * @return string|false
  */
-function mapi_msgstore_entryidfromsourcekey(Resource $store, string $sk_fld, ?string $sk_msg = null): string|false {
+function mapi_msgstore_entryidfromsourcekey(resource $store, string $sk_fld, ?string $sk_msg = null): string|false {
 	return '';
 }
 
 /**
- * @param Resource $store
+ * @param resource $store
  * @param string $entryid
  * @param int $event_mask
- * @param Resource $sink
+ * @param resource $sink
  * @return int|false
  */
-function mapi_msgstore_advise(Resource $store, string $entryid, int $event_mask, Resource $sink): int|false {
+function mapi_msgstore_advise(resource $store, string $entryid, int $event_mask, resource $sink): int|false {
 	return 0;
 }
 
 /**
- * @param Resource $store
+ * @param resource $store
  * @param int $sub_id
  * @return bool
  */
-function mapi_msgstore_unadvise(Resource $store, int $sub_id): bool {
+function mapi_msgstore_unadvise(resource $store, int $sub_id): bool {
 	return false;
 }
 
 /**
- * @param ?Resource $store
+ * @param ?resource $store
  * @param ?string $entryid
  * @return true
  */
-function mapi_msgstore_abortsubmit(?Resource $store, ?string $entryid = null): true {
+function mapi_msgstore_abortsubmit(?resource $store, ?string $entryid = null): true {
 	return null;
 }
 
 /**
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_sink_create(): Resource|false {
-	return null;
+function mapi_sink_create(): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $sink
+ * @param resource $sink
  * @param int $time
  * @return mixed
  */
-function mapi_sink_timedwait(Resource $sink, int $time): mixed {
+function mapi_sink_timedwait(resource $sink, int $time): mixed {
 	return null;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @param ?array $proptags
  * @param ?array $restrict
  * @return mixed
  */
-function mapi_table_queryallrows(Resource $table, ?array $proptags = null, ?array $restrict = null): mixed {
+function mapi_table_queryallrows(resource $table, ?array $proptags = null, ?array $restrict = null): mixed {
 	return null;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @param ?array $proptags
  * @param ?int $start
  * @param ?int $limit
  * @return mixed
  */
-function mapi_table_queryrows(Resource $table, ?array $proptags = null, ?int $start = 0, ?int $limit = 0): mixed {
+function mapi_table_queryrows(resource $table, ?array $proptags = null, ?int $start = 0, ?int $limit = 0): mixed {
 	return null;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @return int|false
  */
-function mapi_table_getrowcount(Resource $table): int|false {
+function mapi_table_getrowcount(resource $table): int|false {
 	return 0;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @param array $columns
  * @param ?int $flags
  * @return bool
  */
-function mapi_table_setcolumns(Resource $table, array $columns, ?int $flags = 0): bool {
+function mapi_table_setcolumns(resource $table, array $columns, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @param int $bookmark
  * @param int $rowcount
  * @return int|false
  */
-function mapi_table_seekrow(Resource $table, int $bookmark, int $rowcount): int|false {
+function mapi_table_seekrow(resource $table, int $bookmark, int $rowcount): int|false {
 	return 0;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @param array $sortcrit
  * @param ?int $flags
  * @return bool
  */
-function mapi_table_sort(Resource $table, array $sortcrit, ?int $flags = 0): bool {
+function mapi_table_sort(resource $table, array $sortcrit, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @param array $restrict
  * @param ?int $flags
  * @return bool
  */
-function mapi_table_restrict(Resource $table, array $restrict, ?int $flags = 0): bool {
+function mapi_table_restrict(resource $table, array $restrict, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @param array $restrict
  * @param ?int $bookmark
  * @param ?int $flags
  * @return int|false
  */
-function mapi_table_findrow(Resource $table, array $restrict, ?int $bookmark = 0, ?int $flags = 0): int|false {
+function mapi_table_findrow(resource $table, array $restrict, ?int $bookmark = 0, ?int $flags = 0): int|false {
 	return 0;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @return int|false
  */
-function mapi_table_createbookmark(Resource $table): int|false {
+function mapi_table_createbookmark(resource $table): int|false {
 	return 0;
 }
 
 /**
- * @param Resource $table
+ * @param resource $table
  * @param int $bookmark
  * @return bool
  */
-function mapi_table_freebookmark(Resource $table, int $bookmark): bool {
+function mapi_table_freebookmark(resource $table, int $bookmark): bool {
 	return false;
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param ?int $flags
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_folder_gethierarchytable(Resource $fld, ?int $flags = 0): Resource|false {
-	return null;
+function mapi_folder_gethierarchytable(resource $fld, ?int $flags = 0): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param ?int $flags
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_folder_getcontentstable(Resource $fld, ?int $flags = 0): Resource|false {
-	return null;
+function mapi_folder_getcontentstable(resource $fld, ?int $flags = 0): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $fld
- * @return Resource|false
+ * @param resource $fld
+ * @return resource|false
  */
-function mapi_folder_getrulestable(Resource $fld): Resource|false {
-	return null;
+function mapi_folder_getrulestable(resource $fld): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param ?int $flags
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_folder_createmessage(Resource $fld, ?int $flags = 0): Resource|false {
-	return null;
+function mapi_folder_createmessage(resource $fld, ?int $flags = 0): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param string $fname
  * @param ?string $comment
  * @param ?int $flags
  * @param ?int $folder_type
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_folder_createfolder(Resource $fld, string $fname, ?string $comment = null, ?int $flags = 0, ?int $folder_type = 0): Resource|false {
-	return null;
+function mapi_folder_createfolder(resource $fld, string $fname, ?string $comment = null, ?int $flags = 0, ?int $folder_type = 0): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param array $entryids
  * @param ?int $flags
  * @return bool
  */
-function mapi_folder_deletemessages(Resource $fld, array $entryids, ?int $flags = 0): bool {
+function mapi_folder_deletemessages(resource $fld, array $entryids, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $srcfld
+ * @param resource $srcfld
  * @param array $entryids
- * @param Resource $dstfld
+ * @param resource $dstfld
  * @param ?int $flags
  * @return bool
  */
-function mapi_folder_copymessages(Resource $srcfld, array $entryids, Resource $dstfld, ?int $flags = 0): bool {
+function mapi_folder_copymessages(resource $srcfld, array $entryids, resource $dstfld, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param ?int $flags
  * @return bool
  */
-function mapi_folder_emptyfolder(Resource $fld, ?int $flags = 0): bool {
+function mapi_folder_emptyfolder(resource $fld, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $srcfld
+ * @param resource $srcfld
  * @param string $entryid
- * @param Resource $dstfld
+ * @param resource $dstfld
  * @param ?string $name
  * @param ?int $flags
  * @return bool
  */
-function mapi_folder_copyfolder(Resource $srcfld, string $entryid, Resource $dstfld, ?string $name, ?int $flags = 0): bool {
+function mapi_folder_copyfolder(resource $srcfld, string $entryid, resource $dstfld, ?string $name, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param string $entryid
  * @param ?int $flags
  * @return bool
  */
-function mapi_folder_deletefolder(Resource $fld, string $entryid, ?int $flags = 0): bool {
+function mapi_folder_deletefolder(resource $fld, string $entryid, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param array $entryids
  * @param ?int $flags
  * @return bool
  */
-function mapi_folder_setreadflags(Resource $fld, array $entryids, ?int $flags = 0): bool {
+function mapi_folder_setreadflags(resource $fld, array $entryids, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param array $restriction
  * @param array $folderlist
  * @param int $flags
  * @return bool
  */
-function mapi_folder_setsearchcriteria(Resource $fld, array $restriction, array $folderlist, int $flags): bool {
+function mapi_folder_setsearchcriteria(resource $fld, array $restriction, array $folderlist, int $flags): bool {
 	return false;
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param ?int $flags
  * @return mixed
  */
-function mapi_folder_getsearchcriteria(Resource $fld, ?int $flags = 0): mixed {
+function mapi_folder_getsearchcriteria(resource $fld, ?int $flags = 0): mixed {
 	return null;
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param array $rows
  * @param ?int $flags
  * @return bool
  */
-function mapi_folder_modifyrules(Resource $fld, array $rows, ?int $flags = 0): bool {
+function mapi_folder_modifyrules(resource $fld, array $rows, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $msg
- * @return Resource|false
+ * @param resource $msg
+ * @return resource|false
  */
-function mapi_message_getattachmenttable(Resource $msg): Resource|false {
-	return null;
+function mapi_message_getattachmenttable(resource $msg): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $msg
- * @return Resource|false
+ * @param resource $msg
+ * @return resource|false
  */
-function mapi_message_getrecipienttable(Resource $msg): Resource|false {
-	return null;
+function mapi_message_getrecipienttable(resource $msg): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $msg
+ * @param resource $msg
  * @param int $id
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_message_openattach(Resource $msg, int $id): Resource|false {
-	return null;
+function mapi_message_openattach(resource $msg, int $id): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $msg
+ * @param resource $msg
  * @param ?int $flags
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_message_createattach(Resource $msg, ?int $flags = 0): Resource|false {
-	return null;
+function mapi_message_createattach(resource $msg, ?int $flags = 0): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $msg
+ * @param resource $msg
  * @param int $id
  * @param ?int $flags
  * @return bool
  */
-function mapi_message_deleteattach(Resource $msg, int $id = 0, ?int $flags = 0): bool {
+function mapi_message_deleteattach(resource $msg, int $id = 0, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $msg
+ * @param resource $msg
  * @param int $flags
  * @param array $adrlist
  * @return bool
  */
-function mapi_message_modifyrecipients(Resource $msg, int $flags, array $adrlist): bool {
+function mapi_message_modifyrecipients(resource $msg, int $flags, array $adrlist): bool {
 	return false;
 }
 
 /**
- * @param Resource $msg
+ * @param resource $msg
  * @return bool
  */
-function mapi_message_submitmessage(Resource $msg): bool {
+function mapi_message_submitmessage(resource $msg): bool {
 	return false;
 }
 
 /**
- * @param Resource $msg
+ * @param resource $msg
  * @param int $flags
  * @return bool
  */
-function mapi_message_setreadflag(Resource $msg, int $flags): bool {
+function mapi_message_setreadflag(resource $msg, int $flags): bool {
 	return false;
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param int $proptag
  * @param ?int $flags
  * @param ?string $guid
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_openpropertytostream(Resource $any, int $proptag, ?int $flags = 0, ?string $guid = null): Resource|false {
-	return null;
+function mapi_openpropertytostream(resource $any, int $proptag, ?int $flags = 0, ?string $guid = null): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $stream
+ * @param resource $stream
  * @param string $data
  * @return int|false
  */
-function mapi_stream_write(Resource $stream, string $data): int|false {
+function mapi_stream_write(resource $stream, string $data): int|false {
 	return 0;
 }
 
 /**
- * @param Resource $stream
+ * @param resource $stream
  * @param int $size
  * @return string|false
  */
-function mapi_stream_read(Resource $stream, int $size): string|false {
+function mapi_stream_read(resource $stream, int $size): string|false {
 	return '';
 }
 
 /**
- * @param Resource $stream
+ * @param resource $stream
  * @return array|false
  */
-function mapi_stream_stat(Resource $stream): array|false {
+function mapi_stream_stat(resource $stream): array|false {
 	return [];
 }
 
 /**
- * @param Resource $stream
+ * @param resource $stream
  * @param int $offset
  * @param ?int $flags
  * @return bool
  */
-function mapi_stream_seek(Resource $stream, int $offset, ?int $flags = 0): bool {
+function mapi_stream_seek(resource $stream, int $offset, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $stream
+ * @param resource $stream
  * @return bool
  */
-function mapi_stream_commit(Resource $stream): bool {
+function mapi_stream_commit(resource $stream): bool {
 	return false;
 }
 
 /**
- * @param Resource $stream
+ * @param resource $stream
  * @param int $size
  * @return bool
  */
-function mapi_stream_setsize(Resource $stream, int $size): bool {
+function mapi_stream_setsize(resource $stream, int $size): bool {
 	return false;
 }
 
 /**
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_stream_create(): Resource|false {
-	return null;
+function mapi_stream_create(): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $attach
+ * @param resource $attach
  * @param ?int $flags
- * @return Resource|bool
+ * @return resource|bool
  */
-function mapi_attach_openobj(Resource $attach, ?int $flags = 0): Resource|bool {
-	return null;
+function mapi_attach_openobj(resource $attach, ?int $flags = 0): resource|bool {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param ?int $flags
  * @return bool
  */
-function mapi_savechanges(Resource $any, ?int $flags = 0): bool {
+function mapi_savechanges(resource $any, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param ?array $proptags
  * @return mixed
  */
-function mapi_getprops(Resource $any, ?array $proptags = null): mixed {
+function mapi_getprops(resource $any, ?array $proptags = null): mixed {
 	return null;
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param array $propvals
  * @return bool
  */
-function mapi_setprops(Resource $any, array $propvals): bool {
+function mapi_setprops(resource $any, array $propvals): bool {
 	return false;
 }
 
 /**
- * @param Resource $src
+ * @param resource $src
  * @param array $excliid
  * @param array $exclprop
- * @param Resource $dst
+ * @param resource $dst
  * @param ?int $flags
  * @return bool
  */
-function mapi_copyto(Resource $src, array $excliid, array $exclprop, Resource $dst, ?int $flags = 0): bool {
+function mapi_copyto(resource $src, array $excliid, array $exclprop, resource $dst, ?int $flags = 0): bool {
 	return false;
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param int $proptag
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_openproperty(Resource $any, int $proptag /* [more] */): Resource|false {
-	return null;
+function mapi_openproperty(resource $any, int $proptag /* [more] */): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param array $proptags
  * @return bool
  */
-function mapi_deleteprops(Resource $any, array $proptags): bool {
+function mapi_deleteprops(resource $any, array $proptags): bool {
 	return false;
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param ?array $names
  * @return array|false
  */
-function mapi_getnamesfromids(Resource $any, ?array $names = null): array|false {
+function mapi_getnamesfromids(resource $any, ?array $names = null): array|false {
 	return [];
 }
 
 /**
- * @param Resource $store
+ * @param resource $store
  * @param array $names
  * @param ?array $guids
  * @return array|false
  */
-function mapi_getidsfromnames(Resource $store, array $names, ?array $guids = null): array|false {
+function mapi_getidsfromnames(resource $store, array $names, ?array $guids = null): array|false {
 	return [];
 }
 
@@ -747,48 +747,48 @@ function mapi_decompressrtf(string $data): string|false {
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param int $type
  * @return array|false
  */
-function mapi_zarafa_getpermissionrules(Resource $any, int $type): array|false {
+function mapi_zarafa_getpermissionrules(resource $any, int $type): array|false {
 	return [];
 }
 
 /**
- * @param Resource $any
+ * @param resource $any
  * @param array $perms
  * @return bool
  */
-function mapi_zarafa_setpermissionrules(Resource $any, array $perms): bool {
+function mapi_zarafa_setpermissionrules(resource $any, array $perms): bool {
 	return false;
 }
 
 /**
- * @param Resource $ses
+ * @param resource $ses
  * @param string $entryid
  * @param int $start
  * @param int $end
  * @return array|false
  */
-function mapi_getuserfreebusy(Resource $ses, string $entryid, int $start, int $end): array|false {
+function mapi_getuserfreebusy(resource $ses, string $entryid, int $start, int $end): array|false {
 	return [];
 }
 
 /**
- * @param Resource $ses
+ * @param resource $ses
  * @param string $entryid
  * @param int $start
  * @param int $end
  * @return string|false
  */
-function mapi_getuserfreebusyical(Resource $ses, string $entryid, int $start, int $end): string|false {
+function mapi_getuserfreebusyical(resource $ses, string $entryid, int $start, int $end): string|false {
 	return '';
 }
 
 /**
- * @param Resource $e
- * @param Resource $stream
+ * @param resource $e
+ * @param resource $stream
  * @param int $flags
  * @param mixed $i
  * @param mixed $restrict
@@ -797,86 +797,86 @@ function mapi_getuserfreebusyical(Resource $ses, string $entryid, int $start, in
  * @param int $bufsize
  * @return bool
  */
-function mapi_exportchanges_config(Resource $e, Resource $stream, int $flags, mixed $i, mixed $restrict, mixed $inclprop, mixed $exclprop, int $bufsize): bool {
+function mapi_exportchanges_config(resource $e, resource $stream, int $flags, mixed $i, mixed $restrict, mixed $inclprop, mixed $exclprop, int $bufsize): bool {
 	return false;
 }
 
 /**
- * @param Resource $x
+ * @param resource $x
  * @return mixed
  */
-function mapi_exportchanges_synchronize(Resource $x): mixed {
+function mapi_exportchanges_synchronize(resource $x): mixed {
 	return null;
 }
 
 /**
- * @param Resource $e
- * @param Resource $stream
+ * @param resource $e
+ * @param resource $stream
  * @return bool
  */
-function mapi_exportchanges_updatestate(Resource $e, Resource $stream): bool {
+function mapi_exportchanges_updatestate(resource $e, resource $stream): bool {
 	return false;
 }
 
 /**
- * @param Resource $r
+ * @param resource $r
  * @return int|false
  */
-function mapi_exportchanges_getchangecount(Resource $r): int|false {
+function mapi_exportchanges_getchangecount(resource $r): int|false {
 	return 0;
 }
 
 /**
- * @param Resource $i
- * @param Resource $stream
+ * @param resource $i
+ * @param resource $stream
  * @param int $flags
  * @return bool
  */
-function mapi_importcontentschanges_config(Resource $i, Resource $stream, int $flags): bool {
+function mapi_importcontentschanges_config(resource $i, resource $stream, int $flags): bool {
 	return false;
 }
 
 /**
- * @param Resource $i
- * @param ?Resource $stream
+ * @param resource $i
+ * @param ?resource $stream
  * @return bool
  */
-function mapi_importcontentschanges_updatestate(Resource $i, ?Resource $stream = null): bool {
+function mapi_importcontentschanges_updatestate(resource $i, ?resource $stream = null): bool {
 	return false;
 }
 
 /**
- * @param Resource $i
+ * @param resource $i
  * @param array $props
  * @param int $flags
  * @param mixed &$msg
  * @return bool
  */
-function mapi_importcontentschanges_importmessagechange(Resource $i, array $props, int $flags, mixed &$msg): bool {
+function mapi_importcontentschanges_importmessagechange(resource $i, array $props, int $flags, mixed &$msg): bool {
 	return false;
 }
 
 /**
- * @param Resource $i
+ * @param resource $i
  * @param int $flags
  * @param array $msgs
  * @return bool
  */
-function mapi_importcontentschanges_importmessagedeletion(Resource $i, int $flags, array $msgs): bool {
+function mapi_importcontentschanges_importmessagedeletion(resource $i, int $flags, array $msgs): bool {
 	return false;
 }
 
 /**
- * @param Resource $i
+ * @param resource $i
  * @param array $readst
  * @return bool
  */
-function mapi_importcontentschanges_importperuserreadstatechange(Resource $i, array $readst): bool {
+function mapi_importcontentschanges_importperuserreadstatechange(resource $i, array $readst): bool {
 	return false;
 }
 
 /**
- * @param Resource $r
+ * @param resource $r
  * @param string $a
  * @param string $b
  * @param string $c
@@ -884,150 +884,150 @@ function mapi_importcontentschanges_importperuserreadstatechange(Resource $i, ar
  * @param string $e
  * @return bool
  */
-function mapi_importcontentschanges_importmessagemove(Resource $r, string $a, string $b, string $c, string $d, string $e): bool {
+function mapi_importcontentschanges_importmessagemove(resource $r, string $a, string $b, string $c, string $d, string $e): bool {
 	return false;
 }
 
 /**
- * @param Resource $i
- * @param Resource $stream
+ * @param resource $i
+ * @param resource $stream
  * @param int $flags
  * @return bool
  */
-function mapi_importhierarchychanges_config(Resource $i, Resource $stream, int $flags): bool {
+function mapi_importhierarchychanges_config(resource $i, resource $stream, int $flags): bool {
 	return false;
 }
 
 /**
- * @param Resource $i
- * @param ?Resource $stream
+ * @param resource $i
+ * @param ?resource $stream
  * @return bool
  */
-function mapi_importhierarchychanges_updatestate(Resource $i, ?Resource $stream): bool {
+function mapi_importhierarchychanges_updatestate(resource $i, ?resource $stream): bool {
 	return false;
 }
 
 /**
- * @param Resource $i
+ * @param resource $i
  * @param array $props
  * @return bool
  */
-function mapi_importhierarchychanges_importfolderchange(Resource $i, array $props): bool {
+function mapi_importhierarchychanges_importfolderchange(resource $i, array $props): bool {
 	return false;
 }
 
 /**
- * @param Resource $i
+ * @param resource $i
  * @param int $flags
  * @param array $folders
  * @return bool
  */
-function mapi_importhierarchychanges_importfolderdeletion(Resource $i, int $flags, array $folders): bool {
+function mapi_importhierarchychanges_importfolderdeletion(resource $i, int $flags, array $folders): bool {
 	return false;
 }
 
 /**
  * @param object &$object
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_wrap_importcontentschanges(object &$object): Resource|false {
-	return null;
+function mapi_wrap_importcontentschanges(object &$object): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
  * @param object &$object
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_wrap_importhierarchychanges(object &$object): Resource|false {
-	return null;
+function mapi_wrap_importhierarchychanges(object &$object): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $ses
- * @param Resource $abk
- * @param Resource $msg
+ * @param resource $ses
+ * @param resource $abk
+ * @param resource $msg
  * @param array $opts
- * @return Resource|false
+ * @return resource|false
  */
-function mapi_inetmapi_imtoinet(Resource $ses, Resource $abk, Resource $msg, array $opts): Resource|false {
-	return null;
+function mapi_inetmapi_imtoinet(resource $ses, resource $abk, resource $msg, array $opts): resource|false {
+	return fopen("php://memory", "r");
 }
 
 /**
- * @param Resource $ses
- * @param Resource $store
- * @param Resource $abk
- * @param Resource $msg
+ * @param resource $ses
+ * @param resource $store
+ * @param resource $abk
+ * @param resource $msg
  * @param string $str
  * @param array $opts
  * @return bool
  */
-function mapi_inetmapi_imtomapi(Resource $ses, Resource $store, Resource $abk, Resource $msg, string $str, array $opts): bool {
+function mapi_inetmapi_imtomapi(resource $ses, resource $store, resource $abk, resource $msg, string $str, array $opts): bool {
 	return false;
 }
 
 /**
- * @param Resource $ses
- * @param Resource $store
- * @param Resource $abk
- * @param Resource $msg
+ * @param resource $ses
+ * @param resource $store
+ * @param resource $abk
+ * @param resource $msg
  * @param string $str
  * @param bool $norecip
  * @return bool
  */
-function mapi_icaltomapi(Resource $ses, Resource $store, Resource $abk, Resource $msg, string $str, bool $norecip): bool {
+function mapi_icaltomapi(resource $ses, resource $store, resource $abk, resource $msg, string $str, bool $norecip): bool {
 	return false;
 }
 
 /**
- * @param Resource $abk
- * @param Resource $fld
+ * @param resource $abk
+ * @param resource $fld
  * @param string $ics
  * @return array|false
  */
-function mapi_icaltomapi2(Resource $abk, Resource $fld, string $ics): array|false {
+function mapi_icaltomapi2(resource $abk, resource $fld, string $ics): array|false {
 	return [];
 }
 
 /**
- * @param Resource $ses
- * @param Resource $abk
- * @param Resource $msg
+ * @param resource $ses
+ * @param resource $abk
+ * @param resource $msg
  * @param array $opts
  * @return string|false
  */
-function mapi_mapitoical(Resource $ses, Resource $abk, Resource $msg, array $opts): string|false {
+function mapi_mapitoical(resource $ses, resource $abk, resource $msg, array $opts): string|false {
 	return '';
 }
 
 /**
- * @param Resource $ses
- * @param Resource $store
- * @param Resource $msg
+ * @param resource $ses
+ * @param resource $store
+ * @param resource $msg
  * @param string $str
  * @return bool
  */
-function mapi_vcftomapi(Resource $ses, Resource $store, Resource $msg, string $str): bool {
+function mapi_vcftomapi(resource $ses, resource $store, resource $msg, string $str): bool {
 	return false;
 }
 
 /**
- * @param Resource $fld
+ * @param resource $fld
  * @param string $vcard
  * @return array|false
  */
-function mapi_vcftomapi2(Resource $fld, string $vcard): array|false {
+function mapi_vcftomapi2(resource $fld, string $vcard): array|false {
 	return [];
 }
 
 /**
- * @param Resource $ses
- * @param Resource $abk
- * @param Resource $msg
+ * @param resource $ses
+ * @param resource $abk
+ * @param resource $msg
  * @param array $opts
  * @return string|false
  */
-function mapi_mapitovcf(Resource $ses, Resource $abk, Resource $msg, array $opts): string|false {
+function mapi_mapitovcf(resource $ses, resource $abk, resource $msg, array $opts): string|false {
 	return '';
 }
 
@@ -1048,11 +1048,11 @@ function mapi_feature(string $ft): bool {
 }
 
 /**
- * @param Resource $ses
+ * @param resource $ses
  * @param string &$data
  * @return int
  */
-function kc_session_save(Resource $ses, string &$data): int {
+function kc_session_save(resource $ses, string &$data): int {
 	return 0;
 }
 
@@ -1092,12 +1092,12 @@ function nsp_essdn_to_username(string $essdn): string|false {
 }
 
 /**
- * @param Resource $ses
+ * @param resource $ses
  * @param ?string $srcheid
  * @param ?string $msgeid
  * @return mixed
  */
-function mapi_linkmessage(Resource $ses, ?string $srcheid = null, ?string $msgeid = null): mixed {
+function mapi_linkmessage(resource $ses, ?string $srcheid = null, ?string $msgeid = null): mixed {
 	return null;
 }
 
