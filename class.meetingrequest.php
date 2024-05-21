@@ -757,6 +757,7 @@ class Meetingrequest {
 	public function accept(bool $tentative, bool $sendresponse, bool $move, array $proposeNewTimeProps, $body, bool $userAction, $store, $calFolder, $basedate = false) {
 		$messageprops = mapi_getprops($this->message);
 		$isDelegate = isset($messageprops[PR_RCVD_REPRESENTING_NAME]);
+		$entryid = '';
 
 		if ($sendresponse) {
 			$this->createResponse($tentative ? olResponseTentative : olResponseAccepted, $proposeNewTimeProps, $body, $store, $basedate, $calFolder);
