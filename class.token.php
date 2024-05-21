@@ -21,7 +21,7 @@ class Token {
 	 */
 	public function __construct($keycloak_token) {
 		$this->_raw = $keycloak_token;
-		if (isset($keycloak_token)) {
+		if ($keycloak_token) {
 			try {
 				$parts = explode('.', $keycloak_token);
 				$th = base64_decode($parts[0]);

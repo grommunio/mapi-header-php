@@ -82,6 +82,9 @@ class KeyCloak {
 	 * @return KeyCloak
 	 */
 	public static function getInstance() {
+		if (!defined('GROMOX_CONFIG_PATH')) {
+			define('GROMOX_CONFIG_PATH', '/etc/gromox/');
+		}
 		if (is_null(KeyCloak::$_instance) && file_exists(GROMOX_CONFIG_PATH . 'keycloak.json')) {
 			// Read the keycloak config adapter into an instance of the keyclaok class
 			$keycloak_file = file_get_contents(GROMOX_CONFIG_PATH . 'keycloak.json');

@@ -376,6 +376,7 @@ class Meetingrequest {
 		$senderentryid = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
 		$messageclass = $messageprops[PR_MESSAGE_CLASS];
 		$deliverytime = $messageprops[PR_MESSAGE_DELIVERY_TIME];
+		$recurringItem = 0;
 
 		// Open the calendar item, find the sender in the recipient table and update all the recipients of the calendar item that match
 		// the email address of the response.
@@ -756,6 +757,7 @@ class Meetingrequest {
 	public function accept(bool $tentative, bool $sendresponse, bool $move, array $proposeNewTimeProps, $body, bool $userAction, $store, $calFolder, $basedate = false) {
 		$messageprops = mapi_getprops($this->message);
 		$isDelegate = isset($messageprops[PR_RCVD_REPRESENTING_NAME]);
+		$entryid = '';
 
 		if ($sendresponse) {
 			$this->createResponse($tentative ? olResponseTentative : olResponseAccepted, $proposeNewTimeProps, $body, $store, $basedate, $calFolder);
@@ -2085,6 +2087,7 @@ class Meetingrequest {
 		$recip[PR_SEARCH_KEY] = $messageprops[PR_SENT_REPRESENTING_SEARCH_KEY];
 
 		$subjectprefix = '';
+		$classpostfix = '';
 
 		switch ($status) {
 			case olResponseAccepted:
@@ -2293,6 +2296,8 @@ class Meetingrequest {
 
 	// Opens this session's default message store
 	public function openDefaultStore() {
+		$entryid = '';
+
 		$storestable = mapi_getmsgstorestable($this->session);
 		$rows = mapi_table_queryallrows($storestable, [PR_ENTRYID, PR_DEFAULT_STORE]);
 
@@ -2496,6 +2501,8 @@ class Meetingrequest {
 
 		// Get the properties of the message
 		$messageprops = mapi_getprops($message);
+
+		$calFolder = '';
 
 		if ($basedate) {
 			$recurrItemProps = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2'], $this->proptags['timezone_data'], $this->proptags['timezone'], PR_OWNER_APPT_ID]);
@@ -3223,7 +3230,7 @@ class Meetingrequest {
 		}
 
 		// Send cancellation to deleted attendees
-		if ($deletedRecips && !empty($deletedRecips)) {
+		if ($deletedRecips) {
 			$new = $this->createOutgoingMessage();
 
 			mapi_message_modifyrecipients($new, MODRECIP_ADD, $deletedRecips);
