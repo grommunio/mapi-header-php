@@ -376,6 +376,7 @@ class Meetingrequest {
 		$senderentryid = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
 		$messageclass = $messageprops[PR_MESSAGE_CLASS];
 		$deliverytime = $messageprops[PR_MESSAGE_DELIVERY_TIME];
+		$recurringItem = 0;
 
 		// Open the calendar item, find the sender in the recipient table and update all the recipients of the calendar item that match
 		// the email address of the response.
