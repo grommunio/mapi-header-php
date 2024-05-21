@@ -2295,6 +2295,8 @@ class Meetingrequest {
 
 	// Opens this session's default message store
 	public function openDefaultStore() {
+		$entryid = '';
+
 		$storestable = mapi_getmsgstorestable($this->session);
 		$rows = mapi_table_queryallrows($storestable, [PR_ENTRYID, PR_DEFAULT_STORE]);
 
