@@ -621,6 +621,7 @@ abstract class BaseRecurrence {
 		$rdata = pack("vvvvv", 0x3004, 0x3004, $rtype, (int) $this->recur["subtype"], MAPI_CAL_DEFAULT);
 		$weekstart = 1; // monday
 		$forwardcount = 0;
+		$count = 0;
 		$restocc = 0;
 		$dayofweek = (int) gmdate("w", (int) $this->recur["start"]); // 0 (for Sunday) through 6 (for Saturday)
 
