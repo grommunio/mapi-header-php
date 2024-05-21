@@ -37,7 +37,7 @@ function mapi_prop_id(int $proptag): int|false {
  * @param int $errcode
  * @return bool|false
  */
-function mapi_is_error(int $errcode): bool|false {
+function mapi_is_error(int $errcode): bool {
 	return false;
 }
 
