@@ -3229,7 +3229,7 @@ class Meetingrequest {
 		}
 
 		// Send cancellation to deleted attendees
-		if ($deletedRecips && !empty($deletedRecips)) {
+		if ($deletedRecips) {
 			$new = $this->createOutgoingMessage();
 
 			mapi_message_modifyrecipients($new, MODRECIP_ADD, $deletedRecips);
