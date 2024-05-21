@@ -2501,6 +2501,8 @@ class Meetingrequest {
 		// Get the properties of the message
 		$messageprops = mapi_getprops($message);
 
+		$calFolder = '';
+
 		if ($basedate) {
 			$recurrItemProps = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2'], $this->proptags['timezone_data'], $this->proptags['timezone'], PR_OWNER_APPT_ID]);
 
