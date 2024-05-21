@@ -2086,6 +2086,7 @@ class Meetingrequest {
 		$recip[PR_SEARCH_KEY] = $messageprops[PR_SENT_REPRESENTING_SEARCH_KEY];
 
 		$subjectprefix = '';
+		$classpostfix = '';
 
 		switch ($status) {
 			case olResponseAccepted:
