@@ -1,4 +1,9 @@
 <?php
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
+ */
 
 /**
  * This class is just static class and will not be instantiate and
