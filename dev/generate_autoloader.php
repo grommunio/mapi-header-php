@@ -109,11 +109,11 @@ try {
 
 	if (extension_loaded('mapi')) {
 		mapi_load_mapidefs(1);
-		$constants = get_defined_constants(true);
+		$constants = get_defined_constants(true)['Core'];
 
 		// Filter the relevant constants
 		$relevant_prefixes = ['PR_', 'PidLid', 'MAPI', 'ec', 'RPC_', 'SYNC_'];
-		$relevant_constants = array_filter($constants['Core'], function ($key) use ($relevant_prefixes) {
+		$relevant_constants = array_filter($constants, function ($key) use ($relevant_prefixes) {
 			foreach ($relevant_prefixes as $prefix) {
 				if (strpos($key, $prefix) === 0) {
 					return true;
