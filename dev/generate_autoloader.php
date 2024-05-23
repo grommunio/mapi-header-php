@@ -125,6 +125,9 @@ try {
 
 		foreach ($relevant_constants as $name => $value) {
 			$autoloaderContent .= "if (!defined('{$name}')) {\n";
+			if (is_numeric($value)) {
+				$value = sprintf("0x%08X", $value);
+			}
 			$autoloaderContent .= "\tdefine('{$name}', {$value});\n";
 			$autoloaderContent .= "}\n";
 		}
