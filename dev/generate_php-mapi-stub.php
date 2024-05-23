@@ -138,9 +138,9 @@ try {
 
 	$autoloaderContent .= "?>";
 
-	file_put_contents('autoloader.php', $autoloaderContent);
+	file_put_contents('php-mapi-stub.php', $autoloaderContent);
 
-	echo "autoloader.php has been generated successfully.\n";
+	echo "php-mapi-stub.php has been generated successfully.\n";
 }
 catch (Exception $e) {
 	echo "Error: " . $e->getMessage() . "\n";
