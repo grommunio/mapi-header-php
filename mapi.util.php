@@ -8,13 +8,7 @@
 define('NOERROR', 0);
 
 // Load all mapi defs
-if (function_exists('mapi_load_mapidefs')) {
-	mapi_load_mapidefs(1);
-}
-else {
-	// code analysis with non-mapi php builds
-	require 'dev/autoloader.php';
-}
+mapi_load_mapidefs(1);
 
 /**
  * Function to make a MAPIGUID from a php string.

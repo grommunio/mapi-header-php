@@ -1,4 +1,9 @@
 <?php
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
+ */
 
 /**
  * This class is just static class and will not be instantiate and
@@ -82,12 +87,14 @@ class FreeBusy {
 
 			// Ensure to return false if an exception occurs
 			error_log("getLocalFreeBusyMessage: unhandled MAPIException " . $e->getMessage());
-		        return false;
+
+			return false;
 
 		}
 
 		// Fallback, should not typically reach here.
 		error_log("getLocalFreeBusyMessage: reached unexpected code path");
+
 		return false;
 
 	}

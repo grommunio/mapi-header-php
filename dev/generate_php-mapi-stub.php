@@ -1,4 +1,8 @@
 <?php
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * SPDX-FileCopyrightText: Copyright 2024 grommunio GmbH
+ */
 
 function fetchAndGenerateStubs(string $url): string {
 	// Fetch the remote file
@@ -62,7 +66,7 @@ function generateReturnValue(string $returnType) {
 
 		case 'resource':
 		case 'resource|false':
-			return 'fopen("php://memory", "r")';
+			return 'new resource()';
 
 		default:
 			if (strpos($returnType, '|') !== false) {
@@ -104,16 +108,17 @@ try {
 	$stubFunctions = fetchAndGenerateStubs($url);
 
 	// Generate autoloader.php content
-	$autoloaderContent = "<?php\n\n";
+	$autoloaderContent = "<?php\n";
+	$autoloaderContent .= "/*\n * SPDX-License-Identifier: AGPL-3.0-only\n * SPDX-FileCopyrightText: Copyright " . date('Y') . " grommunio GmbH\n */\n\n";
 	$autoloaderContent .= $stubFunctions;
 
 	if (extension_loaded('mapi')) {
 		mapi_load_mapidefs(1);
-		$constants = get_defined_constants(true);
+		$constants = get_defined_constants(true)['Core'];
 
 		// Filter the relevant constants
 		$relevant_prefixes = ['PR_', 'PidLid', 'MAPI', 'ec', 'RPC_', 'SYNC_'];
-		$relevant_constants = array_filter($constants['Core'], function ($key) use ($relevant_prefixes) {
+		$relevant_constants = array_filter($constants, function ($key) use ($relevant_prefixes) {
 			foreach ($relevant_prefixes as $prefix) {
 				if (strpos($key, $prefix) === 0) {
 					return true;
@@ -125,6 +130,9 @@ try {
 
 		foreach ($relevant_constants as $name => $value) {
 			$autoloaderContent .= "if (!defined('{$name}')) {\n";
+			if (is_numeric($value)) {
+				$value = sprintf("0x%08X", $value);
+			}
 			$autoloaderContent .= "\tdefine('{$name}', {$value});\n";
 			$autoloaderContent .= "}\n";
 		}
@@ -135,9 +143,9 @@ try {
 
 	$autoloaderContent .= "?>";
 
-	file_put_contents('autoloader.php', $autoloaderContent);
+	file_put_contents('php-mapi-stub.php', $autoloaderContent);
 
-	echo "autoloader.php has been generated successfully.\n";
+	echo "php-mapi-stub.php has been generated successfully.\n";
 }
 catch (Exception $e) {
 	echo "Error: " . $e->getMessage() . "\n";
