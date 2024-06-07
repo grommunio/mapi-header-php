@@ -1,4 +1,8 @@
 <?php
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * SPDX-FileCopyrightText: Copyright 2024 grommunio GmbH
+ */
 
 function fetchAndGenerateStubs(string $url): string {
 	// Fetch the remote file
@@ -62,7 +66,7 @@ function generateReturnValue(string $returnType) {
 
 		case 'resource':
 		case 'resource|false':
-			return 'fopen("php://memory", "r")';
+			return 'new resource()';
 
 		default:
 			if (strpos($returnType, '|') !== false) {
@@ -104,7 +108,8 @@ try {
 	$stubFunctions = fetchAndGenerateStubs($url);
 
 	// Generate autoloader.php content
-	$autoloaderContent = "<?php\n\n";
+	$autoloaderContent = "<?php\n";
+	$autoloaderContent .= "/*\n * SPDX-License-Identifier: AGPL-3.0-only\n * SPDX-FileCopyrightText: Copyright " . date('Y') . " grommunio GmbH\n */\n\n";
 	$autoloaderContent .= $stubFunctions;
 
 	if (extension_loaded('mapi')) {
