@@ -194,7 +194,7 @@ class Meetingrequest {
 		$properties['proposed_end_whole'] = 'PT_SYSTIME:PSETID_Appointment:' . PidLidAppointmentProposedEndWhole;
 		$properties['proposed_duration'] = 'PT_LONG:PSETID_Appointment:0x8256';
 		$properties['counter_proposal'] = 'PT_BOOLEAN:PSETID_Appointment:' . PidLidAppointmentCounterProposal;
-		$properties['recurring_pattern'] = 'PT_STRING8:PSETID_Appointment:0x8232';
+		$properties['recurring_pattern'] = 'PT_STRING8:PSETID_Appointment:' . PidLidRecurrencePattern;
 		$properties['basedate'] = 'PT_SYSTIME:PSETID_Appointment:' . PidLidExceptionReplaceTime;
 		$properties['meetingtype'] = 'PT_LONG:PSETID_Meeting:0x26';
 		$properties['timezone_data'] = 'PT_BINARY:PSETID_Appointment:' . PidLidTimeZoneStruct;
