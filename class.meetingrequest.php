@@ -336,13 +336,13 @@ class Meetingrequest {
 		// Find basedate in GlobalID(0x3), this can be a response for an occurrence
 		$basedate = $this->getBasedateFromGlobalID($messageprops[$this->proptags['goid']]);
 
+		$userStore = $this->store;
 		// check if delegate is processing the response
 		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-			$userStore = $delegatorStore['store'];
-		}
-		else {
-			$userStore = $this->store;
+			if (!empty($delegatorStore['store'])) {
+				$userStore = $delegatorStore['store'];
+			}
 		}
 
 		// check for calendar access
@@ -570,14 +570,13 @@ class Meetingrequest {
 			return;
 		}
 
+		$store = $this->store;
 		// get delegator store, if delegate is processing this cancellation
 		if (isset($messageProps[PR_RCVD_REPRESENTING_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($messageProps[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-
-			$store = $delegatorStore['store'];
-		}
-		else {
-			$store = $this->store;
+			if (!empty($delegatorStore['store'])) {
+				$store = $delegatorStore['store'];
+			}
 		}
 
 		// check for calendar access
@@ -657,17 +656,18 @@ class Meetingrequest {
 		// Remove any previous calendar items with this goid and appt id
 		$messageprops = mapi_getprops($this->message, [PR_ENTRYID, PR_MESSAGE_CLASS, $this->proptags['goid'], $this->proptags['updatecounter'], PR_PROCESSED, PR_RCVD_REPRESENTING_ENTRYID, PR_SENDER_ENTRYID, PR_SENT_REPRESENTING_ENTRYID, PR_RECEIVED_BY_ENTRYID]);
 
+		$calFolder = $this->openDefaultCalendar();
+		$store = $this->store;
 		// If this meeting request is received by a delegate then open delegator's store.
 		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID]) &&
 			!compareEntryIds($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-
-			$store = $delegatorStore['store'];
-			$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
-		}
-		else {
-			$calFolder = $this->openDefaultCalendar();
-			$store = $this->store;
+			if (!empty($delegatorStore['store'])) {
+				$store = $delegatorStore['store'];
+			}
+			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
+				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
+			}
 		}
 
 		// check for calendar access
@@ -1225,16 +1225,17 @@ class Meetingrequest {
 		// Remove any previous calendar items with this goid and appt id
 		$messageprops = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2'], PR_RCVD_REPRESENTING_ENTRYID]);
 
+		$store = $this->store;
+		$calFolder = $this->openDefaultCalendar();
 		// If this meeting request is received by a delegate then open delegator's store.
 		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-
-			$store = $delegatorStore['store'];
-			$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
-		}
-		else {
-			$calFolder = $this->openDefaultCalendar();
-			$store = $this->store;
+			if (!empty($delegatorStore['store'])) {
+				$store = $delegatorStore['store'];
+			}
+			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
+				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
+			}
 		}
 
 		// check for calendar access before deleting the calendar item
@@ -1321,15 +1322,16 @@ class Meetingrequest {
 
 		$goid = $messageprops[$this->proptags['goid']];
 
+		$store = $this->store;
+		$calFolder = $this->openDefaultCalendar();
 		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-
-			$store = $delegatorStore['store'];
-			$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
-		}
-		else {
-			$store = $this->store;
-			$calFolder = $this->openDefaultCalendar();
+			if (!empty($delegatorStore['store'])) {
+				$store = $delegatorStore['store'];
+			}
+			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
+				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
+			}
 		}
 
 		// check for calendar access before deleting the calendar item
@@ -1913,15 +1915,14 @@ class Meetingrequest {
 	 */
 	public function checkCalendarWriteAccess($store = false) {
 		if ($store === false) {
-			// If this meeting request is received by a delegate then open delegator's store.
 			$messageProps = mapi_getprops($this->message, [PR_RCVD_REPRESENTING_ENTRYID]);
+			$store = $this->store;
+			// If this meeting request is received by a delegate then open delegator's store.
 			if (isset($messageProps[PR_RCVD_REPRESENTING_ENTRYID])) {
 				$delegatorStore = $this->getDelegatorStore($messageProps[PR_RCVD_REPRESENTING_ENTRYID]);
-
-				$store = $delegatorStore['store'];
-			}
-			else {
-				$store = $this->store;
+				if (!empty($delegatorStore['store'])) {
+					$store = $delegatorStore['store'];
+				}
 			}
 		}
 
@@ -3601,16 +3602,17 @@ class Meetingrequest {
 		}
 		$globalId = $props[$this->proptags['goid']];
 
+		$store = $this->store;
+		$calFolder = $this->openDefaultCalendar();
 		// If Delegate is processing Meeting Request/Response for Delegator then retrieve Delegator's store and calendar.
 		if (isset($props[PR_RCVD_REPRESENTING_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($props[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-
-			$store = $delegatorStore['store'];
-			$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
-		}
-		else {
-			$store = $this->store;
-			$calFolder = $this->openDefaultCalendar();
+			if (!empty($delegatorStore['store'])) {
+				$store = $delegatorStore['store'];
+			}
+			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
+				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
+			}
 		}
 
 		$basedate = $this->getBasedateFromGlobalID($globalId);
@@ -3672,13 +3674,13 @@ class Meetingrequest {
 		}
 
 		if ($store === false) {
+			$store = $this->store;
 			// If Delegate is processing Meeting Request/Response for Delegator then retrieve Delegator's store and calendar.
 			if (isset($props[PR_RCVD_REPRESENTING_ENTRYID])) {
 				$delegatorStore = $this->getDelegatorStore($props[PR_RCVD_REPRESENTING_ENTRYID]);
-				$store = $delegatorStore['store'];
-			}
-			else {
-				$store = $this->store;
+				if (!empty($delegatorStore['store'])) {
+					$store = $delegatorStore['store'];
+				}
 			}
 		}
 
@@ -3734,8 +3736,12 @@ class Meetingrequest {
 			if (isset($messageProps[PR_RCVD_REPRESENTING_ENTRYID])) {
 				$delegatorStore = $this->getDelegatorStore($messageProps[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
 
-				$userStore = $delegatorStore['store'];
-				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
+				if (!empty($delegatorStore['store'])) {
+					$userStore = $delegatorStore['store'];
+				}
+				if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
+					$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
+				}
 			}
 		}
 
