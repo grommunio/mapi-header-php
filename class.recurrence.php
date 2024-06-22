@@ -73,7 +73,7 @@ class Recurrence extends BaseRecurrence {
 			$properties["meeting"] = "PT_LONG:PSETID_Appointment:" . PidLidAppointmentStateFlags;
 			$properties["startdate_recurring"] = "PT_SYSTIME:PSETID_Appointment:" . PidLidClipStart;
 			$properties["enddate_recurring"] = "PT_SYSTIME:PSETID_Appointment:" . PidLidClipEnd;
-			$properties["recurring_pattern"] = "PT_STRING8:PSETID_Appointment:0x8232";
+			$properties["recurring_pattern"] = "PT_STRING8:PSETID_Appointment:" . PidLidRecurrencePattern;
 			$properties["location"] = "PT_STRING8:PSETID_Appointment:" . PidLidLocation;
 			$properties["duration"] = "PT_LONG:PSETID_Appointment:" . PidLidAppointmentDuration;
 			$properties["responsestatus"] = "PT_LONG:PSETID_Appointment:0x8218";
@@ -513,88 +513,357 @@ class Recurrence extends BaseRecurrence {
 	 */
 
 	/**
-	 * Generates and stores recurrence pattern string to recurring_pattern property.
+	 * Returns langified daily recurrence type string, whether it's singular or plural,
+	 * recurrence interval.
 	 */
-	public function saveRecurrencePattern(): void {
-		// Start formatting the properties in such a way we can apply
-		// them directly into the recurrence pattern.
-		$type = $this->recur['type'];
-		$everyn = $this->recur['everyn'];
-		$start = $this->recur['start'];
-		$end = $this->recur['end'];
-		$term = $this->recur['term'];
-		$numocc = isset($this->recur['numoccur']) ? $this->recur['numoccur'] : 0;
-		$startocc = $this->recur['startocc'];
-		$endocc = $this->recur['endocc'];
-		$pattern = '';
-		$occSingleDayRank = false;
-		$occTimeRange = ($startocc != 0 && $endocc != 0);
-
-		switch ($type) {
-			// Daily
-			case 0x0A:
-				if ($everyn == 1) {
-					$type = dgettext('zarafa', 'workday');
-					$occSingleDayRank = true;
-				}
-				elseif ($everyn == (24 * 60)) {
-					$type = dgettext('zarafa', 'day');
-					$occSingleDayRank = true;
-				}
-				else {
-					$everyn /= (24 * 60);
-					$type = dgettext('zarafa', 'days');
-					$occSingleDayRank = false;
-				}
+	public function getI18RecTypeDaily(mixed $type, mixed $interval, bool $occSingleDayRank): array {
+		switch ($interval) {
+			case 1: // workdays
+				$type = dgettext('zarafa', 'workday');
+				$occSingleDayRank = true;
 				break;
 
-				// Weekly
-			case 0x0B:
-				if ($everyn == 1) {
-					$type = dgettext('zarafa', 'week');
-					$occSingleDayRank = true;
-				}
-				else {
-					$type = dgettext('zarafa', 'weeks');
-					$occSingleDayRank = false;
-				}
+			case 1440: // daily
+				$type = dgettext('zarafa', 'day');
+				$occSingleDayRank = true;
 				break;
 
-				// Monthly
-			case 0x0C:
-				if ($everyn == 1) {
-					$type = dgettext('zarafa', 'month');
-					$occSingleDayRank = true;
-				}
-				else {
-					$type = dgettext('zarafa', 'months');
-					$occSingleDayRank = false;
-				}
-				break;
-
-				// Yearly
-			case 0x0D:
-				if ($everyn <= 12) {
-					$everyn = 1;
-					$type = dgettext('zarafa', 'year');
-					$occSingleDayRank = true;
-				}
-				else {
-					$everyn = $everyn / 12;
-					$type = dgettext('zarafa', 'years');
-					$occSingleDayRank = false;
-				}
+			default: // every $interval days
+				$interval /= 1440;
+				$type = dgettext('zarafa', 'days');
+				$occSingleDayRank = false;
 				break;
 		}
 
-		// get timings of the first occurrence
-		$firstoccstartdate = isset($startocc) ? $start + (((int) $startocc) * 60) : $start;
-		$firstoccenddate = isset($endocc) ? $end + (((int) $endocc) * 60) : $end;
+		return [
+			'type' => $type,
+			'interval' => $interval,
+			'occSingleDayRank' => boolval($occSingleDayRank),
+		];
+	}
 
-		$start = gmdate(dgettext('zarafa', 'd-m-Y'), $firstoccstartdate);
-		$end = gmdate(dgettext('zarafa', 'd-m-Y'), $firstoccenddate);
-		$startocc = gmdate(dgettext('zarafa', 'G:i'), $firstoccstartdate);
-		$endocc = gmdate(dgettext('zarafa', 'G:i'), $firstoccenddate);
+	/**
+	 * Returns langified weekly recurrence type string, whether it's singular or plural,
+	 * recurrence interval.
+	 */
+	public function getI18RecTypeWeekly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
+		if ($interval == 1) {
+			$type = dgettext('zarafa', 'week');
+			$occSingleDayRank = true;
+		}
+		else {
+			$type = dgettext('zarafa', 'weeks');
+			$occSingleDayRank = false;
+		}
+		$daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+		$type .= sprintf(" %s ", dgettext('zarafa', 'on'));
+
+		for ($j = 0, $weekdays = (int) $this->recur["weekdays"]; $j < 7; ++$j) {
+			if ($weekdays & (1 << $j)) {
+				$type .= sprintf("%s, ", dgettext('zarafa', $daysOfWeek[$j]));
+			}
+		}
+		$type = trim($type, ", ");
+		if (($pos = strrpos($type, ",")) !== false) {
+			$type = substr_replace($type, " " . dgettext('zarafa', 'and'), $pos, 1);
+		}
+
+		return [
+			'type' => $type,
+			'interval' => $interval,
+			'occSingleDayRank' => boolval($occSingleDayRank),
+		];
+	}
+
+	/**
+	 * Returns langified monthly recurrence type string, whether it's singular or plural,
+	 * recurrence interval.
+	 */
+	public function getI18RecTypeMonthly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
+		if ($interval == 1) {
+			$type = dgettext('zarafa', 'month');
+			$occSingleDayRank = true;
+		}
+		else {
+			$type = dgettext('zarafa', 'months');
+			$occSingleDayRank = false;
+		}
+
+		return [
+			'type' => $type,
+			'interval' => $interval,
+			'occSingleDayRank' => boolval($occSingleDayRank),
+		];
+	}
+
+	/**
+	 * Returns langified yearly recurrence type string, whether it's singular or plural,
+	 * recurrence interval.
+	 */
+	public function getI18RecTypeYearly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
+		if ($interval <= 12) {
+			$interval = 1;
+			$type = dgettext('zarafa', 'year');
+			$occSingleDayRank = true;
+		}
+		else {
+			$interval = $interval / 12;
+			$type = dgettext('zarafa', 'years');
+			$occSingleDayRank = false;
+		}
+
+		return [
+			'type' => $type,
+			'interval' => $interval,
+			'occSingleDayRank' => boolval($occSingleDayRank),
+		];
+	}
+
+	/**
+	 * Returns langified recurrence type string, whether it's singular or plural,
+	 * recurrence interval.
+	 */
+	public function getI18nRecurrenceType(): array {
+		$type = $this->recur['type'];
+		$interval = $this->recur['everyn'];
+		$occSingleDayRank = false;
+
+		switch ($type) {
+			case 0x0A: // Daily
+				return $this->getI18RecTypeDaily($type, $interval, $occSingleDayRank);
+
+			case 0x0B: // Weekly
+				return $this->getI18RecTypeWeekly($type, $interval, $occSingleDayRank);
+
+			case 0x0C: // Monthly
+				return $this->getI18RecTypeMonthly($type, $interval, $occSingleDayRank);
+
+			case 0x0D: // Yearly
+				return $this->getI18RecTypeYearly($type, $interval, $occSingleDayRank);
+		}
+
+		return [
+			'type' => $type,
+			'interval' => $interval,
+			'occSingleDayRank' => boolval($occSingleDayRank),
+		];
+	}
+
+	/**
+	 * Returns the start or end time of the first occurrence.
+	 */
+	public function getOccDate(bool $getStart = true): mixed {
+		return $getStart ?
+			(isset($this->recur['startocc']) ?
+				$this->recur['start'] + (((int) $this->recur['startocc']) * 60) :
+				$this->recur['start']) :
+			(isset($this->recur['endocc']) ?
+				$this->recur['start'] + (((int) $this->recur['endocc']) * 60) :
+				$this->recur['end']);
+	}
+
+	/**
+	 * Returns langified occurrence time.
+	 */
+	public function getI18nTime(string $format, mixed $occTime): string {
+		return gmdate(dgettext('zarafa', $format), $occTime);
+	}
+
+	/**
+	 * Returns langified recurrence pattern termination after the given date.
+	 */
+	public function getI18nRecTermDate(
+		bool $occTimeRange,
+		bool $occSingleDayRank,
+		mixed $type,
+		mixed $interval,
+		string $start,
+		string $end,
+		string $startocc,
+		string $endocc
+	): string {
+		return $occTimeRange ?
+			(
+				$occSingleDayRank ?
+					sprintf(
+						dgettext('zarafa', 'Occurs every %s effective %s until %s from %s to %s.'),
+						$type,
+						$start,
+						$end,
+						$startocc,
+						$endocc
+					) :
+					sprintf(
+						dgettext('zarafa', 'Occurs every %s %s effective %s until %s from %s to %s.'),
+						$interval,
+						$type,
+						$start,
+						$end,
+						$startocc,
+						$endocc
+					)
+			) :
+			(
+				$occSingleDayRank ?
+					sprintf(
+						dgettext('zarafa', 'Occurs every %s effective %s until %s.'),
+						$type,
+						$start,
+						$end
+					) :
+					sprintf(
+						dgettext('zarafa', 'Occurs every %s %s effective %s until %s.'),
+						$interval,
+						$type,
+						$start,
+						$end
+					)
+			);
+	}
+
+	/**
+	 * Returns langified recurrence pattern termination after a number of
+	 * occurrences.
+	 */
+	public function getI18nRecTermNrOcc(
+		bool $occTimeRange,
+		bool $occSingleDayRank,
+		mixed $type,
+		mixed $interval,
+		string $start,
+		mixed $numocc,
+		string $startocc,
+		string $endocc
+	): string {
+		return $occTimeRange ?
+			(
+				$occSingleDayRank ?
+					sprintf(
+						dngettext(
+							'zarafa',
+							'Occurs every %s effective %s for %s occurrence from %s to %s.',
+							'Occurs every %s effective %s for %s occurrences from %s to %s.',
+							$numocc
+						),
+						$type,
+						$start,
+						$numocc,
+						$startocc,
+						$endocc
+					) :
+					sprintf(
+						dngettext(
+							'zarafa',
+							'Occurs every %s %s effective %s for %s occurrence from %s to %s.',
+							'Occurs every %s %s effective %s for %s occurrences %s to %s.',
+							$numocc
+						),
+						$interval,
+						$type,
+						$start,
+						$numocc,
+						$startocc,
+						$endocc
+					)
+			) :
+			(
+				$occSingleDayRank ?
+					sprintf(
+						dngettext(
+							'zarafa',
+							'Occurs every %s effective %s for %s occurrence.',
+							'Occurs every %s effective %s for %s occurrences.',
+							$numocc
+						),
+						$type,
+						$start,
+						$numocc
+					) :
+					sprintf(
+						dngettext(
+							'zarafa',
+							'Occurs every %s %s effective %s for %s occurrence.',
+							'Occurs every %s %s effective %s for %s occurrences.',
+							$numocc
+						),
+						$interval,
+						$type,
+						$start,
+						$numocc
+					)
+			);
+	}
+
+	/**
+	 * Returns langified recurrence pattern termination with no end date.
+	 */
+	public function getI18nRecTermNoEnd(
+		bool $occTimeRange,
+		bool $occSingleDayRank,
+		mixed $type,
+		mixed $interval,
+		string $start,
+		string $startocc,
+		string $endocc
+	): string {
+		return $occTimeRange ?
+			(
+				$occSingleDayRank ?
+					sprintf(
+						dgettext('zarafa', 'Occurs every %s effective %s from %s to %s.'),
+						$type,
+						$start,
+						$startocc,
+						$endocc
+					) :
+					sprintf(
+						dgettext('zarafa', 'Occurs every %s %s effective %s from %s to %s.'),
+						$interval,
+						$type,
+						$start,
+						$startocc,
+						$endocc
+					)
+			) :
+			(
+				$occSingleDayRank ?
+					sprintf(
+						dgettext('zarafa', 'Occurs every %s effective %s.'),
+						$type,
+						$start
+					) :
+					sprintf(
+						dgettext('zarafa', 'Occurs every %s %s effective %s.'),
+						$interval,
+						$type,
+						$start
+					)
+			);
+	}
+
+	/**
+	 * Generates and stores recurrence pattern string to recurring_pattern property.
+	 */
+	public function saveRecurrencePattern(): string {
+		// Start formatting the properties in such a way we can apply
+		// them directly into the recurrence pattern.
+		$pattern = '';
+		$occTimeRange = $this->recur['startocc'] != 0 && $this->recur['endocc'] != 0;
+
+		[
+			'type' => $type,
+			'interval' => $interval,
+			'occSingleDayRank' => $occSingleDayRank
+		] = $this->getI18nRecurrenceType();
+
+		// get timings of the first occurrence
+		$firstoccstartdate = $this->getOccDate();
+		$firstoccenddate = $this->getOccDate(false);
+
+		$start = $this->getI18nTime('d-m-Y', $firstoccstartdate);
+		$end = $this->getI18nTime('d-m-Y', $firstoccenddate);
+		$startocc = $this->getI18nTime('G:i', $firstoccstartdate);
+		$endocc = $this->getI18nTime('G:i', $firstoccenddate);
 
 		// Based on the properties, we need to generate the recurrence pattern string.
 		// This is obviously very easy since we can simply concatenate a bunch of strings,
@@ -603,87 +872,55 @@ class Recurrence extends BaseRecurrence {
 		// To improve translation quality we create a series of default strings, in which
 		// we only have to fill in the correct variables. The base string is thus selected
 		// based on the available properties.
-		if ($term == 0x23) {
-			// Never ends
-			if ($occTimeRange) {
-				if ($occSingleDayRank) {
-					$pattern = sprintf(dgettext('zarafa', 'Occurs every %s effective %s from %s to %s.'), $type, $start, $startocc, $endocc);
-				}
-				else {
-					$pattern = sprintf(dgettext('zarafa', 'Occurs every %s %s effective %s from %s to %s.'), $everyn, $type, $start, $startocc, $endocc);
-				}
-			}
-			else {
-				if ($occSingleDayRank) {
-					$pattern = sprintf(dgettext('zarafa', 'Occurs every %s effective %s.'), $type, $start);
-				}
-				else {
-					$pattern = sprintf(dgettext('zarafa', 'Occurs every %s %s effective %s.'), $everyn, $type, $start);
-				}
-			}
-		}
-		elseif ($term == 0x22) {
-			// After a number of times
-			if ($occTimeRange) {
-				if ($occSingleDayRank) {
-					$pattern = sprintf(dngettext(
-						'zarafa',
-						'Occurs every %s effective %s for %s occurrence from %s to %s.',
-						'Occurs every %s effective %s for %s occurrences from %s to %s.',
-						$numocc
-					), $type, $start, $numocc, $startocc, $endocc);
-				}
-				else {
-					$pattern = sprintf(dngettext(
-						'zarafa',
-						'Occurs every %s %s effective %s for %s occurrence from %s to %s.',
-						'Occurs every %s %s effective %s for %s occurrences %s to %s.',
-						$numocc
-					), $everyn, $type, $start, $numocc, $startocc, $endocc);
-				}
-			}
-			else {
-				if ($occSingleDayRank) {
-					$pattern = sprintf(dngettext(
-						'zarafa',
-						'Occurs every %s effective %s for %s occurrence.',
-						'Occurs every %s effective %s for %s occurrences.',
-						$numocc
-					), $type, $start, $numocc);
-				}
-				else {
-					$pattern = sprintf(dngettext(
-						'zarafa',
-						'Occurs every %s %s effective %s for %s occurrence.',
-						'Occurs every %s %s effective %s for %s occurrences.',
-						$numocc
-					), $everyn, $type, $start, $numocc);
-				}
-			}
-		}
-		elseif ($term == 0x21) {
-			// After the given enddate
-			if ($occTimeRange) {
-				if ($occSingleDayRank) {
-					$pattern = sprintf(dgettext('zarafa', 'Occurs every %s effective %s until %s from %s to %s.'), $type, $start, $end, $startocc, $endocc);
-				}
-				else {
-					$pattern = sprintf(dgettext('zarafa', 'Occurs every %s %s effective %s until %s from %s to %s.'), $everyn, $type, $start, $end, $startocc, $endocc);
-				}
-			}
-			else {
-				if ($occSingleDayRank) {
-					$pattern = sprintf(dgettext('zarafa', 'Occurs every %s effective %s until %s.'), $type, $start, $end);
-				}
-				else {
-					$pattern = sprintf(dgettext('zarafa', 'Occurs every %s %s effective %s until %s.'), $everyn, $type, $start, $end);
-				}
-			}
+		switch ($this->recur['term']) {
+			case 0x21: // After the given enddate
+				$pattern = $this->getI18nRecTermDate(
+					$occTimeRange,
+					boolval($occSingleDayRank),
+					$type,
+					$interval,
+					$start,
+					$end,
+					$startocc,
+					$endocc
+				);
+				break;
+
+			case 0x22: // After a number of times
+				$pattern = $this->getI18nRecTermNrOcc(
+					$occTimeRange,
+					boolval($occSingleDayRank),
+					$type,
+					$interval,
+					$start,
+					$this->recur['numoccur'] ?? 0,
+					$startocc,
+					$endocc
+				);
+				break;
+
+			case 0x23: // Never ends
+				$pattern = $this->getI18nRecTermNoEnd(
+					$occTimeRange,
+					boolval($occSingleDayRank),
+					$type,
+					$interval,
+					$start,
+					$startocc,
+					$endocc
+				);
+				break;
+
+			default:
+				error_log(sprintf("Invalid recurrence pattern termination %d", $this->recur['term']));
+				break;
 		}
 
 		if (!empty($pattern)) {
 			mapi_setprops($this->message, [$this->proptags["recurring_pattern"] => $pattern]);
 		}
+
+		return $pattern;
 	}
 
 	/*
