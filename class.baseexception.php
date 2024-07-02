@@ -42,7 +42,7 @@ class BaseException extends Exception {
 	/**
 	 * Flag for allow to exception details message or not.
 	 *
-	 * @var false
+	 * @var bool
 	 */
 	public $allowToShowDetailsMessage = false;
 
@@ -55,11 +55,13 @@ class BaseException extends Exception {
 
 	/**
 	 * The notification type by which exception needs to be shown at client side.
+	 *
+	 * @var string
 	 */
 	public $notificationType = "";
 
 	/**
-	 * Construct the exception.
+	 * Constructs the exception.
 	 *
 	 * @param string    $errorMessage
 	 * @param int       $code
@@ -74,16 +76,16 @@ class BaseException extends Exception {
 	}
 
 	/**
-	 * @return string returns file name and line number combined where exception occurred
+	 * Returns file name and line number combined where exception occurred.
 	 */
 	public function getFileLine(): string {
 		return $this->getBaseFile() . ':' . $this->getLine();
 	}
 
 	/**
-	 * @return string returns message that should be sent to client to display
+	 * Returns message that should be sent to client to display.
 	 */
-	public function getDisplayMessage() {
+	public function getDisplayMessage(): string {
 		if (!is_null($this->displayMessage)) {
 			return $this->displayMessage;
 		}
@@ -92,45 +94,43 @@ class BaseException extends Exception {
 	}
 
 	/**
-	 * Function sets display message of an exception that will be sent to the client side
+	 * Sets display message of an exception that will be sent to the client side
 	 * to show it to user.
 	 *
-	 * @param string $message display message
 	 */
-	public function setDisplayMessage($message): void {
+	public function setDisplayMessage(string $message): void {
 		$this->displayMessage = $message . " (" . mapi_strerror($this->getCode()) . ")";
 	}
 
 	/**
-	 * Function sets title of an exception that will be sent to the client side
+	 * Sets the  title of an exception that will be sent to the client side
 	 * to show it to user.
 	 *
-	 * @param string $title title of an exception
 	 */
-	public function setTitle($title): void {
+	public function setTitle(string $title): void {
 		$this->title = $title;
 	}
 
 	/**
-	 * @return null|string returns title that should be sent to client to display as a message box title
+	 * Returns title that should be sent to client to display as a message box title.
 	 */
-	public function getTitle() {
+	public function getTitle(): null|string {
 		return $this->title;
 	}
 
 	/**
-	 * Function sets a flag in exception class to indicate that exception is already handled
-	 * so if it is caught again in the top level of function stack then we have to silently
-	 * ignore it.
+	 * Sets a flag in exception class to indicate that exception is already handled
+	 * so if it is caught again in the top level of function stack
+	 * then we have to silently ignore it.
 	 */
 	public function setHandled(): void {
 		$this->isHandled = true;
 	}
 
 	/**
-	 * @return string returns base path of the file where exception occurred
+	 * Returns base path of the file where exception occurred.
 	 */
-	public function getBaseFile() {
+	public function getBaseFile(): string {
 		if (is_null($this->baseFile)) {
 			$this->baseFile = basename(parent::getFile());
 		}
@@ -139,36 +139,34 @@ class BaseException extends Exception {
 	}
 
 	/**
-	 * Name of the class of exception.
+	 * Returns the name of the class of exception.
 	 *
-	 * @return get-class-of<$this, BaseException&static>
 	 */
 	public function getName(): string {
 		return get_class($this);
 	}
 
 	/**
-	 * Function sets a type of notification by which exception needs to be shown at client side.
+	 * Sets a type of notification by which exception needs to be shown at client side.
 	 *
-	 * @param string $notificationType type of notification to show an exception
 	 */
-	public function setNotificationType($notificationType) {
+	public function setNotificationType(string $notificationType): void {
 		$this->notificationType = $notificationType;
 	}
 
 	/**
-	 * @return string a type of notification to show an exception
+	 * Returns a type of notification to show an exception.
 	 */
-	public function getNotificationType() {
+	public function getNotificationType(): string {
 		return $this->notificationType;
 	}
 
 	/**
-	 * It will return details error message if allowToShowDetailsMessage is set.
+	 * Returns details of the error message if allowToShowDetailsMessage is set.
 	 *
 	 * @return string returns details error message
 	 */
-	public function getDetailsMessage() {
+	public function getDetailsMessage(): string {
 		return $this->allowToShowDetailsMessage ? $this->__toString() : '';
 	}
 
