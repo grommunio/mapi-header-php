@@ -450,6 +450,11 @@ class Meetingrequest {
 		$acceptedrecips = 0;
 		foreach ($recipients as $recipient) {
 			++$totalrecips;
+			// external recipients might not have entryid
+			if (!isset($recipient[PR_ENTRYID]) &&
+				$recipient[PR_EMAIL_ADDRESS] == $messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS]) {
+				$recipient[PR_ENTRYID] = $senderentryid;
+			}
 			if (isset($recipient[PR_ENTRYID]) && $this->compareABEntryIDs($recipient[PR_ENTRYID], $senderentryid)) {
 				$found = true;
 
