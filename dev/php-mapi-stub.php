@@ -708,9 +708,12 @@ function mapi_copyto(resource $src, array $excliid, array $exclprop, resource $d
 /**
  * @param resource $any
  * @param int $proptag
+ * @param ?string $iid
+ * @param ?int $interfaceflags
+ * @param ?int $flags
  * @return resource|bool
  */
-function mapi_openproperty(resource $any, int $proptag /* [more] */): resource|bool {
+function mapi_openproperty(resource $any, int $proptag, ?string $iid = null, ?int $interfaceflags = 0, ?int $flags = 0): resource|bool {
 	return new resource();
 }
 
