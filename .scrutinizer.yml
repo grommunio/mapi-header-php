@@ -2,7 +2,7 @@ build:
   image: default-bionic
   environment:
     php:
-      version: 8.3.4
+      version: 8.3.3
       ini:
         xdebug.mode: coverage
   nodes:
@@ -15,10 +15,6 @@ build:
           - php-scrutinizer-run
           - command: phpcs-run
             use_website_config: true
-filter:
-  excluded_paths:
-    - "vendor"
-    - "*/vendor/*"
 checks:
   php:
     code_rating: true
