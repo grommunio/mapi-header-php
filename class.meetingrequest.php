@@ -659,7 +659,18 @@ class Meetingrequest {
 		}
 
 		// Remove any previous calendar items with this goid and appt id
-		$messageprops = mapi_getprops($this->message, [PR_ENTRYID, PR_MESSAGE_CLASS, $this->proptags['goid'], $this->proptags['updatecounter'], PR_PROCESSED, PR_RCVD_REPRESENTING_ENTRYID, PR_SENDER_ENTRYID, PR_SENT_REPRESENTING_ENTRYID, PR_RECEIVED_BY_ENTRYID]);
+		$messageprops = mapi_getprops($this->message, [PR_ENTRYID, PR_PARENT_ENTRYID,
+			PR_MESSAGE_CLASS, $this->proptags['goid'], $this->proptags['updatecounter'],
+			PR_PROCESSED, PR_RCVD_REPRESENTING_ENTRYID, PR_SENDER_ENTRYID,
+			PR_SENT_REPRESENTING_ENTRYID, PR_RECEIVED_BY_ENTRYID]);
+
+		// do not process meeting requests in sent items folder
+		$sentItemsEntryid = $this->getDefaultSentmailEntryID();
+		if (isset($messageprops[PR_PARENT_ENTRYID]) &&
+			$sentItemsEntryid !== false &&
+			$sentItemsEntryid == $messageprops[PR_PARENT_ENTRYID]) {
+			return false;
+		}
 
 		$calFolder = $this->openDefaultCalendar();
 		$store = $this->store;
