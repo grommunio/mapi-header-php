@@ -2570,7 +2570,7 @@ class Meetingrequest {
 			$userStore = $this->openCustomUserStore($resourceRecipients[$i][PR_ENTRYID]);
 
 			// Open root folder
-			$userRoot = mapi_msgstore_openentry($userStore, null);
+			$userRoot = mapi_msgstore_openentry($userStore);
 
 			// Get calendar entryID
 			$userRootProps = mapi_getprops($userRoot, [PR_STORE_ENTRYID, PR_IPM_APPOINTMENT_ENTRYID, PR_FREEBUSY_ENTRYIDS]);

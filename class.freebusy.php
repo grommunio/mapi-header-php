@@ -43,7 +43,7 @@ class FreeBusy {
 		}
 
 		// Get 'LocalFreeBusy' message from FreeBusy Store
-		$root = mapi_msgstore_openentry($store, null);
+		$root = mapi_msgstore_openentry($store);
 		$storeProps = mapi_getprops($root, [PR_FREEBUSY_ENTRYIDS]);
 		$localFreeBusyEntryids = $storeProps[PR_FREEBUSY_ENTRYIDS];
 
@@ -113,7 +113,7 @@ class FreeBusy {
 			return false;
 		}
 		// Get 'LocalFreeBusy' message from FreeBusy Store
-		$root = mapi_msgstore_openentry($store, null);
+		$root = mapi_msgstore_openentry($store);
 		$storeProps = mapi_getprops($root, [PR_FREEBUSY_ENTRYIDS]);
 
 		return mapi_msgstore_openentry($store, $storeProps[PR_FREEBUSY_ENTRYIDS][self::FREEBUSYDATA_IPM_SUBTREE]);
