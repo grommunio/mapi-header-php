@@ -698,3 +698,21 @@ define('rptMonthEnd', 4);
 define('rptHjMonth', 0xA);
 define('rptHjMonthNth', 0xB);
 define('rptHjMonthEnd', 0xC);
+
+/* User privilege bits from authmgr.hpp */
+define('UP_IMAP', 1);
+define('UP_POP3', UP_IMAP);
+define('UP_SMTP', 2);
+define('UP_CHGPASSWD', 4);
+define('UP_PUBADDR', 8);
+define('UP_CHAT', 0x10);
+define('UP_VIDEO', 0x20);
+define('UP_FILES', 0x40);
+define('UP_ARCHIVE', 0x80);
+define('UP_DETAIL1', 0x100);
+define('UP_WEB', 0x200);
+define('UP_EAS', 0x400);
+define('UP_DAV', 0x800);
+
+define('UP_WANTPRIV_BASIC', 0);
+define('UP_WANTPRIV_METAONLY', 0x40000000);
