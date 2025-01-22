@@ -3577,20 +3577,11 @@ class Meetingrequest {
 	public function clearRecipientResponse($message): void {
 		$recipTable = mapi_message_getrecipienttable($message);
 		$recipsRows = mapi_table_queryallrows($recipTable, $this->recipprops);
-
-		foreach ($recipsRows as $recipient) {
-			if (($recipient[PR_RECIPIENT_FLAGS] & recipOrganizer) != recipOrganizer) {
-				// Recipient is attendee, set the trackstatus to 'Not Responded'
-				$recipient[PR_RECIPIENT_TRACKSTATUS] = olRecipientTrackStatusNone;
-			}
-			else {
-				// Recipient is organizer, this is not possible, but for safety
-				// it is best to clear the trackstatus for him as well by setting
-				// the trackstatus to 'Organized'.
-				$recipient[PR_RECIPIENT_TRACKSTATUS] = olRecipientTrackStatusNone;
-			}
-			mapi_message_modifyrecipients($message, MODRECIP_MODIFY, [$recipient]);
+		for ($i = 0, $recipsCnt = mapi_table_getrowcount($recipTable); $i < $recipsCnt; ++$i) {
+			// Clear track status for everyone in the recipients table
+			$recipsRows[$i][PR_RECIPIENT_TRACKSTATUS] = olRecipientTrackStatusNone;
 		}
+		mapi_message_modifyrecipients($message, MODRECIP_MODIFY, $recipsRows);
 	}
 
 	/**
