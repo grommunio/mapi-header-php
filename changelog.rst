@@ -1,4 +1,12 @@
-1.4 (2023-10-08)
+1.5 (2025-01-23)
+================
+* Added defines for USER_PRIVILEGE bits exposed through
+  PR_EC_ENABLED_FEATURES_L; needed by grommunio-web >= 3.9+git236 (gd301ef731)
+* Fix invited participants disappearing from meetings when their tracking
+  status is cleared.
+
+
+1.4 (2024-10-08)
 ================
 
 * Conditionally provide ``PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON``,
