@@ -677,6 +677,14 @@ define('wblSearchFolder', 0x00000001);
 define('wblSharedFolder', 0x00000002);
 define('wblHeader', 0x00000004);
 
+/* PidTagWlinkSection / PR_WLINK_SECTION values */
+define('wbsidMailFavorites', 0x00000001); // Shortcut is grouped under Mail.
+define('wbsidCalendar', 0x00000003); // Shortcut is grouped under Calendar.
+define('wbsidContacts', 0x00000004); // Shortcut is grouped under Contacts.
+define('wbsidTasks', 0x00000005); // Shortcut is grouped under Tasks.
+define('wbsidNotes', 0x00000006); // Shortcut is grouped under Notes.
+define('wbsidJournal', 0x00000007); // Shortcut is grouped under Journal.
+
 define('TZRULE_FLAG_RECUR_CURRENT_TZREG', 0x0001);
 define('TZRULE_FLAG_EFFECTIVE_TZREG', 0x0002);
 
