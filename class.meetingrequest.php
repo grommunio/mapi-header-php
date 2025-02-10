@@ -2821,25 +2821,15 @@ class Meetingrequest {
 			++$i;
 		}
 
-		/*
-		 * Set the BCC-recipients (resources) tackstatus to accepted.
-		 */
-		// Get resource recipients
-		$getResourcesRestriction = [
-			RES_PROPERTY,
-			[
-				RELOP => RELOP_EQ,	// Equals recipient type 3: Resource
-				ULPROPTAG => PR_RECIPIENT_TYPE,
-				VALUE => [PR_RECIPIENT_TYPE => MAPI_BCC],
-			],
-		];
 		$recipienttable = mapi_message_getrecipienttable($message);
-		$resourceRecipients = mapi_table_queryallrows($recipienttable, $this->recipprops, $getResourcesRestriction);
+		$resourceRecipients = mapi_table_queryallrows($recipienttable, $this->recipprops);
 		if (!empty($resourceRecipients)) {
 			// Set Tracking status of resource recipients to olResponseAccepted (3)
 			for ($i = 0, $len = count($resourceRecipients); $i < $len; ++$i) {
-				$resourceRecipients[$i][PR_RECIPIENT_TRACKSTATUS] = olRecipientTrackStatusAccepted;
-				$resourceRecipients[$i][PR_RECIPIENT_TRACKSTATUS_TIME] = time();
+				if (isset($resourceRecipients[$i][PR_RECIPIENT_TYPE]) && $resourceRecipients[$i][PR_RECIPIENT_TYPE] == MAPI_BCC) {
+					$resourceRecipients[$i][PR_RECIPIENT_TRACKSTATUS] = olRecipientTrackStatusAccepted;
+					$resourceRecipients[$i][PR_RECIPIENT_TRACKSTATUS_TIME] = time();
+				}
 			}
 			mapi_message_modifyrecipients($message, MODRECIP_MODIFY, $resourceRecipients);
 		}
