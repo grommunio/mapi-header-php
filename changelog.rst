@@ -1,3 +1,10 @@
+1.6 (2026-02-19)
+================
+* Add PidTagWlinkSection/PR_WLINK_SECTION value definitions
+* Util to convert restriction consts into strings
+* Fix invitees disappearing from meetings with resources
+
+
 1.5 (2025-01-23)
 ================
 * Added defines for USER_PRIVILEGE bits exposed through
