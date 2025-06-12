@@ -249,6 +249,11 @@ abstract class BaseRecurrence {
 				$rdata = substr($rdata, 16);
 				if ($ret["subtype"] == rptMonthNth) {
 					$data = unpack("Vnday", $rdata);
+					// Sanity check for valid values (and opportunistically try to fix)
+					if ($data["nday"] == 0xffffffff || $data["nday"] == -1)
+						$data["nday"] = 5;
+					else if ($data["nday"] < 0 || $data["nday"] > 5)
+						$data["nday"] = 0;
 					$ret["nday"] = $data["nday"];
 					$rdata = substr($rdata, 4);
 				}
@@ -283,6 +288,11 @@ abstract class BaseRecurrence {
 
 				if ($ret["subtype"] == rptMonthNth) {
 					$data = unpack("Vnday", $rdata);
+					// Sanity check for valid values (and opportunistically try to fix)
+					if ($data["nday"] == 0xffffffff || $data["nday"] == -1)
+						$data["nday"] = 5;
+					else if ($data["nday"] < 0 || $data["nday"] > 5)
+						$data["nday"] = 0;
 					$ret["nday"] = $data["nday"];
 					$rdata = substr($rdata, 4);
 				}
