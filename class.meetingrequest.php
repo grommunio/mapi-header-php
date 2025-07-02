@@ -1974,6 +1974,10 @@ class Meetingrequest {
 
 		try {
 			$mailuser = mapi_ab_openentry($ab, $ownerentryid);
+			if (!$mailuser) {
+				error_log(sprintf("Unable to open ab entry: 0x%08X", mapi_last_hresult()));
+				return;
+			}
 		}
 		catch (MAPIException $e) {
 			return;
