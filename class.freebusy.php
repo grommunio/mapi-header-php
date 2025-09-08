@@ -90,14 +90,7 @@ class FreeBusy {
 			error_log("getLocalFreeBusyMessage: unhandled MAPIException " . $e->getMessage());
 
 			return false;
-
 		}
-
-		// Fallback, should not typically reach here.
-		error_log("getLocalFreeBusyMessage: reached unexpected code path");
-
-		return false;
-
 	}
 
 	/**
