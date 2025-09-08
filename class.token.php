@@ -48,7 +48,7 @@ class Token {
 	}
 
 	/**
-	 * Indicates if the token was singned.
+	 * Indicates if the token was signed.
 	 *
 	 * @return bool
 	 */
