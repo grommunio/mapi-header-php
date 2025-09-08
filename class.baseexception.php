@@ -55,6 +55,13 @@ class BaseException extends Exception {
 	public $notificationType = "";
 
 	/**
+	 * The exception message to show at client side.
+	 *
+	 * @var null|string
+	 */
+	public $displayMessage;
+
+	/**
 	 * Constructs the exception.
 	 *
 	 * @param string    $errorMessage
@@ -62,11 +69,9 @@ class BaseException extends Exception {
 	 * @param Throwable $previous
 	 * @param string    $displayMessage
 	 */
-	public function __construct($errorMessage, $code = 0, $previous = null, /**
-	 * The exception message to show at client side.
-	 */
-		public $displayMessage = null) {
+	public function __construct($errorMessage, $code = 0, $previous = null, $displayMessage = null) {
 		parent::__construct($errorMessage, (int) $code, $previous);
+		$this->displayMessage = $displayMessage;
 	}
 
 	/**
