@@ -86,6 +86,6 @@ class Token {
 	 * @return bool
 	 */
 	public function is_expired() {
-		return $this->token_payload['exp'] < time() || $this->token_payload['iat'] < time() - 86400;
+		return ($this->token_payload['exp'] ?? 0) < time() || ($this->token_payload['iat'] ?? 0) < time() - 86400;
 	}
 }
