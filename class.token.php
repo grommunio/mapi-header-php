@@ -22,6 +22,9 @@ class Token {
 		if ($this->_raw) {
 			try {
 				$parts = explode('.', (string) $this->_raw);
+				if (count($parts) !== 3) {
+					throw new Exception('Invalid token format');
+				}
 				$th = base64_decode($parts[0]);
 				$tp = base64_decode($parts[1]);
 				$ts = base64_decode($parts[2]);
