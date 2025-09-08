@@ -128,11 +128,7 @@ class BaseException extends Exception {
 	 * Returns base path of the file where exception occurred.
 	 */
 	public function getBaseFile(): string {
-		if (is_null($this->baseFile)) {
-			$this->baseFile = basename(parent::getFile());
-		}
-
-		return $this->baseFile;
+		return $this->baseFile ??= basename(parent::getFile());
 	}
 
 	/**
