@@ -46,7 +46,7 @@ class KeyCloak {
 		$url = "https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 		$url_exp = explode('?', $url);
 		$url = $url_exp[0];
-		if ($url[-1] == '/') {
+		if (str_ends_with($url, '/')) {
 			$url = substr($url, 0, -1);
 		}
 		$this->redirect_url = $url;
