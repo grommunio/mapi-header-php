@@ -312,7 +312,7 @@ class KeyCloak {
 	protected function http_curl_request($method, $domain, $headers = [], $data = '') {
 		$request = curl_init();
 		curl_setopt($request, CURLOPT_URL, $this->realm_url . $domain);
-		if (strcmp(strtoupper((string) $method), 'POST') == 0) {
+		if (strcasecmp($method, 'POST') === 0) {
 			curl_setopt($request, CURLOPT_POST, true);
 			curl_setopt($request, CURLOPT_POSTFIELDS, $data);
 			array_push($headers, 'Content-Length: ' . strlen((string) $data));
