@@ -38,7 +38,7 @@ class KeyCloak {
 	 * @param mixed $keycloak_config
 	 */
 	public function __construct($keycloak_config) {
-		if (gettype($keycloak_config) === 'string') {
+		if (is_string($keycloak_config)) {
 			$keycloak_config = json_decode($keycloak_config);
 		}
 
@@ -198,7 +198,7 @@ class KeyCloak {
 			return false;
 		}
 		$this->grant = $response['body'];
-		if (gettype($this->grant) === 'string') {
+		if (is_string($this->grant)) {
 			$this->grant = json_decode($this->grant, true);
 		}
 		else {
