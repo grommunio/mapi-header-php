@@ -43,7 +43,7 @@ function get_mapi_error_name($errcode = null) {
 		$errcode = mapi_last_hresult();
 	}
 
-	if (strcasecmp(substr($errcode, 0, 2), '0x') === 0) {
+	if (str_starts_with((string) $errcode, '0x') || str_starts_with((string) $errcode, '0X')) {
 		$errcode = hexdec($errcode);
 	}
 
