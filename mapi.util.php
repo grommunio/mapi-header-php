@@ -121,7 +121,7 @@ function getPropIdsFromStrings($store, $mapping) {
 			// have we used this guid before?
 			if (!defined($split[1])) {
 				if (!array_key_exists($split[1], $guids)) {
-					$guids[$split[1]] = makeguid($split[1]);
+					$guids[$split[1]] = makeGuid($split[1]);
 				}
 				$guid = $guids[$split[1]];
 			}
