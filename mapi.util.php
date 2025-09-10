@@ -59,11 +59,11 @@ function get_mapi_error_name($errcode = null) {
 			if ($errcode == (int) $value) {
 				// Check that we have an actual MAPI error or warning definition
 				$prefix = substr($key, 0, 7);
-				if ($prefix == "MAPI_E_" || $prefix == "MAPI_W_") {
+				if ($prefix === "MAPI_E_" || $prefix === "MAPI_W_") {
 					return $key;
 				}
 				$prefix = substr($key, 0, 2);
-				if ($prefix == "ec") {
+				if ($prefix === "ec") {
 					return $key;
 				}
 			}
