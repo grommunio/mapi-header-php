@@ -265,12 +265,12 @@ function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequest
 			foreach ($occurrences as $occurrence) {
 				// The occurrence takes all properties from the main row, but overrides some properties (like start and end obviously)
 				$item = $occurrence + $row;
-				array_push($items, $item);
+				$items[] = $item;
 			}
 		}
 		else {
 			// Normal item, it matched the search criteria and therefore overlaps the interval <$viewstart, $viewend>
-			array_push($items, $row);
+			$items[] = $row;
 		}
 
 		$result = array_merge($result, $items);
