@@ -360,10 +360,10 @@ function getUidFromGoid($goid) {
  * @return string the symbolic name of the property tag
  */
 function prop2Str($property) {
-	if (is_integer($property)) {
+	if (is_int($property)) {
 		// Retrieve constants categories, zcore provides them in 'Core'
 		foreach (get_defined_constants(true)['Core'] as $key => $value) {
-			if ($property == $value && str_starts_with($key, 'PR_')) {
+			if ($property === $value && str_starts_with($key, 'PR_')) {
 				return $key;
 			}
 		}
