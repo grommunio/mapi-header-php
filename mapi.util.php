@@ -375,6 +375,26 @@ function prop2Str($property) {
 }
 
 /**
+ * Converts RELOP constant to human readable string.
+ *
+ * @param int $relOp
+ *
+ * @return string
+ */
+function relOpToString($relOp) {
+	return match ($relOp) {
+		RELOP_LT => "RELOP_LT",
+		RELOP_LE => "RELOP_LE",
+		RELOP_GT => "RELOP_GT",
+		RELOP_GE => "RELOP_GE",
+		RELOP_EQ => "RELOP_EQ",
+		RELOP_NE => "RELOP_NE",
+		RELOP_RE => "RELOP_RE",
+		default => "",
+	};
+}
+
+/**
  * Converts all constants of restriction into a human readable strings.
  *
  * @param mixed $restriction
@@ -444,31 +464,7 @@ function simplifyRestriction($restriction) {
 
 			unset($restriction[1]);
 
-			// relop flags
-			$relOpFlags = "";
-			if ($relOp == RELOP_LT) {
-				$relOpFlags = "RELOP_LT";
-			}
-			elseif ($relOp == RELOP_LE) {
-				$relOpFlags = "RELOP_LE";
-			}
-			elseif ($relOp == RELOP_GT) {
-				$relOpFlags = "RELOP_GT";
-			}
-			elseif ($relOp == RELOP_GE) {
-				$relOpFlags = "RELOP_GE";
-			}
-			elseif ($relOp == RELOP_EQ) {
-				$relOpFlags = "RELOP_EQ";
-			}
-			elseif ($relOp == RELOP_NE) {
-				$relOpFlags = "RELOP_NE";
-			}
-			elseif ($relOp == RELOP_RE) {
-				$relOpFlags = "RELOP_RE";
-			}
-
-			$restriction[1]["RELOP"] = $relOpFlags;
+			$restriction[1]["RELOP"] = relOpToString($relOp);
 			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
 			$restriction[1]["VALUE"] = is_array($propValue) ? $propValue[$propTag] : $propValue;
 			break;
@@ -553,32 +549,8 @@ function simplifyRestriction($restriction) {
 
 			unset($restriction[1]);
 
-			// relop flags
-			$relOpFlags = "";
-			if ($relOp == RELOP_LT) {
-				$relOpFlags = "RELOP_LT";
-			}
-			elseif ($relOp == RELOP_LE) {
-				$relOpFlags = "RELOP_LE";
-			}
-			elseif ($relOp == RELOP_GT) {
-				$relOpFlags = "RELOP_GT";
-			}
-			elseif ($relOp == RELOP_GE) {
-				$relOpFlags = "RELOP_GE";
-			}
-			elseif ($relOp == RELOP_EQ) {
-				$relOpFlags = "RELOP_EQ";
-			}
-			elseif ($relOp == RELOP_NE) {
-				$relOpFlags = "RELOP_NE";
-			}
-			elseif ($relOp == RELOP_RE) {
-				$relOpFlags = "RELOP_RE";
-			}
-
 			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
-			$restriction[1]["RELOP"] = $relOpFlags;
+			$restriction[1]["RELOP"] = relOpToString($relOp);
 			$restriction[1]["CB"] = $propValue;
 			break;
 
