@@ -295,12 +295,8 @@ function compareEntryIds($entryId1, $entryId2) {
 		return false;
 	}
 
-	if ($entryId1 === $entryId2) {
-		// if normal comparison succeeds then we can directly say that entryids are same
-		return true;
-	}
-
-	return false;
+	// if normal comparison succeeds then we can directly say that entryids are same
+	return $entryId1 === $entryId2;
 }
 
 /**
