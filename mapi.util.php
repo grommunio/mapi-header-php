@@ -519,7 +519,7 @@ function simplifyRestriction($restriction) {
 
 			unset($restriction[1]);
 
-			$restriction[1]["ULPROPTAG1"] = is_string($propTag1) ? $proptag1 : prop2Str($proptag1);
+			$restriction[1]["ULPROPTAG1"] = is_string($propTag1) ? $propTag1 : prop2Str($propTag1);
 			$restriction[1]["ULPROPTAG2"] = is_string($propTag2) ? $propTag2 : prop2Str($propTag2);
 			break;
 
