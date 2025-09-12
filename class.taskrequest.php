@@ -133,7 +133,7 @@ class TaskRequest {
 		$properties["task_goid"] = "PT_BINARY:PSETID_Common:0x8519";
 		$properties["complete"] = "PT_BOOLEAN:PSETID_Common:" . PidLidTaskComplete;
 		$properties["task_assigned_time"] = "PT_SYSTIME:PSETID_Task:0x8115";
-		$properties["taskfcreator"] = "PT_BOOLEAN:PSETID_Task:0x0x811e";
+		$properties["taskfcreator"] = "PT_BOOLEAN:PSETID_Task:0x811e";
 		$properties["tasklastuser"] = "PT_STRING8:PSETID_Task:0x8122";
 		$properties["tasklastdelegate"] = "PT_STRING8:PSETID_Task:0x8125";
 		$properties["taskaccepted"] = "PT_BOOLEAN:PSETID_Task:0x8108";
