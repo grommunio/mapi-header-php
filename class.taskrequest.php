@@ -139,8 +139,6 @@ class TaskRequest {
 		$properties["taskaccepted"] = "PT_BOOLEAN:PSETID_Task:0x8108";
 		$properties["task_acceptance_state"] = "PT_LONG:PSETID_Task:0x812a";
 		$properties["ownership"] = "PT_LONG:PSETID_Task:0x8129";
-
-		$properties["complete"] = "PT_BOOLEAN:PSETID_Task:" . PidLidTaskComplete;
 		$properties["datecompleted"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
 		$properties["recurring"] = "PT_BOOLEAN:PSETID_Task:0x8126";
 		$properties["startdate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskStartDate;
