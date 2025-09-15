@@ -498,7 +498,7 @@ abstract class BaseRecurrence {
 				// Notes or Attachments modified: no data here (only in attachment)
 			}
 
-			array_push($exc_changed_details, $item);
+			$exc_changed_details[] = $item;
 		}
 
 		/**
@@ -1015,7 +1015,7 @@ abstract class BaseRecurrence {
 		$items = $deleted_items;
 
 		foreach ($changed_items as $changed_item) {
-			array_push($items, $this->dayStartOf($changed_item["basedate"]));
+			$items[] = $this->dayStartOf($changed_item["basedate"]);
 		}
 
 		sort($items);
@@ -1726,7 +1726,7 @@ abstract class BaseRecurrence {
 				}
 
 				// OK, add to items.
-				array_push($items, $this->getExceptionProperties($exception));
+				$items[] = $this->getExceptionProperties($exception);
 				if ($limit && (count($items) == $limit)) {
 					break;
 				}
