@@ -171,11 +171,11 @@ class Recurrence extends BaseRecurrence {
 			$changed_item["end"] = $this->fromGMT($this->tz, $props[$this->proptags["duedate"]]);
 
 			// Add the changed occurrence to the list
-			array_push($this->recur["changed_occurrences"], $changed_item);
+			$this->recur["changed_occurrences"][] = $changed_item;
 		}
 		else {
 			// Delete the occurrence by placing it in the deleted occurrences list
-			array_push($this->recur["deleted_occurrences"], $baseday);
+			$this->recur["deleted_occurrences"][] = $baseday;
 		}
 
 		// Turn on hideattachments, because the attachments in this item are the exceptions
@@ -1153,7 +1153,7 @@ class Recurrence extends BaseRecurrence {
 				continue;
 			}
 
-			array_push($items, $this->getExceptionProperties($exception));
+			$items[] = $this->getExceptionProperties($exception);
 			if (count($items) == $limit) {
 				break;
 			}
