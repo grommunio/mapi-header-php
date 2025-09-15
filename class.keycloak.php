@@ -187,7 +187,7 @@ class KeyCloak {
 			$params['client_id'] = $this->client_id;
 		}
 		else {
-			array_push($headers, 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret));
+			$headers[] = 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret);
 		}
 		$params['scope'] = 'openid';
 		$response = $this->http_curl_request('POST', '/protocol/openid-connect/token', $headers, http_build_query($params));
@@ -241,7 +241,7 @@ class KeyCloak {
 				$params['client_id'] = $this->client_id;
 			}
 			else {
-				array_push($headers, 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret));
+				$headers[] = 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret);
 			}
 			$response = $this->http_curl_request('POST', $path, $headers, http_build_query($params));
 
@@ -315,7 +315,7 @@ class KeyCloak {
 		if (strcasecmp($method, 'POST') === 0) {
 			curl_setopt($request, CURLOPT_POST, true);
 			curl_setopt($request, CURLOPT_POSTFIELDS, $data);
-			array_push($headers, 'Content-Length: ' . strlen((string) $data));
+			$headers[] = 'Content-Length: ' . strlen((string) $data);
 		}
 
 		curl_setopt($request, CURLOPT_HTTPHEADER, $headers);
