@@ -8,10 +8,10 @@
  */
 
 class Token {
-	public $token_header;
-	public $token_payload;
-	public $token_signature;
-	public $signed;
+	public ?array $token_header = null;
+	public ?array $token_payload = null;
+	public string|false|null $token_signature = null;
+	public ?string $signed = null;
 
 	/**
 	 * Constructor loading a token string received from Keycloak.
@@ -43,49 +43,37 @@ class Token {
 
 	/**
 	 * Returns the signature of the token.
-	 *
-	 * @return string
 	 */
-	public function get_signature() {
+	public function get_signature(): string|false|null {
 		return $this->token_signature;
 	}
 
 	/**
 	 * Indicates if the token was signed.
-	 *
-	 * @return bool
 	 */
-	public function get_signed() {
+	public function get_signed(): ?string {
 		return $this->signed;
 	}
 
 	/**
 	 * Returns raw payload.
-	 *
-	 * @return string
 	 */
-	public function get_payload() {
+	public function get_payload(): mixed {
 		return $this->_raw;
 	}
 
 	/**
 	 * Returns the value of a claim if it's defined in the payload.
 	 * Otherwise returns an empty string.
-	 *
-	 * @param string $claim
-	 *
-	 * @return string
 	 */
-	public function get_claims($claim) {
+	public function get_claims(string $claim): mixed {
 		return $this->token_payload[$claim] ?? '';
 	}
 
 	/**
 	 * Checks if a token is expired comparing to the current time.
-	 *
-	 * @return bool
 	 */
-	public function is_expired() {
+	public function is_expired(): bool {
 		return ($this->token_payload['exp'] ?? 0) < time() || ($this->token_payload['iat'] ?? 0) < time() - SECONDS_PER_DAY;
 	}
 }
