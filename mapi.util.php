@@ -7,6 +7,7 @@
  */
 
 define('NOERROR', 0);
+define('SECONDS_PER_DAY', 86400);
 
 // Load all mapi defs
 mapi_load_mapidefs(1);

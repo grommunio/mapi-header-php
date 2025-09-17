@@ -1878,7 +1878,7 @@ abstract class BaseRecurrence {
 
 							$nowtime = $this->gmtime($daynow);
 							while (($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) == 0) {
-								$daynow -= 86400;
+								$daynow -= SECONDS_PER_DAY;
 								$nowtime = $this->gmtime($daynow);
 							}
 						}
