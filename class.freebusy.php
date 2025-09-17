@@ -26,11 +26,9 @@ class FreeBusy {
 	/**
 	 * Function will return resource of the local freebusy message of the user's store.
 	 *
-	 * @param mixed $store (optional) user's store
-	 *
-	 * @return bool|resource local freebusy message, otherwise false if message not found
+	 * @return resource|false local freebusy message, otherwise false if message not found
 	 */
-	public static function getLocalFreeBusyMessage($store = false) {
+	public static function getLocalFreeBusyMessage(mixed $store = false): mixed {
 		if (!$store) {
 			error_log("getLocalFreeBusyMessage: store not available");
 
@@ -54,7 +52,7 @@ class FreeBusy {
 		catch (MAPIException $e) {
 			// Either user store have malformed entryid in PR_FREEBUSY_ENTRYIDS or
 			// No message found of given entryid in 'Freebusy Data' folder.
-			if ($e->getCode() == MAPI_E_NOT_FOUND || $e->getCode() == MAPI_E_INVALID_ENTRYID) {
+			if ($e->getCode() === MAPI_E_NOT_FOUND || $e->getCode() === MAPI_E_INVALID_ENTRYID) {
 				$freeBusyFolder = mapi_msgstore_openentry($store, $localFreeBusyEntryids[self::FREEBUSYDATA_IPM_SUBTREE]);
 				$table = mapi_folder_getcontentstable($freeBusyFolder);
 				mapi_table_restrict(
@@ -96,11 +94,9 @@ class FreeBusy {
 	/**
 	 * Function will return resource of the freebusy folder of the user's store.
 	 *
-	 * @param mixed $store (optional) user's store
-	 *
-	 * @return bool|resource freebusy folder
+	 * @return resource|false freebusy folder
 	 */
-	public static function getLocalFreeBusyFolder($store = false) {
+	public static function getLocalFreeBusyFolder(mixed $store = false): mixed {
 		if (!$store) {
 			error_log("getLocalFreeBusyFolder: store not available");
 
