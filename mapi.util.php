@@ -35,11 +35,9 @@ function makeGuid($guid): string {
 /**
  * Function to get a human readable string from a MAPI error code.
  *
- * @param mixed $errcode the MAPI error code, if not given, we use mapi_last_hresult
- *
  * @return string The defined name for the MAPI error code
  */
-function get_mapi_error_name($errcode = null) {
+function get_mapi_error_name(mixed $errcode = null): string {
 	if ($errcode === null) {
 		$errcode = mapi_last_hresult();
 	}
@@ -85,12 +83,9 @@ function get_mapi_error_name($errcode = null) {
  * or a string with format "PT_TYPE:{GUID}:StringId" or "PT_TYPE:{GUID}:0xXXXX" for named
  * properties.
  *
- * @param mixed $store
- * @param mixed $mapping
- *
  * @return array
  */
-function getPropIdsFromStrings($store, $mapping) {
+function getPropIdsFromStrings(mixed $store, array $mapping): array {
 	$props = [];
 
 	$ids = ["name" => [], "id" => [], "guid" => [], "type" => []]; // this array stores all the information needed to retrieve a named property
@@ -163,12 +158,9 @@ function getPropIdsFromStrings($store, $mapping) {
  * and returns error for that particular property, probable errors
  * that can be returned as value can be MAPI_E_NOT_FOUND, MAPI_E_NOT_ENOUGH_MEMORY.
  *
- * @param int   $property  Property to check for error
- * @param array $propArray An array of properties
- *
- * @return bool|mixed Gives back false when there is no error, if there is, gives the error
+ * @return false|mixed Gives back false when there is no error, if there is, gives the error
  */
-function propIsError($property, $propArray) {
+function propIsError(int $property, array $propArray): mixed {
 	if (array_key_exists(mapi_prop_tag(PT_ERROR, mapi_prop_id($property)), $propArray)) {
 		return $propArray[mapi_prop_tag(PT_ERROR, mapi_prop_id($property))];
 	}
@@ -286,12 +278,9 @@ function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequest
  * Compares two entryIds. It is possible to have two different entryIds that should match as they
  * represent the same object (in multiserver environments).
  *
- * @param mixed $entryId1 EntryID
- * @param mixed $entryId2 EntryID
- *
  * @return bool Result of the comparison
  */
-function compareEntryIds($entryId1, $entryId2) {
+function compareEntryIds(mixed $entryId1, mixed $entryId2): bool {
 	if (!is_string($entryId1) || !is_string($entryId2)) {
 		return false;
 	}
@@ -303,11 +292,9 @@ function compareEntryIds($entryId1, $entryId2) {
 /**
  * Creates a goid from an ical uuid.
  *
- * @param string $uid
- *
  * @return string binary string representation of goid
  */
-function getGoidFromUid($uid) {
+function getGoidFromUid(string $uid): string {
 	return hex2bin("040000008200E00074C5B7101A82E0080000000000000000000000000000000000000000" .
 				bin2hex(pack("V", 12 + strlen($uid)) . "vCal-Uid" . pack("V", 1) . $uid));
 }
@@ -315,11 +302,9 @@ function getGoidFromUid($uid) {
 /**
  * Returns zero terminated goid. It is required for backwards compatibility.
  *
- * @param mixed $uid
- *
  * @return string an OL compatible GlobalObjectID
  */
-function getGoidFromUidZero($uid) {
+function getGoidFromUidZero(string $uid): string {
 	if (strlen((string) $uid) <= 64) {
 		return hex2bin("040000008200E00074C5B7101A82E0080000000000000000000000000000000000000000" .
 			bin2hex(pack("V", 13 + strlen((string) $uid)) . "vCal-Uid" . pack("V", 1) . $uid) . "00");
@@ -331,11 +316,9 @@ function getGoidFromUidZero($uid) {
 /**
  * Creates an ical uuid from a goid.
  *
- * @param string $goid
- *
  * @return null|string ical uuid
  */
-function getUidFromGoid($goid) {
+function getUidFromGoid(string $goid): ?string {
 	// check if "vCal-Uid" is somewhere in outlookid case-insensitive
 	$uid = stristr($goid, "vCal-Uid");
 	if ($uid !== false) {
@@ -356,11 +339,9 @@ function getUidFromGoid($goid) {
  *
  * @example prop2Str(0x0037001e) => 'PR_SUBJECT'
  *
- * @param mixed $property
- *
  * @return string the symbolic name of the property tag
  */
-function prop2Str($property) {
+function prop2Str(mixed $property): string {
 	if (is_int($property)) {
 		// Retrieve constants categories, zcore provides them in 'Core'
 		foreach (get_defined_constants(true)['Core'] as $key => $value) {
