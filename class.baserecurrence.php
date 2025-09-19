@@ -1705,14 +1705,14 @@ abstract class BaseRecurrence {
 
 		// Optimization: remindersonly and default reminder is off; since only exceptions with reminder set will match, just look which
 		// exceptions are in range and have a reminder set
-		if ($remindersonly && (!isset($this->messageprops[$this->proptags["reminder"]]) || $this->messageprops[$this->proptags["reminder"]] == false)) {
+		if ($remindersonly && (!isset($this->messageprops[$this->proptags["reminder"]]) || $this->messageprops[$this->proptags["reminder"]] === false)) {
 			// Sort exceptions by start time
 			uasort($this->recur["changed_occurrences"], $this->sortExceptionStart(...));
 
 			// Loop through all changed exceptions
 			foreach ($this->recur["changed_occurrences"] as $exception) {
 				// Check reminder set
-				if (!isset($exception["reminder"]) || $exception["reminder"] == false) {
+				if (!isset($exception["reminder"]) || $exception["reminder"] === false) {
 					continue;
 				}
 
