@@ -1126,7 +1126,7 @@ class Recurrence extends BaseRecurrence {
 		$newitem["basedate"] = $basedate;
 
 		// If reminderonly is set, only add reminders
-		if ($reminderonly && (!isset($newitem[$this->proptags["reminder"]]) || $newitem[$this->proptags["reminder"]] == false)) {
+		if ($reminderonly && (!isset($newitem[$this->proptags["reminder"]]) || $newitem[$this->proptags["reminder"]] === false)) {
 			return;
 		}
 
