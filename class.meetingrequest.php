@@ -376,7 +376,7 @@ class Meetingrequest {
 		$calendarItemProps = mapi_getprops($calendarItem, [$this->proptags['recurring'], PR_STORE_ENTRYID, PR_PARENT_ENTRYID, PR_ENTRYID, $this->proptags['updatecounter']]);
 
 		// check if meeting response is already processed
-		if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] == true) {
+		if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] === true) {
 			// meeting is already processed
 			return;
 		}
@@ -698,8 +698,8 @@ class Meetingrequest {
 		 *		recipient's calendar
 		 *	2) after this every subsequent request to open meeting request will not do any processing
 		 */
-		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && $userAction == false) {
-			if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] == true) {
+		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && $userAction === false) {
+			if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] === true) {
 				// if meeting request is already processed then don't do anything
 				return false;
 			}
@@ -708,7 +708,7 @@ class Meetingrequest {
 			$calendarItem = $this->getCorrespondentCalendarItem();
 			if ($calendarItem) {
 				$calendarItemProps = mapi_getprops($calendarItem, [PR_PROCESSED]);
-				if (isset($calendarItemProps[PR_PROCESSED]) && $calendarItemProps[PR_PROCESSED] == true) {
+				if (isset($calendarItemProps[PR_PROCESSED]) && $calendarItemProps[PR_PROCESSED] === true) {
 					// mark meeting-request mail as processed as well
 					mapi_setprops($this->message, [PR_PROCESSED => true]);
 					mapi_savechanges($this->message);
@@ -784,7 +784,7 @@ class Meetingrequest {
 		 */
 		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS])) {
 			// This meeting request item is recurring, so find all occurrences and saves them all as exceptions to this meeting request item.
-			if (isset($messageprops[$this->proptags['recurring']]) && $messageprops[$this->proptags['recurring']] == true && $basedate == false) {
+			if (isset($messageprops[$this->proptags['recurring']]) && $messageprops[$this->proptags['recurring']] === true && $basedate === false) {
 				$calendarItem = false;
 
 				// Find main recurring item based on GlobalID (0x3)
@@ -802,7 +802,7 @@ class Meetingrequest {
 				}
 				else {
 					// we have found the main recurring item, check if this meeting request is already processed
-					if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] == true) {
+					if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] === true) {
 						// only set required properties, other properties are already copied when processing this meeting request
 						// for the first time
 						$processed = true;
