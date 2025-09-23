@@ -765,7 +765,7 @@ class Meetingrequest {
 	 */
 	public function accept(bool $tentative, bool $sendresponse, bool $move, array $proposeNewTimeProps, $body, bool $userAction, $store, $calFolder, $basedate = false) {
 		$messageprops = mapi_getprops($this->message);
-		$isDelegate = isset($messageprops[PR_RCVD_REPRESENTING_NAME]);
+		$isDelegate = $this->isMessageFromDelegate($messageprops);
 		$entryid = '';
 
 		if ($sendresponse) {
@@ -3997,5 +3997,16 @@ class Meetingrequest {
 			}
 			mapi_savechanges($message);
 		}
+	}
+
+	/**
+	 * Check if a message is from a delegate (received representing someone else).
+	 *
+	 * @param array $messageprops Message properties
+	 *
+	 * @return bool True if message is from delegate
+	 */
+	private function isMessageFromDelegate(array $messageprops): bool {
+		return isset($messageprops[PR_RCVD_REPRESENTING_NAME]);
 	}
 }
