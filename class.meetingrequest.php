@@ -840,18 +840,7 @@ class Meetingrequest {
 				// when we are automatically processing the meeting request set responsestatus to olResponseNotResponded
 				$props[$this->proptags['responsestatus']] = $userAction ? ($tentative ? olResponseTentative : olResponseAccepted) : olResponseNotResponded;
 
-				if (isset($props[$this->proptags['intendedbusystatus']])) {
-					if ($tentative && $props[$this->proptags['intendedbusystatus']] !== fbFree) {
-						$props[$this->proptags['busystatus']] = fbTentative;
-					}
-					else {
-						$props[$this->proptags['busystatus']] = $props[$this->proptags['intendedbusystatus']];
-					}
-					// we already have intendedbusystatus value in $props so no need to copy it
-				}
-				else {
-					$props[$this->proptags['busystatus']] = $tentative ? fbTentative : fbBusy;
-				}
+				$props[$this->proptags['busystatus']] = $this->calculateBusyStatus($tentative, $props);
 
 				if ($userAction) {
 					$addrInfo = $this->getOwnerAddress($this->store);
@@ -4008,5 +3997,25 @@ class Meetingrequest {
 	 */
 	private function isMessageFromDelegate(array $messageprops): bool {
 		return isset($messageprops[PR_RCVD_REPRESENTING_NAME]);
+	}
+
+	/**
+	 * Calculate the busy status for an accepted meeting based on tentative flag and intended status.
+	 *
+	 * @param bool  $tentative          Whether acceptance is tentative
+	 * @param array $props              Message properties containing intended busy status
+	 *
+	 * @return int The calculated busy status
+	 */
+	private function calculateBusyStatus(bool $tentative, array $props): int {
+		if (isset($props[$this->proptags['intendedbusystatus']])) {
+			if ($tentative && $props[$this->proptags['intendedbusystatus']] !== fbFree) {
+				return fbTentative;
+			}
+
+			return $props[$this->proptags['intendedbusystatus']];
+		}
+
+		return $tentative ? fbTentative : fbBusy;
 	}
 }
