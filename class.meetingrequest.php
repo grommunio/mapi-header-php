@@ -843,14 +843,7 @@ class Meetingrequest {
 				$props[$this->proptags['busystatus']] = $this->calculateBusyStatus($tentative, $props);
 
 				if ($userAction) {
-					$addrInfo = $this->getOwnerAddress($this->store);
-
-					// if user has responded then set replytime and name
-					$props[$this->proptags['replytime']] = time();
-					if (!empty($addrInfo)) {
-						// @FIXME conditionally set this property only for delegation case
-						$props[$this->proptags['apptreplyname']] = $addrInfo[0];
-					}
+					$this->setReplyTimeAndName($props);
 				}
 
 				mapi_setprops($calendarItem, $props);
@@ -4017,5 +4010,21 @@ class Meetingrequest {
 		}
 
 		return $tentative ? fbTentative : fbBusy;
+	}
+
+	/**
+	 * Set reply time and name properties when user responds to a meeting.
+	 *
+	 * @param array $props Properties array to update (passed by reference)
+	 */
+	private function setReplyTimeAndName(array &$props): void {
+		$addrInfo = $this->getOwnerAddress($this->store);
+
+		// if user has responded then set replytime and name
+		$props[$this->proptags['replytime']] = time();
+		if (!empty($addrInfo)) {
+			// @FIXME conditionally set this property only for delegation case
+			$props[$this->proptags['apptreplyname']] = $addrInfo[0];
+		}
 	}
 }
