@@ -817,14 +817,8 @@ class Meetingrequest {
 					$props = mapi_getprops($this->message);
 					// reset the PidLidMeetingType to Unspecified for outlook display the item
 					$props[$this->proptags['meetingtype']] = mtgEmpty;
-					/*
-					 * the client which has sent this meeting request can generate wrong flagdueby
-					 * time (mainly OL), so regenerate that property so we will always show reminder
-					 * on right time
-					 */
-					if (isset($props[$this->proptags['reminderminutes']])) {
-						$props[$this->proptags['flagdueby']] = $props[$this->proptags['startdate']] - ($props[$this->proptags['reminderminutes']] * 60);
-					}
+					// Correct reminder time (some clients like OL can generate wrong flagdueby time)
+					$this->correctReminderTime($props);
 				}
 				else {
 					// only get required properties so we will not overwrite existing updated properties from calendar
@@ -4025,6 +4019,18 @@ class Meetingrequest {
 		if (!empty($addrInfo)) {
 			// @FIXME conditionally set this property only for delegation case
 			$props[$this->proptags['apptreplyname']] = $addrInfo[0];
+		}
+	}
+
+	/**
+	 * Correct the flagdueby (reminder time) property.
+	 * Some clients (mainly OL) can generate wrong flagdueby time, so regenerate it.
+	 *
+	 * @param array $props Properties array to update (passed by reference)
+	 */
+	private function correctReminderTime(array &$props): void {
+		if (isset($props[$this->proptags['reminderminutes']])) {
+			$props[$this->proptags['flagdueby']] = $props[$this->proptags['startdate']] - ($props[$this->proptags['reminderminutes']] * 60);
 		}
 	}
 }
