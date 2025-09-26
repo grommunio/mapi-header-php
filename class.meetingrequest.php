@@ -965,17 +965,9 @@ class Meetingrequest {
 							$calItemProps[$this->proptags['flagdueby']] = $messageprops[$this->proptags['startdate']] - ($messageprops[$this->proptags['reminderminutes']] * 60);
 						}
 
+						$calItemProps[$this->proptags['busystatus']] = $this->calculateBusyStatus($tentative, $messageprops);
 						if (isset($messageprops[$this->proptags['intendedbusystatus']])) {
-							if ($tentative && $messageprops[$this->proptags['intendedbusystatus']] !== fbFree) {
-								$calItemProps[$this->proptags['busystatus']] = fbTentative;
-							}
-							else {
-								$calItemProps[$this->proptags['busystatus']] = $messageprops[$this->proptags['intendedbusystatus']];
-							}
 							$calItemProps[$this->proptags['intendedbusystatus']] = $messageprops[$this->proptags['intendedbusystatus']];
-						}
-						else {
-							$calItemProps[$this->proptags['busystatus']] = $tentative ? fbTentative : fbBusy;
 						}
 
 						// when we are automatically processing the meeting request set responsestatus to olResponseNotResponded
