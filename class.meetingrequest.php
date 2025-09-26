@@ -1061,18 +1061,7 @@ class Meetingrequest {
 						// when we are automatically processing the meeting request set responsestatus to olResponseNotResponded
 						$props[$this->proptags['responsestatus']] = $userAction ? ($tentative ? olResponseTentative : olResponseAccepted) : olResponseNotResponded;
 
-						if (isset($props[$this->proptags['intendedbusystatus']])) {
-							if ($tentative && $props[$this->proptags['intendedbusystatus']] !== fbFree) {
-								$props[$this->proptags['busystatus']] = fbTentative;
-							}
-							else {
-								$props[$this->proptags['busystatus']] = $props[$this->proptags['intendedbusystatus']];
-							}
-							// we already have intendedbusystatus value in $props so no need to copy it
-						}
-						else {
-							$props[$this->proptags['busystatus']] = $tentative ? fbTentative : fbBusy;
-						}
+						$props[$this->proptags['busystatus']] = $this->calculateBusyStatus($tentative, $props);
 
 						if ($userAction) {
 							$addrInfo = $this->getOwnerAddress($this->store);
