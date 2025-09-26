@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
@@ -81,21 +82,6 @@ class TaskRequest {
 	private $props;
 
 	/**
-	 * @var resource
-	 */
-	private $store;
-
-	/**
-	 * @var resource
-	 */
-	private $message;
-
-	/**
-	 * @var resource
-	 */
-	private $session;
-
-	/**
 	 * @var string
 	 */
 	private $taskCommentsInfo;
@@ -132,10 +118,7 @@ class TaskRequest {
 	 * @param resource $message MAPI Message to which the task request refers (can be an email or a task)
 	 * @param resource $session MAPI Session which is used to open tasks folders for delegated task requests or responses
 	 */
-	public function __construct($store, $message, $session) {
-		$this->store = $store;
-		$this->message = $message;
-		$this->session = $session;
+	public function __construct(private $store, private $message, private $session) {
 		$this->taskCommentsInfo = '';
 
 		$properties = [];
@@ -171,7 +154,7 @@ class TaskRequest {
 		$properties["mileage"] = "PT_STRING8:PSETID_Common:0x8534";
 		$properties["billinginformation"] = "PT_STRING8:PSETID_Common:0x8535";
 
-		$this->props = getPropIdsFromStrings($store, $properties);
+		$this->props = getPropIdsFromStrings($this->store, $properties);
 	}
 
 	// General functions
@@ -187,7 +170,7 @@ class TaskRequest {
 	public function isTaskRequest($messageClass = false) {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
-			$messageClass = isset($props[PR_MESSAGE_CLASS]) ? $props[PR_MESSAGE_CLASS] : false;
+			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
 		if ($messageClass !== false && $messageClass === "IPM.TaskRequest") {
@@ -207,10 +190,10 @@ class TaskRequest {
 	public function isTaskRequestResponse($messageClass = false) {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
-			$messageClass = isset($props[PR_MESSAGE_CLASS]) ? $props[PR_MESSAGE_CLASS] : false;
+			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
-		if ($messageClass !== false && strpos($messageClass, "IPM.TaskRequest.") === 0) {
+		if ($messageClass !== false && str_starts_with((string) $messageClass, "IPM.TaskRequest.")) {
 			return true;
 		}
 
@@ -225,7 +208,7 @@ class TaskRequest {
 	 * @return bool true if this is an incoming task request/response else false
 	 */
 	public function isReceivedItem($props) {
-		return isset($props[PR_MESSAGE_TO_ME]) ? $props[PR_MESSAGE_TO_ME] : false;
+		return $props[PR_MESSAGE_TO_ME] ?? false;
 	}
 
 	/**
@@ -1023,7 +1006,7 @@ class TaskRequest {
 	public function createTGOID(): string {
 		$goid = "";
 		for ($i = 0; $i < 16; ++$i) {
-			$goid .= chr(rand(0, 255));
+			$goid .= chr(random_int(0, 255));
 		}
 
 		return $goid;
@@ -1055,7 +1038,7 @@ class TaskRequest {
 				$attach = mapi_message_openattach($this->message, $row[PR_ATTACH_NUM]);
 				$task = mapi_attach_openobj($attach);
 			}
-			catch (MAPIException $e) {
+			catch (MAPIException) {
 				continue;
 			}
 

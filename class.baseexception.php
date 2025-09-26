@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
@@ -33,13 +34,6 @@ class BaseException extends Exception {
 	public $isHandled = false;
 
 	/**
-	 * The exception message to show at client side.
-	 *
-	 * @var null|string
-	 */
-	public $displayMessage;
-
-	/**
 	 * Flag for allow to exception details message or not.
 	 *
 	 * @var bool
@@ -68,10 +62,10 @@ class BaseException extends Exception {
 	 * @param Throwable $previous
 	 * @param string    $displayMessage
 	 */
-	public function __construct($errorMessage, $code = 0, $previous = null, $displayMessage = null) {
-		// assign display message
-		$this->displayMessage = $displayMessage;
-
+	public function __construct($errorMessage, $code = 0, $previous = null, /**
+	 * The exception message to show at client side.
+	 */
+		public $displayMessage = null) {
 		parent::__construct($errorMessage, (int) $code, $previous);
 	}
 
@@ -96,7 +90,6 @@ class BaseException extends Exception {
 	/**
 	 * Sets display message of an exception that will be sent to the client side
 	 * to show it to user.
-	 *
 	 */
 	public function setDisplayMessage(string $message): void {
 		$this->displayMessage = $message . " (" . mapi_strerror($this->getCode()) . ")";
@@ -105,7 +98,6 @@ class BaseException extends Exception {
 	/**
 	 * Sets the  title of an exception that will be sent to the client side
 	 * to show it to user.
-	 *
 	 */
 	public function setTitle(string $title): void {
 		$this->title = $title;
@@ -114,7 +106,7 @@ class BaseException extends Exception {
 	/**
 	 * Returns title that should be sent to client to display as a message box title.
 	 */
-	public function getTitle(): null|string {
+	public function getTitle(): ?string {
 		return $this->title;
 	}
 
@@ -140,15 +132,13 @@ class BaseException extends Exception {
 
 	/**
 	 * Returns the name of the class of exception.
-	 *
 	 */
 	public function getName(): string {
-		return get_class($this);
+		return static::class;
 	}
 
 	/**
 	 * Sets a type of notification by which exception needs to be shown at client side.
-	 *
 	 */
 	public function setNotificationType(string $notificationType): void {
 		$this->notificationType = $notificationType;

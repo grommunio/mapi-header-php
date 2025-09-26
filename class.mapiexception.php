@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
@@ -16,52 +17,23 @@ class MAPIException extends BaseException {
 	 * Returns display message of exception if its set by the callee.
 	 * If it is not set then we are generating some default display messages based
 	 * on mapi error code.
-	 *
 	 */
+	#[Override]
 	public function getDisplayMessage(): string {
 		if (!empty($this->displayMessage)) {
 			return $this->displayMessage;
 		}
 
-		switch ($this->getCode()) {
-			/* see also class.webappauthentication.php:getErrorMessage for more instances */
-
-			case MAPI_E_NO_ACCESS:
-				return dgettext("zarafa", "You have insufficient privileges to open this object.");
-
-			case ecUnknownUser:
-			case MAPI_E_LOGON_FAILED:
-			case MAPI_E_UNCONFIGURED:
-				return dgettext("zarafa", "Logon Failed. Please check your name/password.");
-
-			case MAPI_E_NETWORK_ERROR:
-				return dgettext("zarafa", "Can not connect to Gromox.");
-
-			case MAPI_E_UNKNOWN_ENTRYID:
-				return dgettext("zarafa", "Can not open object with provided id.");
-
-			case MAPI_E_NO_RECIPIENTS:
-				return dgettext("zarafa", "There are no recipients in the message.");
-
-			case MAPI_E_NOT_FOUND:
-				return dgettext("zarafa", "Can not find object.");
-
-			case MAPI_E_NOT_ENOUGH_MEMORY:
-				return dgettext("zarafa", "Operation failed: Server does not have enough memory.");
-
-			case MAPI_E_INTERFACE_NOT_SUPPORTED:
-			case MAPI_E_INVALID_PARAMETER:
-			case MAPI_E_INVALID_ENTRYID:
-			case MAPI_E_INVALID_OBJECT:
-			case MAPI_E_TOO_COMPLEX:
-			case MAPI_E_CORRUPT_DATA:
-			case MAPI_E_END_OF_SESSION:
-			case MAPI_E_AMBIGUOUS_RECIP:
-			case MAPI_E_COLLISION:
-			case MAPI_E_UNCONFIGURED:
-			default:
-				return sprintf(dgettext("zarafa", "Unknown MAPI Error: %s"), get_mapi_error_name($this->getCode()));
-		}
+		return match ($this->getCode()) {
+			MAPI_E_NO_ACCESS => dgettext("zarafa", "You have insufficient privileges to open this object."),
+			ecUnknownUser, MAPI_E_LOGON_FAILED, MAPI_E_UNCONFIGURED => dgettext("zarafa", "Logon Failed. Please check your name/password."),
+			MAPI_E_NETWORK_ERROR => dgettext("zarafa", "Can not connect to Gromox."),
+			MAPI_E_UNKNOWN_ENTRYID => dgettext("zarafa", "Can not open object with provided id."),
+			MAPI_E_NO_RECIPIENTS => dgettext("zarafa", "There are no recipients in the message."),
+			MAPI_E_NOT_FOUND => dgettext("zarafa", "Can not find object."),
+			MAPI_E_NOT_ENOUGH_MEMORY => dgettext("zarafa", "Operation failed: Server does not have enough memory."),
+			default => sprintf(dgettext("zarafa", "Unknown MAPI Error: %s"), get_mapi_error_name($this->getCode())),
+		};
 	}
 }
 

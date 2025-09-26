@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
@@ -628,25 +629,21 @@ class Recurrence extends BaseRecurrence {
 		$interval = $this->recur['everyn'];
 		$occSingleDayRank = false;
 
-		switch ($type) {
-			case 0x0A: // Daily
-				return $this->getI18RecTypeDaily($type, $interval, $occSingleDayRank);
-
-			case 0x0B: // Weekly
-				return $this->getI18RecTypeWeekly($type, $interval, $occSingleDayRank);
-
-			case 0x0C: // Monthly
-				return $this->getI18RecTypeMonthly($type, $interval, $occSingleDayRank);
-
-			case 0x0D: // Yearly
-				return $this->getI18RecTypeYearly($type, $interval, $occSingleDayRank);
-		}
-
-		return [
-			'type' => $type,
-			'interval' => $interval,
-			'occSingleDayRank' => boolval($occSingleDayRank),
-		];
+		return match ($type) {
+			// Daily
+			0x0A => $this->getI18RecTypeDaily($type, $interval, $occSingleDayRank),
+			// Weekly
+			0x0B => $this->getI18RecTypeWeekly($type, $interval, $occSingleDayRank),
+			// Monthly
+			0x0C => $this->getI18RecTypeMonthly($type, $interval, $occSingleDayRank),
+			// Yearly
+			0x0D => $this->getI18RecTypeYearly($type, $interval, $occSingleDayRank),
+			default => [
+				'type' => $type,
+				'interval' => $interval,
+				'occSingleDayRank' => boolval($occSingleDayRank),
+			],
+		};
 	}
 
 	/**
@@ -853,7 +850,7 @@ class Recurrence extends BaseRecurrence {
 		[
 			'type' => $type,
 			'interval' => $interval,
-			'occSingleDayRank' => $occSingleDayRank
+			'occSingleDayRank' => $occSingleDayRank,
 		] = $this->getI18nRecurrenceType();
 
 		// get timings of the first occurrence

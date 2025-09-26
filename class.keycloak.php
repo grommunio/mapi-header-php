@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2023 grommunio GmbH
@@ -58,7 +59,7 @@ class KeyCloak {
 
 		// @type {bool} checks if client is a public client and extracts the public key
 		$this->is_public = $keycloak_config['public-client'] ?? false;
-		$this->public_key = $this->is_public == false ? "" : "-----BEGIN PUBLIC KEY-----\n" . chunk_split($keycloak_config['realm-public-key'], 64, "\n") . "\n-----END PUBLIC KEY-----\n";
+		$this->public_key = $this->is_public == false ? "" : "-----BEGIN PUBLIC KEY-----\n" . chunk_split((string) $keycloak_config['realm-public-key'], 64, "\n") . "\n-----END PUBLIC KEY-----\n";
 
 		// client secret => obtained if client is not a public client
 		if (!$this->is_public) {
@@ -251,9 +252,9 @@ class KeyCloak {
 			}
 
 			try {
-				$data = json_decode($response['body'], true);
+				$data = json_decode((string) $response['body'], true);
 			}
-			catch (Exception $e) {
+			catch (Exception) {
 				return false;
 			}
 
@@ -286,7 +287,7 @@ class KeyCloak {
 	public function login_url($redirect_url) {
 		$uuid = bin2hex(openssl_random_pseudo_bytes(32));
 
-		return $this->realm_url . '/protocol/openid-connect/auth?scope=openid&client_id=' . urlencode($this->client_id) . '&state=' . urlencode($uuid) . '&redirect_uri=' . urlencode($redirect_url) . '&response_type=code';
+		return $this->realm_url . '/protocol/openid-connect/auth?scope=openid&client_id=' . urlencode((string) $this->client_id) . '&state=' . urlencode($uuid) . '&redirect_uri=' . urlencode($redirect_url) . '&response_type=code';
 	}
 
 	/**
@@ -313,10 +314,10 @@ class KeyCloak {
 	protected function http_curl_request($method, $domain, $headers = [], $data = '') {
 		$request = curl_init();
 		curl_setopt($request, CURLOPT_URL, $this->realm_url . $domain);
-		if (strcmp(strtoupper($method), 'POST') == 0) {
+		if (strcmp(strtoupper((string) $method), 'POST') == 0) {
 			curl_setopt($request, CURLOPT_POST, true);
 			curl_setopt($request, CURLOPT_POSTFIELDS, $data);
-			array_push($headers, 'Content-Length: ' . strlen($data));
+			array_push($headers, 'Content-Length: ' . strlen((string) $data));
 		}
 
 		curl_setopt($request, CURLOPT_HTTPHEADER, $headers);

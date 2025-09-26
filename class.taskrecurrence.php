@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
@@ -199,7 +200,7 @@ class TaskRecurrence extends BaseRecurrence {
 	public function getNextOccurrence() {
 		if ($this->recur) {
 			// @TODO: fix start of range
-			$start = isset($this->messageprops[$this->proptags["duedate"]]) ? $this->messageprops[$this->proptags["duedate"]] : $this->action['start'];
+			$start = $this->messageprops[$this->proptags["duedate"]] ?? $this->action['start'];
 			$dayend = ($this->recur['term'] == 0x23) ? 0x7FFFFFFF : $this->dayStartOf($this->recur["end"]);
 
 			// Fix recur object
@@ -348,7 +349,7 @@ class TaskRecurrence extends BaseRecurrence {
 		// Fix timezone object
 		$this->tz = false;
 		$this->action = &$recur;
-		$dead_occurrence = isset($this->messageprops[$this->proptags['dead_occurrence']]) ? $this->messageprops[$this->proptags['dead_occurrence']] : false;
+		$dead_occurrence = $this->messageprops[$this->proptags['dead_occurrence']] ?? false;
 
 		if (!$dead_occurrence) {
 			return $this->moveToNextOccurrence();
@@ -366,14 +367,14 @@ class TaskRecurrence extends BaseRecurrence {
 		$props = [];
 		if (!empty($nextOccurrence)) {
 			// Check if reminder is reset. Default is 'false'
-			$reset_reminder = isset($this->messageprops[$this->proptags['reset_reminder']]) ? $this->messageprops[$this->proptags['reset_reminder']] : false;
+			$reset_reminder = $this->messageprops[$this->proptags['reset_reminder']] ?? false;
 			$reminder = $this->messageprops[$this->proptags['reminder']];
 
 			// Either reminder was already set OR reminder was set but was dismissed bty user
 			if ($reminder || $reset_reminder) {
 				// Reminder can be set at any time either before or after the duedate, so get duration between the reminder time and duedate
-				$reminder_time = isset($this->messageprops[$this->proptags['reminder_time']]) ? $this->messageprops[$this->proptags['reminder_time']] : 0;
-				$reminder_difference = isset($this->messageprops[$this->proptags['duedate']]) ? $this->messageprops[$this->proptags['duedate']] : 0;
+				$reminder_time = $this->messageprops[$this->proptags['reminder_time']] ?? 0;
+				$reminder_difference = $this->messageprops[$this->proptags['duedate']] ?? 0;
 				$reminder_difference = $reminder_difference - $reminder_time;
 
 				// Apply duration to next calculated duedate

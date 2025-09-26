@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
@@ -106,15 +107,11 @@ class Meetingrequest {
 	public $errorSetResource;
 
 	public $proptags;
-	private $store;
-	public $message;
-	private $session;
 
 	/**
 	 * @var false|string
 	 */
 	private $meetingTimeInfo;
-	private $enableDirectBooking;
 
 	/**
 	 * @var null|bool
@@ -141,13 +138,9 @@ class Meetingrequest {
 	 * @param mixed $session
 	 * @param mixed $enableDirectBooking
 	 */
-	public function __construct($store, $message, $session = false, $enableDirectBooking = true) {
-		$this->store = $store;
-		$this->message = $message;
-		$this->session = $session;
+	public function __construct(private $store, public $message, private $session = false, private $enableDirectBooking = true) {
 		// This variable string saves time information for the MR.
 		$this->meetingTimeInfo = false;
-		$this->enableDirectBooking = $enableDirectBooking;
 
 		$properties = [];
 		$properties['goid'] = 'PT_BINARY:PSETID_Meeting:0x3';
@@ -205,7 +198,7 @@ class Meetingrequest {
 		$properties['toattendeesstring'] = 'PT_STRING8:PSETID_Appointment:0x823B';
 		$properties['ccattendeesstring'] = 'PT_STRING8:PSETID_Appointment:0x823C';
 
-		$this->proptags = getPropIdsFromStrings($store, $properties);
+		$this->proptags = getPropIdsFromStrings($this->store, $properties);
 	}
 
 	/**
@@ -229,7 +222,7 @@ class Meetingrequest {
 	public function isMeetingRequest($messageClass = false) {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
-			$messageClass = isset($props[PR_MESSAGE_CLASS]) ? $props[PR_MESSAGE_CLASS] : false;
+			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
 		if ($messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.request') === 0) {
@@ -249,7 +242,7 @@ class Meetingrequest {
 	public function isMeetingRequestResponse($messageClass = false) {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
-			$messageClass = isset($props[PR_MESSAGE_CLASS]) ? $props[PR_MESSAGE_CLASS] : false;
+			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
 		if ($messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.resp') === 0) {
@@ -269,7 +262,7 @@ class Meetingrequest {
 	public function isMeetingCancellation($messageClass = false) {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
-			$messageClass = isset($props[PR_MESSAGE_CLASS]) ? $props[PR_MESSAGE_CLASS] : false;
+			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
 		if ($messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.canceled') === 0) {
@@ -741,7 +734,7 @@ class Meetingrequest {
 
 		// While sender is receiver then we have to process the meeting request as per the intended busy status
 		// instead of tentative, and accept the same as per the intended busystatus.
-		$senderEntryId = isset($messageprops[PR_SENT_REPRESENTING_ENTRYID]) ? $messageprops[PR_SENT_REPRESENTING_ENTRYID] : $messageprops[PR_SENDER_ENTRYID];
+		$senderEntryId = $messageprops[PR_SENT_REPRESENTING_ENTRYID] ?? $messageprops[PR_SENDER_ENTRYID];
 		if (isset($messageprops[PR_RECEIVED_BY_ENTRYID]) && compareEntryIds($senderEntryId, $messageprops[PR_RECEIVED_BY_ENTRYID])) {
 			$entryid = $this->accept(false, $sendresponse, $move, $proposeNewTimeProps, $body, true, $store, $calFolder, $basedate);
 		}
@@ -1063,9 +1056,9 @@ class Meetingrequest {
 						$props = mapi_getprops($this->message);
 
 						$props[$this->proptags['recurring_pattern']] = '';
-						$props[$this->proptags['alldayevent']] = $props[$this->proptags['alldayevent']] ?? false;
-						$props[$this->proptags['private']] = $props[$this->proptags['private']] ?? false;
-						$props[$this->proptags['meetingstatus']] = $props[$this->proptags['meetingstatus']] ?? olMeetingReceived;
+						$props[$this->proptags['alldayevent']] ??= false;
+						$props[$this->proptags['private']] ??= false;
+						$props[$this->proptags['meetingstatus']] ??= olMeetingReceived;
 						if (isset($props[$this->proptags['startdate']])) {
 							$props[$this->proptags['commonstart']] = $props[$this->proptags['startdate']];
 						}
@@ -1520,11 +1513,11 @@ class Meetingrequest {
 		$goid .= pack('V', 16);
 		// Random data.
 		for ($i = 0; $i < 16; ++$i) {
-			$goid .= chr(rand(0, 255));
+			$goid .= chr(random_int(0, 255));
 		}
 
 		// Create a new appointment id for this item
-		$apptid = rand();
+		$apptid = random_int(0, mt_getrandmax());
 
 		$props[PR_OWNER_APPT_ID] = $apptid;
 		$props[PR_ICON_INDEX] = 1026;
@@ -1717,21 +1710,12 @@ class Meetingrequest {
 	public function getTrackStatus($class) {
 		$status = olRecipientTrackStatusNone;
 
-		switch ($class) {
-			case 'IPM.Schedule.Meeting.Resp.Pos':
-				$status = olRecipientTrackStatusAccepted;
-				break;
-
-			case 'IPM.Schedule.Meeting.Resp.Tent':
-				$status = olRecipientTrackStatusTentative;
-				break;
-
-			case 'IPM.Schedule.Meeting.Resp.Neg':
-				$status = olRecipientTrackStatusDeclined;
-				break;
-		}
-
-		return $status;
+		return match ($class) {
+			'IPM.Schedule.Meeting.Resp.Pos' => olRecipientTrackStatusAccepted,
+			'IPM.Schedule.Meeting.Resp.Tent' => olRecipientTrackStatusTentative,
+			'IPM.Schedule.Meeting.Resp.Neg' => olRecipientTrackStatusDeclined,
+			default => $status,
+		};
 	}
 
 	/**
@@ -1811,7 +1795,7 @@ class Meetingrequest {
 	 */
 	public function getDefaultFolderEntryID($prop, $store = false) {
 		try {
-			$inbox = mapi_msgstore_getreceivefolder($store ? $store : $this->store);
+			$inbox = mapi_msgstore_getreceivefolder($store ?: $this->store);
 			$inboxprops = mapi_getprops($inbox, [$prop]);
 			if (isset($inboxprops[$prop])) {
 				return $inboxprops[$prop];
@@ -1841,7 +1825,7 @@ class Meetingrequest {
 		$entryid = $this->getDefaultFolderEntryID($prop, $store);
 
 		if ($entryid !== false) {
-			$folder = mapi_msgstore_openentry($store ? $store : $this->store, $entryid);
+			$folder = mapi_msgstore_openentry($store ?: $this->store, $entryid);
 		}
 
 		return $folder;
@@ -1858,7 +1842,7 @@ class Meetingrequest {
 	 * @return bool|string entryid of default folder from store
 	 */
 	public function getBaseEntryID($prop, $store = false) {
-		$storeprops = mapi_getprops($store ? $store : $this->store, [$prop]);
+		$storeprops = mapi_getprops($store ?: $this->store, [$prop]);
 		if (!isset($storeprops[$prop])) {
 			return false;
 		}
@@ -1879,7 +1863,7 @@ class Meetingrequest {
 		$entryid = $this->getBaseEntryID($prop, $store);
 
 		if ($entryid !== false) {
-			$folder = mapi_msgstore_openentry($store ? $store : $this->store, $entryid);
+			$folder = mapi_msgstore_openentry($store ?: $this->store, $entryid);
 		}
 
 		return $folder;
@@ -1976,10 +1960,11 @@ class Meetingrequest {
 			$mailuser = mapi_ab_openentry($ab, $ownerentryid);
 			if (!$mailuser) {
 				error_log(sprintf("Unable to open ab entry: 0x%08X", mapi_last_hresult()));
+
 				return;
 			}
 		}
-		catch (MAPIException $e) {
+		catch (MAPIException) {
 			return;
 		}
 
@@ -2142,7 +2127,7 @@ class Meetingrequest {
 		// Set GlobalId AND CleanGlobalId, if exception then also set basedate into GlobalId(0x3).
 		$props[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedate);
 		$props[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
-		$props[$this->proptags['updatecounter']] = isset($messageprops[$this->proptags['updatecounter']]) ? $messageprops[$this->proptags['updatecounter']] : 0;
+		$props[$this->proptags['updatecounter']] = $messageprops[$this->proptags['updatecounter']] ?? 0;
 
 		if (!empty($proposeNewTimeProps)) {
 			// merge proposal properties to message properties which will be sent to organizer
@@ -2151,7 +2136,7 @@ class Meetingrequest {
 
 		// Set body message in Appointment
 		if (isset($body)) {
-			$props[PR_BODY] = $this->getMeetingTimeInfo() ? $this->getMeetingTimeInfo() : $body;
+			$props[PR_BODY] = $this->getMeetingTimeInfo() ?: $body;
 		}
 
 		// PR_START_DATE/PR_END_DATE is used in the UI in Outlook on the response message
@@ -2251,7 +2236,7 @@ class Meetingrequest {
 				return '';
 			}
 		}
-		catch (MAPIException $e) {
+		catch (MAPIException) {
 			return '';
 		}
 
@@ -2605,9 +2590,9 @@ class Meetingrequest {
 				if ($localFreebusyMsg) {
 					$props = mapi_getprops($localFreebusyMsg, [PR_SCHDINFO_AUTO_ACCEPT_APPTS, PR_SCHDINFO_DISALLOW_RECURRING_APPTS, PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS]);
 
-					$acceptMeetingRequests = isset($props[PR_SCHDINFO_AUTO_ACCEPT_APPTS]) ? $props[PR_SCHDINFO_AUTO_ACCEPT_APPTS] : false;
-					$declineRecurringMeetingRequests = isset($props[PR_SCHDINFO_DISALLOW_RECURRING_APPTS]) ? $props[PR_SCHDINFO_DISALLOW_RECURRING_APPTS] : false;
-					$declineConflictingMeetingRequests = isset($props[PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS]) ? $props[PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS] : false;
+					$acceptMeetingRequests = $props[PR_SCHDINFO_AUTO_ACCEPT_APPTS] ?? false;
+					$declineRecurringMeetingRequests = $props[PR_SCHDINFO_DISALLOW_RECURRING_APPTS] ?? false;
+					$declineConflictingMeetingRequests = $props[PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS] ?? false;
 
 					if (!$acceptMeetingRequests) {
 						/*
@@ -2717,7 +2702,7 @@ class Meetingrequest {
 					$addrInfo = $this->getOwnerAddress($defaultStore, false);
 
 					if (!empty($addrInfo)) {
-						list($ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey) = $addrInfo;
+						[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $addrInfo;
 
 						$messageprops[PR_SENDER_EMAIL_ADDRESS] = $owneremailaddr;
 						$messageprops[PR_SENDER_NAME] = $ownername;
@@ -2730,7 +2715,7 @@ class Meetingrequest {
 					$addrInfo = $this->getOwnerAddress($this->store, false);
 
 					if (!empty($addrInfo)) {
-						list($ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey) = $addrInfo;
+						[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $addrInfo;
 
 						$messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS] = $owneremailaddr;
 						$messageprops[PR_SENT_REPRESENTING_NAME] = $ownername;
@@ -2744,7 +2729,7 @@ class Meetingrequest {
 					$addrInfo = $this->getOwnerAddress($this->store);
 
 					if (!empty($addrInfo)) {
-						list($ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey) = $addrInfo;
+						[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $addrInfo;
 
 						$messageprops[PR_SENDER_EMAIL_ADDRESS] = $owneremailaddr;
 						$messageprops[PR_SENDER_NAME] = $ownername;
@@ -3187,7 +3172,7 @@ class Meetingrequest {
 
 			// we should store busystatus value to intendedbusystatus property, because busystatus for outgoing meeting request
 			// should always be fbTentative
-			$newmessageprops[$this->proptags['intendedbusystatus']] = isset($newmessageprops[$this->proptags['busystatus']]) ? $newmessageprops[$this->proptags['busystatus']] : $messageprops[$this->proptags['busystatus']];
+			$newmessageprops[$this->proptags['intendedbusystatus']] = $newmessageprops[$this->proptags['busystatus']] ?? $messageprops[$this->proptags['busystatus']];
 			$newmessageprops[$this->proptags['busystatus']] = fbTentative; // The default status when not accepted
 			$newmessageprops[$this->proptags['responsestatus']] = olResponseNotResponded; // The recipient has not responded yet
 			$newmessageprops[$this->proptags['attendee_critical_change']] = time();
@@ -3347,7 +3332,7 @@ class Meetingrequest {
 				$delegatorDetails = $this->getOwnerAddress($store, false);
 
 				if (!empty($delegatorDetails)) {
-					list($ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey) = $delegatorDetails;
+					[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $delegatorDetails;
 					$sentprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS] = $owneremailaddr;
 					$sentprops[PR_SENT_REPRESENTING_NAME] = $ownername;
 					$sentprops[PR_SENT_REPRESENTING_ADDRTYPE] = $owneraddrtype;
@@ -3359,7 +3344,7 @@ class Meetingrequest {
 				$delegateDetails = $this->getOwnerAddress($userStore, false);
 
 				if (!empty($delegateDetails)) {
-					list($ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey) = $delegateDetails;
+					[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $delegateDetails;
 					$sentprops[PR_SENDER_EMAIL_ADDRESS] = $owneremailaddr;
 					$sentprops[PR_SENDER_NAME] = $ownername;
 					$sentprops[PR_SENDER_ADDRTYPE] = $owneraddrtype;
@@ -3373,7 +3358,7 @@ class Meetingrequest {
 			$userDetails = $this->getOwnerAddress($userStore);
 
 			if (!empty($userDetails)) {
-				list($ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey) = $userDetails;
+				[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $userDetails;
 				$sentprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS] = $owneremailaddr;
 				$sentprops[PR_SENT_REPRESENTING_NAME] = $ownername;
 				$sentprops[PR_SENT_REPRESENTING_ADDRTYPE] = $owneraddrtype;

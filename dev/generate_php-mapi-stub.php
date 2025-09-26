@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2024 grommunio GmbH
@@ -15,7 +16,7 @@ function fetchAndGenerateStubs(string $url): string {
 	$stubFileContents = str_replace('res ', 'resource ', $stubFileContents);
 
 	// Extract function definitions
-	preg_match_all('/function\s+(\w+)\s*\(([^)]*)\)\s*:\s*([\w|?\\\\]+)\s*{}/', $stubFileContents, $matches, PREG_SET_ORDER);
+	preg_match_all('/function\s+(\w+)\s*\(([^)]*)\)\s*:\s*([\w|?\\\]+)\s*{}/', $stubFileContents, $matches, PREG_SET_ORDER);
 
 	$stubFunctions = "class resource {}\n\n";
 
@@ -69,7 +70,7 @@ function generateReturnValue(string $returnType) {
 			return 'new resource()';
 
 		default:
-			if (strpos($returnType, '|') !== false) {
+			if (str_contains($returnType, '|')) {
 				$types = explode('|', $returnType);
 
 				return generateReturnValue($types[0]);
@@ -85,7 +86,7 @@ function generatePHPDoc(string $parameters, string $returnType): string {
 		$params = explode(',', $parameters);
 		foreach ($params as $param) {
 			$param = trim($param);
-			if (strpos($param, ' ') !== false) {
+			if (str_contains($param, ' ')) {
 				[$type, $name] = explode(' ', $param);
 				$type = str_replace('resource', 'resource', $type); // Ensure type remains resource
 				$paramDocs[] = " * @param {$type} {$name}";
@@ -120,7 +121,7 @@ try {
 		$relevant_prefixes = ['PR_', 'PidLid', 'MAPI', 'ec', 'RPC_', 'SYNC_'];
 		$relevant_constants = array_filter($constants, function ($key) use ($relevant_prefixes) {
 			foreach ($relevant_prefixes as $prefix) {
-				if (strpos($key, $prefix) === 0) {
+				if (str_starts_with($key, $prefix)) {
 					return true;
 				}
 			}

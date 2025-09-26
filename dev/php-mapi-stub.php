@@ -1,7 +1,7 @@
 <?php
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
- * SPDX-FileCopyrightText: Copyright 2024 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2025 grommunio GmbH
  */
 
 class resource {}
@@ -2678,41 +2678,41 @@ if (!defined('PR_BUSINESS_FAX_NUMBER')) {
 if (!defined('PR_HOME_FAX_NUMBER')) {
 	define('PR_HOME_FAX_NUMBER', 0x3A25001E);
 }
-if (!defined('PR_BUSINESS_ADDRESS_COUNTRY')) {
-	define('PR_BUSINESS_ADDRESS_COUNTRY', 0x3A26001E);
-}
 if (!defined('PR_COUNTRY')) {
 	define('PR_COUNTRY', 0x3A26001E);
 }
-if (!defined('PR_BUSINESS_ADDRESS_CITY')) {
-	define('PR_BUSINESS_ADDRESS_CITY', 0x3A27001E);
+if (!defined('PR_BUSINESS_ADDRESS_COUNTRY')) {
+	define('PR_BUSINESS_ADDRESS_COUNTRY', 0x3A26001E);
 }
 if (!defined('PR_LOCALITY')) {
 	define('PR_LOCALITY', 0x3A27001E);
 }
-if (!defined('PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE')) {
-	define('PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE', 0x3A28001E);
+if (!defined('PR_BUSINESS_ADDRESS_CITY')) {
+	define('PR_BUSINESS_ADDRESS_CITY', 0x3A27001E);
 }
 if (!defined('PR_STATE_OR_PROVINCE')) {
 	define('PR_STATE_OR_PROVINCE', 0x3A28001E);
 }
-if (!defined('PR_BUSINESS_ADDRESS_STREET')) {
-	define('PR_BUSINESS_ADDRESS_STREET', 0x3A29001E);
+if (!defined('PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE')) {
+	define('PR_BUSINESS_ADDRESS_STATE_OR_PROVINCE', 0x3A28001E);
 }
 if (!defined('PR_STREET_ADDRESS')) {
 	define('PR_STREET_ADDRESS', 0x3A29001E);
 }
-if (!defined('PR_BUSINESS_ADDRESS_POSTAL_CODE')) {
-	define('PR_BUSINESS_ADDRESS_POSTAL_CODE', 0x3A2A001E);
+if (!defined('PR_BUSINESS_ADDRESS_STREET')) {
+	define('PR_BUSINESS_ADDRESS_STREET', 0x3A29001E);
 }
 if (!defined('PR_POSTAL_CODE')) {
 	define('PR_POSTAL_CODE', 0x3A2A001E);
 }
-if (!defined('PR_BUSINESS_ADDRESS_POST_OFFICE_BOX')) {
-	define('PR_BUSINESS_ADDRESS_POST_OFFICE_BOX', 0x3A2B001E);
+if (!defined('PR_BUSINESS_ADDRESS_POSTAL_CODE')) {
+	define('PR_BUSINESS_ADDRESS_POSTAL_CODE', 0x3A2A001E);
 }
 if (!defined('PR_POST_OFFICE_BOX')) {
 	define('PR_POST_OFFICE_BOX', 0x3A2B001E);
+}
+if (!defined('PR_BUSINESS_ADDRESS_POST_OFFICE_BOX')) {
+	define('PR_BUSINESS_ADDRESS_POST_OFFICE_BOX', 0x3A2B001E);
 }
 if (!defined('PR_TELEX_NUMBER')) {
 	define('PR_TELEX_NUMBER', 0x3A2C001E);
@@ -3527,6 +3527,9 @@ if (!defined('PR_EC_EXTERNAL_SUBJECT')) {
 if (!defined('PR_EC_WEBACCESS_SETTINGS_JSON')) {
 	define('PR_EC_WEBACCESS_SETTINGS_JSON', 0x6772001E);
 }
+if (!defined('PR_EC_RECIPIENT_HISTORY_JSON')) {
+	define('PR_EC_RECIPIENT_HISTORY_JSON', 0x6773001E);
+}
 if (!defined('PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON')) {
 	define('PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON', 0x6774001E);
 }
@@ -4049,24 +4052,6 @@ if (!defined('PR_EMS_AB_PARENT_ENTRYID')) {
 if (!defined('PR_EMS_AB_CONTAINERID')) {
 	define('PR_EMS_AB_CONTAINERID', 0xFFFD0003);
 }
-if (!defined('PidLidAttendeeCriticalChange')) {
-	define('PidLidAttendeeCriticalChange', 0x00000001);
-}
-if (!defined('PidLidGlobalObjectId')) {
-	define('PidLidGlobalObjectId', 0x00000003);
-}
-if (!defined('PidLidIsException')) {
-	define('PidLidIsException', 0x0000000A);
-}
-if (!defined('PidLidStartRecurrenceTime')) {
-	define('PidLidStartRecurrenceTime', 0x0000000E);
-}
-if (!defined('PidLidOwnerCriticalChange')) {
-	define('PidLidOwnerCriticalChange', 0x0000001A);
-}
-if (!defined('PidLidCleanGlobalObjectId')) {
-	define('PidLidCleanGlobalObjectId', 0x00000023);
-}
 if (!defined('PidLidCategories')) {
 	define('PidLidCategories', 0x00002328);
 }
@@ -4187,6 +4172,9 @@ if (!defined('PidLidTaskOwner')) {
 if (!defined('PidLidTaskFRecurring')) {
 	define('PidLidTaskFRecurring', 0x00008126);
 }
+if (!defined('PidLidSendMeetingAsIcal')) {
+	define('PidLidSendMeetingAsIcal', 0x00008200);
+}
 if (!defined('PidLidAppointmentSequence')) {
 	define('PidLidAppointmentSequence', 0x00008201);
 }
@@ -4195,9 +4183,6 @@ if (!defined('PidLidBusyStatus')) {
 }
 if (!defined('PidLidLocation')) {
 	define('PidLidLocation', 0x00008208);
-}
-if (!defined('PidLidAppointmentReplyTime')) {
-	define('PidLidAppointmentReplyTime', 0x00008220);
 }
 if (!defined('PidLidAppointmentStartWhole')) {
 	define('PidLidAppointmentStartWhole', 0x0000820D);
@@ -4220,6 +4205,9 @@ if (!defined('PidLidAppointmentStateFlags')) {
 if (!defined('PidLidResponseStatus')) {
 	define('PidLidResponseStatus', 0x00008218);
 }
+if (!defined('PidLidAppointmentReplyTime')) {
+	define('PidLidAppointmentReplyTime', 0x00008220);
+}
 if (!defined('PidLidRecurring')) {
 	define('PidLidRecurring', 0x00008223);
 }
@@ -4231,6 +4219,9 @@ if (!defined('PidLidExceptionReplaceTime')) {
 }
 if (!defined('PidLidFInvited')) {
 	define('PidLidFInvited', 0x00008229);
+}
+if (!defined('PidLidAppointmentReplyName')) {
+	define('PidLidAppointmentReplyName', 0x00008230);
 }
 if (!defined('PidLidRecurrenceType')) {
 	define('PidLidRecurrenceType', 0x00008231);
@@ -4249,6 +4240,15 @@ if (!defined('PidLidClipStart')) {
 }
 if (!defined('PidLidClipEnd')) {
 	define('PidLidClipEnd', 0x00008236);
+}
+if (!defined('PidLidAllAttendeesString')) {
+	define('PidLidAllAttendeesString', 0x00008238);
+}
+if (!defined('PidLidToAttendeesString')) {
+	define('PidLidToAttendeesString', 0x0000823B);
+}
+if (!defined('PidLidCcAttendeesString')) {
+	define('PidLidCcAttendeesString', 0x0000823C);
 }
 if (!defined('PidLidAppointmentProposedStartWhole')) {
 	define('PidLidAppointmentProposedStartWhole', 0x00008250);
@@ -4271,6 +4271,42 @@ if (!defined('PidLidAppointmentTimeZoneDefinitionEndDisplay')) {
 if (!defined('PidLidAppointmentTimeZoneDefinitionRecur')) {
 	define('PidLidAppointmentTimeZoneDefinitionRecur', 0x00008260);
 }
+if (!defined('PidLidAttendeeCriticalChange')) {
+	define('PidLidAttendeeCriticalChange', 0x00000001);
+}
+if (!defined('PidLidWhere')) {
+	define('PidLidWhere', 0x00000002);
+}
+if (!defined('PidLidGlobalObjectId')) {
+	define('PidLidGlobalObjectId', 0x00000003);
+}
+if (!defined('PidLidIsSilent')) {
+	define('PidLidIsSilent', 0x00000004);
+}
+if (!defined('PidLidIsRecurring')) {
+	define('PidLidIsRecurring', 0x00000005);
+}
+if (!defined('PidLidIsException')) {
+	define('PidLidIsException', 0x0000000A);
+}
+if (!defined('PidLidTimeZone')) {
+	define('PidLidTimeZone', 0x0000000C);
+}
+if (!defined('PidLidStartRecurrenceTime')) {
+	define('PidLidStartRecurrenceTime', 0x0000000E);
+}
+if (!defined('PidLidMonthOfYearMask')) {
+	define('PidLidMonthOfYearMask', 0x00000017);
+}
+if (!defined('PidLidOwnerCriticalChange')) {
+	define('PidLidOwnerCriticalChange', 0x0000001A);
+}
+if (!defined('PidLidCleanGlobalObjectId')) {
+	define('PidLidCleanGlobalObjectId', 0x00000023);
+}
+if (!defined('PidLidMeetingType')) {
+	define('PidLidMeetingType', 0x00000026);
+}
 if (!defined('PidLidReminderDelta')) {
 	define('PidLidReminderDelta', 0x00008501);
 }
@@ -4283,6 +4319,9 @@ if (!defined('PidLidReminderSet')) {
 if (!defined('PidLidPrivate')) {
 	define('PidLidPrivate', 0x00008506);
 }
+if (!defined('PidLidSideEffects')) {
+	define('PidLidSideEffects', 0x00008510);
+}
 if (!defined('PidLidSmartNoAttach')) {
 	define('PidLidSmartNoAttach', 0x00008514);
 }
@@ -4291,6 +4330,9 @@ if (!defined('PidLidCommonStart')) {
 }
 if (!defined('PidLidCommonEnd')) {
 	define('PidLidCommonEnd', 0x00008517);
+}
+if (!defined('PidLidTaskMode')) {
+	define('PidLidTaskMode', 0x00008518);
 }
 if (!defined('PidLidFlagRequest')) {
 	define('PidLidFlagRequest', 0x00008530);

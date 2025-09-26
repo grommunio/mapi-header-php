@@ -13,11 +13,6 @@
  */
 abstract class BaseRecurrence {
 	/**
-	 * @var resource Mapi Message Store (may be null if readonly)
-	 */
-	public $store;
-
-	/**
 	 * @var mixed Mapi Message (may be null if readonly)
 	 */
 	public $message;
@@ -48,9 +43,7 @@ abstract class BaseRecurrence {
 	 * @param resource $store   MAPI Message Store Object
 	 * @param mixed    $message the MAPI (appointment) message
 	 */
-	public function __construct($store, $message) {
-		$this->store = $store;
-
+	public function __construct(public $store, $message) {
 		if (is_array($message)) {
 			$this->messageprops = $message;
 		}
@@ -61,7 +54,7 @@ abstract class BaseRecurrence {
 
 		if (isset($this->messageprops[$this->proptags["recurring_data"]])) {
 			// There is a possibility that recurr blob can be more than 255 bytes so get full blob through stream interface
-			if (strlen($this->messageprops[$this->proptags["recurring_data"]]) >= 255) {
+			if (strlen((string) $this->messageprops[$this->proptags["recurring_data"]]) >= 255) {
 				$this->getFullRecurrenceBlob();
 			}
 
@@ -1420,8 +1413,7 @@ abstract class BaseRecurrence {
 			if ($this->tz["timezone"] != 0) {
 				// Create user readable timezone information
 				$timezone = sprintf(
-					"(GMT %s%02d:%02d)",-
-					$this->tz["timezone"] > 0 ? "+" : "-",
+					"(GMT %s%02d:%02d)", -$this->tz["timezone"] > 0 ? "+" : "-",
 					abs($this->tz["timezone"] / 60),
 					abs($this->tz["timezone"] % 60)
 				);
@@ -1607,11 +1599,11 @@ abstract class BaseRecurrence {
 	 * @return null|array|false
 	 */
 	public function parseTimezone($data) {
-		if (strlen($data) < 48) {
+		if (strlen((string) $data) < 48) {
 			return;
 		}
 
-		return unpack("ltimezone/lunk/ltimezonedst/lunk/ldstendmonth/vdstendweek/vdstendhour/lunk/lunk/vunk/ldststartmonth/vdststartweek/vdststarthour/lunk/vunk", $data);
+		return unpack("ltimezone/lunk/ltimezonedst/lunk/ldstendmonth/vdstendweek/vdstendhour/lunk/lunk/vunk/ldststartmonth/vdststartweek/vdststarthour/lunk/vunk", (string) $data);
 	}
 
 	/**
@@ -1714,7 +1706,7 @@ abstract class BaseRecurrence {
 		// exceptions are in range and have a reminder set
 		if ($remindersonly && (!isset($this->messageprops[$this->proptags["reminder"]]) || $this->messageprops[$this->proptags["reminder"]] == false)) {
 			// Sort exceptions by start time
-			uasort($this->recur["changed_occurrences"], [$this, "sortExceptionStart"]);
+			uasort($this->recur["changed_occurrences"], $this->sortExceptionStart(...));
 
 			// Loop through all changed exceptions
 			foreach ($this->recur["changed_occurrences"] as $exception) {
@@ -1739,7 +1731,7 @@ abstract class BaseRecurrence {
 				}
 			}
 
-			uasort($items, [$this, "sortStarttime"]);
+			uasort($items, $this->sortStarttime(...));
 
 			return $items;
 		}
@@ -1803,7 +1795,7 @@ abstract class BaseRecurrence {
 				for ($now = $daystart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += (60 * 60 * 24 * 7 * $this->recur["everyn"])) {
 					if ($this->recur['regen']) {
 						$this->processOccurrenceItem($items, $start, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-						continue;
+						break;
 					}
 					// Loop through the whole following week to the first occurrence of the week, add each day that is specified
 					for ($wday = 0; $wday < 7; ++$wday) {
@@ -1954,7 +1946,7 @@ abstract class BaseRecurrence {
 		}
 
 		// sort items on starttime
-		usort($items, [$this, "sortStarttime"]);
+		usort($items, $this->sortStarttime(...));
 
 		// Return the MAPI-compatible list of items for this object
 		return $items;

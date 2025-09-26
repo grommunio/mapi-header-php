@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
@@ -107,7 +108,7 @@ function getPropIdsFromStrings($store, $mapping) {
 				continue;
 			}
 
-			if (substr($split[2], 0, 2) == "0x") {
+			if (str_starts_with($split[2], "0x")) {
 				$id = hexdec(substr($split[2], 2));
 			}
 			elseif (preg_match('/^[1-9][0-9]{0,12}$/', $split[2])) {
@@ -322,12 +323,12 @@ function getGoidFromUid($uid) {
  * @return string an OL compatible GlobalObjectID
  */
 function getGoidFromUidZero($uid) {
-	if (strlen($uid) <= 64) {
+	if (strlen((string) $uid) <= 64) {
 		return hex2bin("040000008200E00074C5B7101A82E0080000000000000000000000000000000000000000" .
-			bin2hex(pack("V", 13 + strlen($uid)) . "vCal-Uid" . pack("V", 1) . $uid) . "00");
+			bin2hex(pack("V", 13 + strlen((string) $uid)) . "vCal-Uid" . pack("V", 1) . $uid) . "00");
 	}
 
-	return hex2bin($uid);
+	return hex2bin((string) $uid);
 }
 
 /**
@@ -366,7 +367,7 @@ function prop2Str($property) {
 	if (is_integer($property)) {
 		// Retrieve constants categories, zcore provides them in 'Core'
 		foreach (get_defined_constants(true)['Core'] as $key => $value) {
-			if ($property == $value && substr($key, 0, 3) == 'PR_') {
+			if ($property == $value && str_starts_with($key, 'PR_')) {
 				return $key;
 			}
 		}

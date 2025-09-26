@@ -1,4 +1,5 @@
 <?php
+
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2023 grommunio GmbH
@@ -12,18 +13,15 @@ class Token {
 	public $token_signature;
 	public $signed;
 
-	protected $_raw;
-
 	/**
 	 * Constructor loading a token string received from Keycloak.
 	 *
-	 * @param string $keycloak_token holding
+	 * @param string $_raw holding
 	 */
-	public function __construct($keycloak_token) {
-		$this->_raw = $keycloak_token;
-		if ($keycloak_token) {
+	public function __construct(protected $_raw) {
+		if ($this->_raw) {
 			try {
-				$parts = explode('.', $keycloak_token);
+				$parts = explode('.', (string) $this->_raw);
 				$th = base64_decode($parts[0]);
 				$tp = base64_decode($parts[1]);
 				$ts = base64_decode($parts[2]);
@@ -32,7 +30,7 @@ class Token {
 				$this->token_signature = $ts;
 				$this->signed = $parts[0] . '.' . $parts[1];
 			}
-			catch (Exception $e) {
+			catch (Exception) {
 				$this->token_payload = [
 					'expires_at' => 0,
 				];
