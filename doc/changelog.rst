@@ -1,4 +1,11 @@
-1.6 (2026-02-19)
+1.7 (2025-09-26)
+================
+* Drop support for PHP <= 8.1
+* Evaluate mapi_ab_openentry result before using it, preventing soft-crash
+* Guard against bogus recurrence.{monthly,yearly}.nday values
+
+
+1.6 (2025-02-19)
 ================
 * Add PidTagWlinkSection/PR_WLINK_SECTION value definitions
 * Util to convert restriction consts into strings
