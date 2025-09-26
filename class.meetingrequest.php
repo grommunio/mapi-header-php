@@ -1110,17 +1110,9 @@ class Meetingrequest {
 			$props = [];
 			$props[$this->proptags['responsestatus']] = $tentative ? olResponseTentative : olResponseAccepted;
 
+			$props[$this->proptags['busystatus']] = $this->calculateBusyStatus($tentative, $messageprops);
 			if (isset($messageprops[$this->proptags['intendedbusystatus']])) {
-				if ($tentative && $messageprops[$this->proptags['intendedbusystatus']] !== fbFree) {
-					$props[$this->proptags['busystatus']] = fbTentative;
-				}
-				else {
-					$props[$this->proptags['busystatus']] = $messageprops[$this->proptags['intendedbusystatus']];
-				}
 				$props[$this->proptags['intendedbusystatus']] = $messageprops[$this->proptags['intendedbusystatus']];
-			}
-			else {
-				$props[$this->proptags['busystatus']] = $tentative ? fbTentative : fbBusy;
 			}
 
 			$props[$this->proptags['meetingstatus']] = olMeetingReceived;
