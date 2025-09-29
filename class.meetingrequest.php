@@ -1105,13 +1105,7 @@ class Meetingrequest {
 
 			$props[$this->proptags['meetingstatus']] = olMeetingReceived;
 
-			$addrInfo = $this->getOwnerAddress($this->store);
-
-			// if user has responded then set replytime and name
-			$props[$this->proptags['replytime']] = time();
-			if (!empty($addrInfo)) {
-				$props[$this->proptags['apptreplyname']] = $addrInfo[0];
-			}
+			$this->setReplyTimeAndName($props);
 
 			if ($basedate) {
 				$recurr = new Recurrence($store, $this->message);
