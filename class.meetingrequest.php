@@ -973,13 +973,7 @@ class Meetingrequest {
 						// when we are automatically processing the meeting request set responsestatus to olResponseNotResponded
 						$calItemProps[$this->proptags['responsestatus']] = $userAction ? ($tentative ? olResponseTentative : olResponseAccepted) : olResponseNotResponded;
 						if ($userAction) {
-							$addrInfo = $this->getOwnerAddress($this->store);
-
-							// if user has responded then set replytime and name
-							$calItemProps[$this->proptags['replytime']] = time();
-							if (!empty($addrInfo)) {
-								$calItemProps[$this->proptags['apptreplyname']] = $addrInfo[0];
-							}
+							$this->setReplyTimeAndName($calItemProps);
 						}
 
 						$calItemProps[$this->proptags['recurring_pattern']] = '';
