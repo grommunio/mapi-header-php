@@ -2836,13 +2836,7 @@ class Meetingrequest {
 		}
 
 		if ($userAction) {
-			$addrInfo = $this->getOwnerAddress($this->store);
-
-			// if user has responded then set replytime and name
-			$exception_props[$this->proptags['replytime']] = time();
-			if (!empty($addrInfo)) {
-				$exception_props[$this->proptags['apptreplyname']] = $addrInfo[0];
-			}
+			$this->setReplyTimeAndName($exception_props);
 		}
 
 		// In some cases the exception subject is not in the property list,
