@@ -1058,13 +1058,7 @@ class Meetingrequest {
 						$props[$this->proptags['busystatus']] = $this->calculateBusyStatus($tentative, $props);
 
 						if ($userAction) {
-							$addrInfo = $this->getOwnerAddress($this->store);
-
-							// if user has responded then set replytime and name
-							$props[$this->proptags['replytime']] = time();
-							if (!empty($addrInfo)) {
-								$props[$this->proptags['apptreplyname']] = $addrInfo[0];
-							}
+							$this->setReplyTimeAndName($props);
 						}
 
 						mapi_setprops($new, $proposeNewTimeProps + $props);
