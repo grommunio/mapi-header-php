@@ -2815,7 +2815,7 @@ class Meetingrequest {
 		}
 
 		$exception_props[$this->proptags['meetingstatus']] = olMeetingReceived;
-		$exception_props[$this->proptags['responsestatus']] = $userAction ? ($tentative ? olResponseTentative : olResponseAccepted) : olResponseNotResponded;
+		$exception_props[$this->proptags['responsestatus']] = $this->determineResponseStatus($userAction, $tentative);
 
 		if (isset($exception_props[$this->proptags['intendedbusystatus']])) {
 			if ($tentative && $exception_props[$this->proptags['intendedbusystatus']] !== fbFree) {
