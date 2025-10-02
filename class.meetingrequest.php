@@ -969,8 +969,7 @@ class Meetingrequest {
 							$calItemProps[$this->proptags['intendedbusystatus']] = $messageprops[$this->proptags['intendedbusystatus']];
 						}
 
-						// when we are automatically processing the meeting request set responsestatus to olResponseNotResponded
-						$calItemProps[$this->proptags['responsestatus']] = $userAction ? ($tentative ? olResponseTentative : olResponseAccepted) : olResponseNotResponded;
+						$calItemProps[$this->proptags['responsestatus']] = $this->determineResponseStatus($userAction, $tentative);
 						if ($userAction) {
 							$this->setReplyTimeAndName($calItemProps);
 						}
