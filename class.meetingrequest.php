@@ -1048,8 +1048,7 @@ class Meetingrequest {
 						if (!isset($props[$this->proptags['updatecounter']])) {
 							$props[$this->proptags['updatecounter']] = 0;
 						}
-						// when we are automatically processing the meeting request set responsestatus to olResponseNotResponded
-						$props[$this->proptags['responsestatus']] = $userAction ? ($tentative ? olResponseTentative : olResponseAccepted) : olResponseNotResponded;
+						$props[$this->proptags['responsestatus']] = $this->determineResponseStatus($userAction, $tentative);
 
 						$props[$this->proptags['busystatus']] = $this->calculateBusyStatus($tentative, $props);
 
