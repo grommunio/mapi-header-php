@@ -831,8 +831,7 @@ class Meetingrequest {
 					$props[$this->proptags['updatecounter']] = 0;
 				}
 				$props[$this->proptags['meetingstatus']] = olMeetingReceived;
-				// when we are automatically processing the meeting request set responsestatus to olResponseNotResponded
-				$props[$this->proptags['responsestatus']] = $userAction ? ($tentative ? olResponseTentative : olResponseAccepted) : olResponseNotResponded;
+				$props[$this->proptags['responsestatus']] = $this->determineResponseStatus($userAction, $tentative);
 
 				$props[$this->proptags['busystatus']] = $this->calculateBusyStatus($tentative, $props);
 
@@ -3979,5 +3978,21 @@ class Meetingrequest {
 		if (isset($props[$this->proptags['reminderminutes']])) {
 			$props[$this->proptags['flagdueby']] = $props[$this->proptags['startdate']] - ($props[$this->proptags['reminderminutes']] * 60);
 		}
+	}
+
+	/**
+	 * Determine the appropriate response status based on user action and tentative flag.
+	 *
+	 * @param bool $userAction Whether this is a user-initiated action
+	 * @param bool $tentative  Whether the response is tentative
+	 *
+	 * @return int The response status constant
+	 */
+	private function determineResponseStatus(bool $userAction, bool $tentative): int {
+		if (!$userAction) {
+			return olResponseNotResponded;
+		}
+
+		return $tentative ? olResponseTentative : olResponseAccepted;
 	}
 }
