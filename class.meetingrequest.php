@@ -255,11 +255,11 @@ class Meetingrequest {
 	/**
 	 * Returns TRUE if the message pointed to is a cancellation request.
 	 *
-	 * @param string $messageClass message class to use for checking
+	 * @param string|false $messageClass message class to use for checking
 	 *
 	 * @return bool returns true if this is a meeting request else false
 	 */
-	public function isMeetingCancellation($messageClass = false) {
+	public function isMeetingCancellation(string|false $messageClass = false): bool {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
