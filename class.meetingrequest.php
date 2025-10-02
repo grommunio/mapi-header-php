@@ -215,11 +215,11 @@ class Meetingrequest {
 	 * Returns TRUE if the message pointed to is an incoming meeting request and should
 	 * therefore be replied to with doAccept or doDecline().
 	 *
-	 * @param string $messageClass message class to use for checking
+	 * @param string|false $messageClass message class to use for checking
 	 *
 	 * @return bool returns true if this is a meeting request else false
 	 */
-	public function isMeetingRequest($messageClass = false) {
+	public function isMeetingRequest(string|false $messageClass = false): bool {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
