@@ -275,9 +275,9 @@ class Meetingrequest {
 	/**
 	 * Function is used to get the last update counter of meeting request.
 	 *
-	 * @return bool|int false when last_updatecounter not found else return last_updatecounter
+	 * @return int|false false when last_updatecounter not found else return last_updatecounter
 	 */
-	public function getLastUpdateCounter() {
+	public function getLastUpdateCounter(): int|false {
 		$calendarItemProps = mapi_getprops($this->message, [$this->proptags['last_updatecounter']]);
 		if (isset($calendarItemProps) && !empty($calendarItemProps)) {
 			return $calendarItemProps[$this->proptags['last_updatecounter']];
