@@ -2337,7 +2337,7 @@ class Meetingrequest {
 	 *
 	 * @return false|string globalID with basedate in it
 	 */
-	public function setBasedateInGlobalID($goid, $basedate = false, $recurrence = null) {
+	public function setBasedateInGlobalID(string $goid, int|false $basedate = false, ?BaseRecurrence $recurrence = null): string|false {
 		$hexguid = bin2hex($goid);
 		$timestamp = $basedate;
 
