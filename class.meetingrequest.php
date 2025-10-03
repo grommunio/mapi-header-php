@@ -1631,9 +1631,11 @@ class Meetingrequest {
 	/**
 	 * Return the tracking status of a recipient based on the IPM class (passed).
 	 *
-	 * @param mixed $class
+	 * @param string $class
+	 *
+	 * @return int tracking status constant
 	 */
-	public function getTrackStatus($class) {
+	public function getTrackStatus(string $class): int {
 		$status = olRecipientTrackStatusNone;
 
 		return match ($class) {
