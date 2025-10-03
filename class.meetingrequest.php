@@ -3854,7 +3854,7 @@ class Meetingrequest {
 	 *
 	 * @param string $meetingTimeInfo info about meeting timing along with message body
 	 */
-	public function setMeetingTimeInfo($meetingTimeInfo): void {
+	public function setMeetingTimeInfo(string|false $meetingTimeInfo): void {
 		$this->meetingTimeInfo = $meetingTimeInfo;
 	}
 
