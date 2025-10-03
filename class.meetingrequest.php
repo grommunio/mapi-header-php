@@ -3844,7 +3844,7 @@ class Meetingrequest {
 	 *
 	 * @return false|string $meetingTimeInfo info about meeting timing along with message body
 	 */
-	public function getMeetingTimeInfo() {
+	public function getMeetingTimeInfo(): string|false {
 		return $this->meetingTimeInfo;
 	}
 
