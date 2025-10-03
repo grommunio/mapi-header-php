@@ -536,7 +536,7 @@ class Meetingrequest {
 	 * Process an incoming meeting request cancellation. This updates the
 	 * appointment in your calendar to show that the meeting has been cancelled.
 	 */
-	public function processMeetingCancellation() {
+	public function processMeetingCancellation(): void {
 		if (!$this->isMeetingCancellation()) {
 			return;
 		}
