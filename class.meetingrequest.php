@@ -3346,7 +3346,7 @@ class Meetingrequest {
 	 *
 	 * @return bool true if meeting request is outofdate else false if it is new
 	 */
-	public function isMeetingOutOfDate() {
+	public function isMeetingOutOfDate(): bool {
 		$result = false;
 
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->proptags['goid'], $this->proptags['goid2'], $this->proptags['updatecounter'], $this->proptags['meetingtype'], $this->proptags['owner_critical_change']]);
