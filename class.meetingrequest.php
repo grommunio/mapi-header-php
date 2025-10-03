@@ -3257,47 +3257,18 @@ class Meetingrequest {
 			if ($storeProps[PR_ENTRYID] !== $userStoreProps[PR_ENTRYID]) {
 				// get the delegator properties and set it into outgoing mail
 				$delegatorDetails = $this->getOwnerAddress($store, false);
-
-				if (!empty($delegatorDetails)) {
-					[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $delegatorDetails;
-					$sentprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS] = $owneremailaddr;
-					$sentprops[PR_SENT_REPRESENTING_NAME] = $ownername;
-					$sentprops[PR_SENT_REPRESENTING_ADDRTYPE] = $owneraddrtype;
-					$sentprops[PR_SENT_REPRESENTING_ENTRYID] = $ownerentryid;
-					$sentprops[PR_SENT_REPRESENTING_SEARCH_KEY] = $ownersearchkey;
-				}
+				$this->setAddressProperties($sentprops, $delegatorDetails, 'SENT_REPRESENTING');
 
 				// get the delegate properties and set it into outgoing mail
 				$delegateDetails = $this->getOwnerAddress($userStore, false);
-
-				if (!empty($delegateDetails)) {
-					[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $delegateDetails;
-					$sentprops[PR_SENDER_EMAIL_ADDRESS] = $owneremailaddr;
-					$sentprops[PR_SENDER_NAME] = $ownername;
-					$sentprops[PR_SENDER_ADDRTYPE] = $owneraddrtype;
-					$sentprops[PR_SENDER_ENTRYID] = $ownerentryid;
-					$sentprops[PR_SENDER_SEARCH_KEY] = $ownersearchkey;
-				}
+				$this->setAddressProperties($sentprops, $delegateDetails, 'SENDER');
 			}
 		}
 		else {
 			// normal user is sending mail, so both set of properties will be same
 			$userDetails = $this->getOwnerAddress($userStore);
-
-			if (!empty($userDetails)) {
-				[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $userDetails;
-				$sentprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS] = $owneremailaddr;
-				$sentprops[PR_SENT_REPRESENTING_NAME] = $ownername;
-				$sentprops[PR_SENT_REPRESENTING_ADDRTYPE] = $owneraddrtype;
-				$sentprops[PR_SENT_REPRESENTING_ENTRYID] = $ownerentryid;
-				$sentprops[PR_SENT_REPRESENTING_SEARCH_KEY] = $ownersearchkey;
-
-				$sentprops[PR_SENDER_EMAIL_ADDRESS] = $owneremailaddr;
-				$sentprops[PR_SENDER_NAME] = $ownername;
-				$sentprops[PR_SENDER_ADDRTYPE] = $owneraddrtype;
-				$sentprops[PR_SENDER_ENTRYID] = $ownerentryid;
-				$sentprops[PR_SENDER_SEARCH_KEY] = $ownersearchkey;
-			}
+			$this->setAddressProperties($sentprops, $userDetails, 'SENT_REPRESENTING');
+			$this->setAddressProperties($sentprops, $userDetails, 'SENDER');
 		}
 
 		$sentprops[PR_SENTMAIL_ENTRYID] = $this->getDefaultSentmailEntryID($userStore);
