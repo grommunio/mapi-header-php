@@ -3407,7 +3407,7 @@ class Meetingrequest {
 	 *
 	 * @return bool true if meeting request is updated later
 	 */
-	public function isMeetingUpdated($basedate = false) {
+	public function isMeetingUpdated(int|false $basedate = false): bool {
 		$result = false;
 
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->proptags['updatecounter']]);
