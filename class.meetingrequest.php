@@ -3402,7 +3402,7 @@ class Meetingrequest {
 	 *                                   true means Recurrence pattern has been changed,
 	 *                                   so clear all attendees response
 	 */
-	public function checkSignificantChanges($oldProps, $basedate, $isRecurrenceChanged = false) {
+	public function checkSignificantChanges(array $oldProps, mixed $basedate, bool $isRecurrenceChanged = false): void {
 		$message = null;
 		$attach = null;
 
