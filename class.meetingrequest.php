@@ -290,7 +290,7 @@ class Meetingrequest {
 	 * Process an incoming meeting request response. This updates the appointment
 	 * in your calendar to show whether the user has accepted or declined.
 	 */
-	public function processMeetingRequestResponse() {
+	public function processMeetingRequestResponse(): void {
 		if (!$this->isMeetingRequestResponse()) {
 			return;
 		}
