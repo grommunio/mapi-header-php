@@ -3588,7 +3588,7 @@ class Meetingrequest {
 	 *
 	 * @psalm-return bool|int<1, max>
 	 */
-	public function isMeetingConflicting($message = false, $userStore = false, $calFolder = false) {
+	public function isMeetingConflicting(mixed $message = false, mixed $userStore = false, mixed $calFolder = false): bool|int {
 		$returnValue = false;
 		$noOfInstances = 0;
 
