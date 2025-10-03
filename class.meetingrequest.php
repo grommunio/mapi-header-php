@@ -3472,7 +3472,7 @@ class Meetingrequest {
 	 *
 	 * @return bool|resource resource of calendar item
 	 */
-	public function getCorrespondentCalendarItem($open = true) {
+	public function getCorrespondentCalendarItem(bool $open = true): mixed {
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->proptags['goid'], $this->proptags['goid2'], PR_RCVD_REPRESENTING_ENTRYID]);
 
 		if (!$this->isMeetingRequest($props[PR_MESSAGE_CLASS]) && !$this->isMeetingRequestResponse($props[PR_MESSAGE_CLASS]) && !$this->isMeetingCancellation($props[PR_MESSAGE_CLASS])) {
