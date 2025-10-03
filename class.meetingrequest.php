@@ -3547,7 +3547,7 @@ class Meetingrequest {
 	 *
 	 * @return entryid or MAPIMessage resource of exception item
 	 */
-	public function getExceptionItem($recurringMessage, $basedate, $store = false) {
+	public function getExceptionItem(mixed $recurringMessage, mixed $basedate, mixed $store = false): mixed {
 		$occurItem = false;
 
 		$props = mapi_getprops($this->message, [PR_RCVD_REPRESENTING_ENTRYID, $this->proptags['recurring']]);
