@@ -2645,29 +2645,11 @@ class Meetingrequest {
 				if ($storeProps[PR_ENTRYID] !== $defaultStoreProps[PR_ENTRYID]) {
 					// get delegate information
 					$addrInfo = $this->getOwnerAddress($defaultStore, false);
-
-					if (!empty($addrInfo)) {
-						[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $addrInfo;
-
-						$messageprops[PR_SENDER_EMAIL_ADDRESS] = $owneremailaddr;
-						$messageprops[PR_SENDER_NAME] = $ownername;
-						$messageprops[PR_SENDER_ADDRTYPE] = $owneraddrtype;
-						$messageprops[PR_SENDER_ENTRYID] = $ownerentryid;
-						$messageprops[PR_SENDER_SEARCH_KEY] = $ownersearchkey;
-					}
+					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
 
 					// get delegator information
 					$addrInfo = $this->getOwnerAddress($this->store, false);
-
-					if (!empty($addrInfo)) {
-						[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $addrInfo;
-
-						$messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS] = $owneremailaddr;
-						$messageprops[PR_SENT_REPRESENTING_NAME] = $ownername;
-						$messageprops[PR_SENT_REPRESENTING_ADDRTYPE] = $owneraddrtype;
-						$messageprops[PR_SENT_REPRESENTING_ENTRYID] = $ownerentryid;
-						$messageprops[PR_SENT_REPRESENTING_SEARCH_KEY] = $ownersearchkey;
-					}
+					$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
 				}
 				else {
 					// get organizer information
@@ -3994,5 +3976,26 @@ class Meetingrequest {
 		}
 
 		return $tentative ? olResponseTentative : olResponseAccepted;
+	}
+
+	/**
+	 * Sets sender or representing address properties in message props.
+	 *
+	 * @param array  $messageprops reference to message properties array
+	 * @param array  $addrInfo     address info array from getOwnerAddress
+	 * @param string $prefix       property prefix ('SENDER' or 'SENT_REPRESENTING')
+	 */
+	private function setAddressProperties(array &$messageprops, array $addrInfo, string $prefix): void {
+		if (empty($addrInfo)) {
+			return;
+		}
+
+		[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $addrInfo;
+
+		$messageprops[constant("PR_{$prefix}_EMAIL_ADDRESS")] = $owneremailaddr;
+		$messageprops[constant("PR_{$prefix}_NAME")] = $ownername;
+		$messageprops[constant("PR_{$prefix}_ADDRTYPE")] = $owneraddrtype;
+		$messageprops[constant("PR_{$prefix}_ENTRYID")] = $ownerentryid;
+		$messageprops[constant("PR_{$prefix}_SEARCH_KEY")] = $ownersearchkey;
 	}
 }
