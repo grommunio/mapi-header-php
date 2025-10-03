@@ -1401,7 +1401,7 @@ class Meetingrequest {
 	 *
 	 * @return int the MAPI FileTime equalevent to the given epoch time
 	 */
-	public function epochToMapiFileTime($epoch) {
+	public function epochToMapiFileTime(int $epoch): int {
 		$nanoseconds_between_epoch = 116444736000000000;
 
 		return ($epoch * 10000000) + $nanoseconds_between_epoch;
