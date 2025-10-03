@@ -3867,7 +3867,7 @@ class Meetingrequest {
 	 *
 	 * @return array $localCategories which contain array of basedate along with categories
 	 */
-	public function getLocalCategories($calendarItem, $store, $calFolder) {
+	public function getLocalCategories(mixed $calendarItem, mixed $store, mixed $calFolder): array {
 		$calendarItemProps = mapi_getprops($calendarItem);
 		$recurrence = new Recurrence($store, $calendarItem);
 
