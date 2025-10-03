@@ -2314,7 +2314,7 @@ class Meetingrequest {
 	 *
 	 * @return false|int true if basedate is found else false it not found
 	 */
-	public function getBasedateFromGlobalID($goid) {
+	public function getBasedateFromGlobalID(string $goid): int|false {
 		$hexguid = bin2hex($goid);
 		$hexbase = substr($hexguid, 32, 8);
 		$day = (int) hexdec(substr($hexbase, 6, 2));
