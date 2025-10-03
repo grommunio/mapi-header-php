@@ -2155,7 +2155,7 @@ class Meetingrequest {
 	}
 
 	// Gets the SMTP address of the passed addressbook entryid
-	public function getSMTPAddress($entryid) {
+	public function getSMTPAddress(string $entryid): string|false {
 		if (!$this->session) {
 			return false;
 		}
