@@ -2654,22 +2654,8 @@ class Meetingrequest {
 				else {
 					// get organizer information
 					$addrInfo = $this->getOwnerAddress($this->store);
-
-					if (!empty($addrInfo)) {
-						[$ownername, $owneremailaddr, $owneraddrtype, $ownerentryid, $ownersearchkey] = $addrInfo;
-
-						$messageprops[PR_SENDER_EMAIL_ADDRESS] = $owneremailaddr;
-						$messageprops[PR_SENDER_NAME] = $ownername;
-						$messageprops[PR_SENDER_ADDRTYPE] = $owneraddrtype;
-						$messageprops[PR_SENDER_ENTRYID] = $ownerentryid;
-						$messageprops[PR_SENDER_SEARCH_KEY] = $ownersearchkey;
-
-						$messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS] = $owneremailaddr;
-						$messageprops[PR_SENT_REPRESENTING_NAME] = $ownername;
-						$messageprops[PR_SENT_REPRESENTING_ADDRTYPE] = $owneraddrtype;
-						$messageprops[PR_SENT_REPRESENTING_ENTRYID] = $ownerentryid;
-						$messageprops[PR_SENT_REPRESENTING_SEARCH_KEY] = $ownersearchkey;
-					}
+					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
+					$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
 				}
 
 				$messageprops[$this->proptags['replytime']] = time();
