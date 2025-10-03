@@ -2138,7 +2138,7 @@ class Meetingrequest {
 
 	// Returns TRUE if both entryid's are equal. Equality is defined by both entryid's pointing at the
 	// same SMTP address when converted to SMTP
-	public function compareABEntryIDs($entryid1, $entryid2): bool {
+	public function compareABEntryIDs(string $entryid1, string $entryid2): bool {
 		// If the session was not passed, just do a 'normal' compare.
 		if (!$this->session) {
 			return $entryid1 == $entryid2;
