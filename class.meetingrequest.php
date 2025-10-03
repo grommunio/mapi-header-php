@@ -2194,7 +2194,7 @@ class Meetingrequest {
 	 *
 	 * @psalm-return false|list{mixed, mixed, mixed, mixed, mixed}
 	 */
-	public function getOwnerAddress($store, $fallbackToLoggedInUser = true) {
+	public function getOwnerAddress(mixed $store, bool $fallbackToLoggedInUser = true): array|false {
 		if (!$this->session) {
 			return false;
 		}
