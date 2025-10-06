@@ -1219,7 +1219,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @return bool Returns TRUE when both dates are on the same day
 	 */
-	public function isSameDay($date1, $date2) {
+	public function isSameDay(int $date1, int $date2): bool {
 		$time1 = $this->gmtime($date1);
 		$time2 = $this->gmtime($date2);
 
