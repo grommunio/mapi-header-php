@@ -3211,7 +3211,7 @@ class Meetingrequest {
 	 * @param array  $messageprops    properties of meeting object that is going to be sent
 	 * @param array  $newmessageprops properties of meeting request/response that is going to be sent
 	 */
-	public function generateRecurDates($recurObject, $messageprops, &$newmessageprops): void {
+	public function generateRecurDates(object $recurObject, array $messageprops, array &$newmessageprops): void {
 		if ($messageprops[$this->proptags['startdate']] && $messageprops[$this->proptags['duedate']]) {
 			$startDate = date('Y:n:j:G:i:s', $recurObject->fromGMT($recurObject->tz, $messageprops[$this->proptags['startdate']]));
 			$endDate = date('Y:n:j:G:i:s', $recurObject->fromGMT($recurObject->tz, $messageprops[$this->proptags['duedate']]));
