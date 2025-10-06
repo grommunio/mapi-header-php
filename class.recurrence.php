@@ -1167,7 +1167,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @return bool true - if an exception occurs on the given date, false - no exception occurs on the given date
 	 */
-	public function isException($basedate) {
+	public function isException(int $basedate): bool {
 		if ($this->isDeleteException($basedate)) {
 			return true;
 		}
@@ -1184,7 +1184,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function isDeleteException($basedate): bool {
+	public function isDeleteException(int $basedate): bool {
 		// Check if the occurrence is deleted on the specified date
 		foreach ($this->recur["deleted_occurrences"] as $deleted) {
 			if ($this->isSameDay($deleted, $basedate)) {
