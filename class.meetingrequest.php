@@ -2400,7 +2400,7 @@ class Meetingrequest {
 	 * @param bool  $isDelegate indicates whether delegate is processing
 	 *                          so don't copy delegate information to recipient table
 	 */
-	public function replaceRecipients($copyFrom, $copyTo, $isDelegate = false): void {
+	public function replaceRecipients(mixed $copyFrom, mixed $copyTo, bool $isDelegate = false): void {
 		$recipientTable = mapi_message_getrecipienttable($copyFrom);
 
 		// If delegate, then do not add the delegate in recipients
