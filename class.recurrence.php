@@ -415,13 +415,13 @@ class Recurrence extends BaseRecurrence {
 
 	// Returns the start or end time of the occurrence on the given base date.
 	// This assumes that the basedate you supply is in LOCAL time
-	public function getOccurrenceStart($basedate) {
+	public function getOccurrenceStart(int $basedate): int {
 		$daystart = $this->dayStartOf($basedate);
 
 		return $this->toGMT($this->tz, $daystart + $this->recur["startocc"] * 60);
 	}
 
-	public function getOccurrenceEnd($basedate) {
+	public function getOccurrenceEnd(int $basedate): int {
 		$daystart = $this->dayStartOf($basedate);
 
 		return $this->toGMT($this->tz, $daystart + $this->recur["endocc"] * 60);
