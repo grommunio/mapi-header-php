@@ -2840,7 +2840,7 @@ class Meetingrequest {
 	 * @param mixed    $basedate       basedate of occurrence
 	 * @param resource $store          user store
 	 */
-	public function mergeException(&$recurringItem, &$occurrenceItem, $basedate, $store): void {
+	public function mergeException(mixed &$recurringItem, mixed &$occurrenceItem, mixed $basedate, mixed $store): void {
 		$recurr = new Recurrence($store, $recurringItem);
 
 		// Copy properties from meeting request
