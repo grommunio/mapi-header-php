@@ -1200,7 +1200,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function getChangeException($basedate) {
+	public function getChangeException(int $basedate): array|false {
 		// Check if the occurrence is modified on the specified date
 		foreach ($this->recur["changed_occurrences"] as $changed) {
 			if ($this->isSameDay($changed["basedate"], $basedate)) {
