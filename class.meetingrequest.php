@@ -2102,7 +2102,7 @@ class Meetingrequest {
 	 *
 	 * @return mixed
 	 */
-	public function findCalendarItems($goid, $calendar = false, $useCleanGlobalId = false) {
+	public function findCalendarItems(string $goid, mixed $calendar = false, bool $useCleanGlobalId = false): ?array {
 		if ($calendar === false) {
 			// Open the Calendar
 			$calendar = $this->openDefaultCalendar();
