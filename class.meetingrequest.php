@@ -2751,7 +2751,7 @@ class Meetingrequest {
 	 * @param resource $store          user store
 	 * @param bool     $isDelegate     true if delegate is processing this meeting request
 	 */
-	public function acceptException(&$recurringItem, &$occurrenceItem, $basedate, $move, $tentative, $userAction, $store, $isDelegate = false): void {
+	public function acceptException(mixed &$recurringItem, mixed &$occurrenceItem, mixed $basedate, bool $move, bool $tentative, bool $userAction, mixed $store, bool $isDelegate = false): void {
 		$recurr = new Recurrence($store, $recurringItem);
 
 		// Copy properties from meeting request
