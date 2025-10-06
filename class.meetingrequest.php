@@ -2301,7 +2301,7 @@ class Meetingrequest {
 	 * @param mixed    $message  recurring item from which occurrence has to be deleted
 	 * @param resource $store    MAPI_MSG_Store which contains the item
 	 */
-	public function doRemoveExceptionFromCalendar($basedate, $message, $store): void {
+	public function doRemoveExceptionFromCalendar(mixed $basedate, mixed $message, mixed $store): void {
 		$recurr = new Recurrence($store, $message);
 		$recurr->createException([], $basedate, true);
 		mapi_savechanges($message);
