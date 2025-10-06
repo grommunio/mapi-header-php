@@ -2261,7 +2261,7 @@ class Meetingrequest {
 	 * @param array $recipients   recipients list of message
 	 * @param bool  $isException  true if we are processing recipient of exception
 	 */
-	public function addOrganizer($messageProps, &$recipients, $isException = false): void {
+	public function addOrganizer(array $messageProps, array &$recipients, bool $isException = false): void {
 		$hasOrganizer = false;
 		// Check if meeting already has an organizer.
 		foreach ($recipients as $key => $recipient) {
