@@ -1577,7 +1577,7 @@ class Meetingrequest {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function updateMeetingRequest($basedate = false): void {
+	public function updateMeetingRequest(int|false $basedate = false): void {
 		$messageprops = mapi_getprops($this->message, [$this->proptags['last_updatecounter'], $this->proptags['goid']]);
 
 		if (!isset($messageprops[$this->proptags['goid']])) {
