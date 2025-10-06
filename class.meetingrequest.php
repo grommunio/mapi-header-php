@@ -2233,7 +2233,7 @@ class Meetingrequest {
 	}
 
 	// Opens this session's default message store
-	public function openDefaultStore() {
+	public function openDefaultStore(): mixed {
 		$entryid = '';
 
 		$storestable = mapi_getmsgstorestable($this->session);
