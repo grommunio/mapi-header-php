@@ -1041,7 +1041,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $base_date
 	 */
-	public function getExceptionAttachment($base_date) {
+	public function getExceptionAttachment(int $base_date): mixed {
 		// Retrieve only exceptions which are stored as embedded messages
 		$attach_res = [
 			RES_PROPERTY,
