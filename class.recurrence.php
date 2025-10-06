@@ -437,7 +437,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $timestamp
 	 */
-	public function getNextReminderTime($timestamp) {
+	public function getNextReminderTime(int $timestamp): int|false {
 		/**
 		 * Get next item from now until forever, but max 1 item with reminder set
 		 * Note 0x7ff00000 instead of 0x7fffffff because of possible overflow failures when converting to GMT....
