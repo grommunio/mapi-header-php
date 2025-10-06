@@ -2359,7 +2359,7 @@ class Meetingrequest {
 	 * @param mixed $copyTo         MAPI_message to which attachment are to be copied
 	 * @param bool  $copyExceptions if true then all exceptions should also be sent as attachments
 	 */
-	public function replaceAttachments($copyFrom, $copyTo, $copyExceptions = true): void {
+	public function replaceAttachments(mixed $copyFrom, mixed $copyTo, bool $copyExceptions = true): void {
 		/* remove all old attachments */
 		$attachmentTableTo = mapi_message_getattachmenttable($copyTo);
 		if ($attachmentTableTo) {
