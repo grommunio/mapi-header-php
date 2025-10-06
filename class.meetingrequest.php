@@ -1336,7 +1336,7 @@ class Meetingrequest {
 	 * @FIXME cancellation mail is also sent to attendee which has declined the meeting
 	 * @FIXME don't send canellation mail when cancelling meeting from past
 	 */
-	public function doCancelInvitation($basedate = false) {
+	public function doCancelInvitation(int|false $basedate = false): void {
 		if (!$this->isLocalOrganiser()) {
 			return;
 		}
