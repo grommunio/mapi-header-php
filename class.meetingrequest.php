@@ -1415,7 +1415,7 @@ class Meetingrequest {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function setMeetingRequest($basedate = false): void {
+	public function setMeetingRequest(int|false $basedate = false): void {
 		$props = mapi_getprops($this->message, [$this->proptags['updatecounter']]);
 
 		// Create a new global id for this item
