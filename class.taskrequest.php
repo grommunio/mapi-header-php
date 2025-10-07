@@ -1345,7 +1345,7 @@ class TaskRequest {
 	 *
 	 * @return string info about task request comments along with message body
 	 */
-	public function getTaskCommentsInfo() {
+	public function getTaskCommentsInfo(): string {
 		return $this->taskCommentsInfo;
 	}
 
@@ -1355,11 +1355,11 @@ class TaskRequest {
 	 *
 	 * @param string $taskCommentsInfo info about task request comments along with message body
 	 */
-	public function setTaskCommentsInfo($taskCommentsInfo): void {
+	public function setTaskCommentsInfo(string $taskCommentsInfo): void {
 		$this->taskCommentsInfo = $taskCommentsInfo;
 	}
 
-	public function getSubProperties() {
+	public function getSubProperties(): array {
 		$subProperties = [];
 		$subProperties["subject"] = PR_SUBJECT;
 		$subProperties["convtopic"] = PR_CONVERSATION_TOPIC;
