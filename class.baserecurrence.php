@@ -1695,7 +1695,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @psalm-return array<int, T|array>
 	 */
-	public function getItems($start, $end, $limit = 0, $remindersonly = false): array {
+	public function getItems(int $start, int $end, mixed $limit = 0, mixed $remindersonly = false): array {
 		$items = [];
 		$firstday = 0;
 
