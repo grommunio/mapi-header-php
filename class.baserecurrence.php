@@ -140,7 +140,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @psalm-return array{changed_occurrences: array<int, array{basedate: false|int, start: int, end: int, bitmask: mixed, subject?: false|string, remind_before?: mixed, reminder_set?: mixed, location?: false|string, busystatus?: mixed, alldayevent?: mixed, label?: mixed, ex_start_datetime?: mixed, ex_end_datetime?: mixed, ex_orig_date?: mixed}>, deleted_occurrences: list<int>, type?: int|mixed, subtype?: mixed, month?: mixed, everyn?: mixed, regen?: mixed, monthday?: mixed, weekdays?: 0|mixed, nday?: mixed, term?: int|mixed, numoccur?: mixed, numexcept?: mixed, first_dow?: mixed, numexceptmod?: mixed, start?: int, end?: int, startocc?: mixed, endocc?: mixed}|null
 	 */
-	public function parseRecurrence($rdata) {
+	public function parseRecurrence(string $rdata): ?array {
 		if (strlen($rdata) < 10) {
 			return;
 		}
