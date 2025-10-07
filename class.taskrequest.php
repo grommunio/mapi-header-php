@@ -854,7 +854,7 @@ class TaskRequest {
 	/**
 	 * Opens the default task folder for the current user, or the specified user if passed.
 	 */
-	public function getDefaultTasksFolder() {
+	public function getDefaultTasksFolder(): mixed {
 		$store = $this->getTaskFolderStore();
 
 		$inbox = mapi_msgstore_getreceivefolder($store);
@@ -875,7 +875,7 @@ class TaskRequest {
 	 *
 	 * @psalm-return array<array<array<array<array<array<never, never>>>>>>|false
 	 */
-	public function getSentReprProps($store) {
+	public function getSentReprProps(mixed $store): array|false {
 		$storeprops = mapi_getprops($store, [PR_MAILBOX_OWNER_ENTRYID]);
 		if (!isset($storeprops[PR_MAILBOX_OWNER_ENTRYID])) {
 			return false;
@@ -899,7 +899,7 @@ class TaskRequest {
 	 * Creates an outgoing message based on the passed message - will set delegate information
 	 * and sent mail folder.
 	 */
-	public function createOutgoingMessage() {
+	public function createOutgoingMessage(): mixed {
 		// Open our default store for this user (that's the only store we can submit in)
 		$store = $this->getDefaultStore();
 		$storeprops = mapi_getprops($store, [PR_IPM_OUTBOX_ENTRYID, PR_IPM_SENTMAIL_ENTRYID]);
