@@ -1447,7 +1447,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return float|int the converted date in minutes
 	 */
-	public function unixDataToRecurData($date) {
+	public function unixDataToRecurData(int $date): float|int {
 		return ($date / 60) + 194074560;
 	}
 
@@ -1460,7 +1460,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return float|int
 	 */
-	public function GetTZOffset($ts) {
+	public function GetTZOffset(mixed $ts): float|int {
 		$Offset = date("O", $ts);
 
 		$Parity = $Offset < 0 ? -1 : 1;
