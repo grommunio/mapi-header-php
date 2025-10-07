@@ -2125,7 +2125,11 @@ class Meetingrequest {
 		}
 
 		// Set GlobalId AND CleanGlobalId, if exception then also set basedate into GlobalId(0x3).
-		$props[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedate);
+		$props[$this->proptags['goid']] = $this->setBasedateInGlobalID(
+			$messageprops[$this->proptags['goid2']],
+			$basedate,
+			isset($recurr) && $recurr instanceof BaseRecurrence ? $recurr : null
+		);
 		$props[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
 		$props[$this->proptags['updatecounter']] = $messageprops[$this->proptags['updatecounter']] ?? 0;
 
@@ -2399,16 +2403,23 @@ class Meetingrequest {
 	/**
 	 * Function which sets basedate in globalID of changed occurrence which is to be sent.
 	 *
-	 * @param string $goid     globalID
-	 * @param mixed  $basedate of changed occurrence
+	 * @param string               $goid       globalID
+	 * @param mixed                $basedate   of changed occurrence (UTC when $recurrence is provided)
+	 * @param null|BaseRecurrence $recurrence recurrence helper for timezone conversion
 	 *
 	 * @return false|string globalID with basedate in it
 	 */
-	public function setBasedateInGlobalID($goid, $basedate = false) {
+	public function setBasedateInGlobalID($goid, $basedate = false, $recurrence = null) {
 		$hexguid = bin2hex($goid);
-		$year = $basedate ? sprintf('%04s', dechex((int) gmdate('Y', $basedate))) : '0000';
-		$month = $basedate ? sprintf('%02s', dechex((int) gmdate('m', $basedate))) : '00';
-		$day = $basedate ? sprintf('%02s', dechex((int) gmdate('d', $basedate))) : '00';
+		$timestamp = $basedate;
+
+		if ($basedate !== false && $recurrence instanceof BaseRecurrence && isset($recurrence->tz)) {
+			$timestamp = $recurrence->fromGMT($recurrence->tz, $basedate);
+		}
+
+		$year = $timestamp !== false ? sprintf('%04s', dechex((int) gmdate('Y', $timestamp))) : '0000';
+		$month = $timestamp !== false ? sprintf('%02s', dechex((int) gmdate('m', $timestamp))) : '00';
+		$day = $timestamp !== false ? sprintf('%02s', dechex((int) gmdate('d', $timestamp))) : '00';
 
 		return hex2bin(strtoupper(substr($hexguid, 0, 32) . $year . $month . $day . substr($hexguid, 40)));
 	}
@@ -2513,7 +2524,13 @@ class Meetingrequest {
 		if ($basedate) {
 			$recurrItemProps = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2'], $this->proptags['timezone_data'], $this->proptags['timezone'], PR_OWNER_APPT_ID]);
 
-			$messageprops[$this->proptags['goid']] = $this->setBasedateInGlobalID($recurrItemProps[$this->proptags['goid']], $basedate);
+			$recurrenceHelper = new Recurrence($this->openDefaultStore(), $this->message);
+			$basedateUtc = $basedate;
+			if ($recurrenceHelper instanceof BaseRecurrence && isset($recurrenceHelper->tz)) {
+				$basedateUtc = $recurrenceHelper->toGMT($recurrenceHelper->tz, $basedate);
+			}
+
+			$messageprops[$this->proptags['goid']] = $this->setBasedateInGlobalID($recurrItemProps[$this->proptags['goid']], $basedateUtc, $recurrenceHelper);
 			$messageprops[$this->proptags['goid2']] = $recurrItemProps[$this->proptags['goid2']];
 
 			// Delete properties which are not needed.
@@ -2972,8 +2989,13 @@ class Meetingrequest {
 			// and newmessageprops contains properties of exception item
 			$newmessageprops = mapi_getprops($message);
 
+			$basedateUtc = $basedate;
+			if ($recurObject instanceof BaseRecurrence && isset($recurObject->tz)) {
+				$basedateUtc = $recurObject->toGMT($recurObject->tz, $basedate);
+			}
+
 			// Ensure that the correct basedate is set in the new message
-			$newmessageprops[$this->proptags['basedate']] = $basedate;
+			$newmessageprops[$this->proptags['basedate']] = $basedateUtc;
 
 			// Set isRecurring to false, because this is an exception
 			$newmessageprops[$this->proptags['recurring']] = false;
@@ -2993,7 +3015,7 @@ class Meetingrequest {
 			}
 
 			// Set basedate in guid (0x3)
-			$newmessageprops[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedate);
+			$newmessageprops[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedateUtc, $recurObject instanceof BaseRecurrence ? $recurObject : null);
 			$newmessageprops[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
 			$newmessageprops[PR_OWNER_APPT_ID] = $messageprops[PR_OWNER_APPT_ID];
 
@@ -3779,7 +3801,8 @@ class Meetingrequest {
 					// Get the goid2 from recurring MR which further used to
 					// check the resource conflicts item.
 					$recurrItemProps = mapi_getprops($this->message, [$this->proptags['goid2']]);
-					$messageProps[$this->proptags['goid']] = $this->setBasedateInGlobalID($recurrItemProps[$this->proptags['goid2']], $basedate);
+					$recurrenceHelper = new Recurrence($this->openDefaultStore(), $this->message);
+					$messageProps[$this->proptags['goid']] = $this->setBasedateInGlobalID($recurrItemProps[$this->proptags['goid2']], $basedate, $recurrenceHelper);
 					$messageProps[$this->proptags['goid2']] = $recurrItemProps[$this->proptags['goid2']];
 				}
 
