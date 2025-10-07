@@ -1039,7 +1039,7 @@ class TaskRequest {
 	 *
 	 * @return bool|resource embedded task if found else false
 	 */
-	public function getEmbeddedTask() {
+	public function getEmbeddedTask(): mixed {
 		$task = false;
 		$goid = mapi_getprops($this->message, [$this->props["task_goid"]]);
 		$attachmentTable = mapi_message_getattachmenttable($this->message);
@@ -1136,7 +1136,7 @@ class TaskRequest {
 	 *
 	 * @param mixed $task assignee's copy of task
 	 */
-	public function setAssignorInRecipients($task): void {
+	public function setAssignorInRecipients(mixed $task): void {
 		$recipTable = mapi_message_getrecipienttable($task);
 
 		// Delete all MAPI_TO recipients
@@ -1202,7 +1202,7 @@ class TaskRequest {
 	 *
 	 * @return array|false
 	 */
-	public function deleteReceivedTR() {
+	public function deleteReceivedTR(): array|false {
 		$store = $this->getTaskFolderStore();
 		$storeType = mapi_getprops($store, [PR_MDB_PROVIDER]);
 		if ($storeType[PR_MDB_PROVIDER] === ZARAFA_STORE_PUBLIC_GUID) {
