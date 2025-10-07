@@ -43,7 +43,7 @@ abstract class BaseRecurrence {
 	 * @param resource $store   MAPI Message Store Object
 	 * @param mixed    $message the MAPI (appointment) message
 	 */
-	public function __construct(public $store, $message) {
+	public function __construct(public $store, mixed $message) {
 		if (is_array($message)) {
 			$this->messageprops = $message;
 		}
@@ -2086,5 +2086,5 @@ abstract class BaseRecurrence {
 	 * @param mixed     $tz
 	 * @param mixed     $reminderonly
 	 */
-	abstract public function processOccurrenceItem(array &$items, $start, int $end, $basedate, $startocc, $endocc, $tz, $reminderonly);
+	abstract public function processOccurrenceItem(array &$items, false|int $start, int $end, false|int $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): void;
 }
