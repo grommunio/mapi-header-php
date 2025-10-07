@@ -1434,7 +1434,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return int the converted date
 	 */
-	public function recurDataToUnixData($rdate) {
+	public function recurDataToUnixData(int $rdate): int {
 		return ($rdate - 194074560) * 60;
 	}
 
