@@ -1663,7 +1663,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int Timestamp referring to same month but on the first day, and at 00:00:00
 	 */
-	public function monthStartOf($date) {
+	public function monthStartOf(int $date): int|false {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, $time1["tm_mon"] + 1, 1, $time1["tm_year"] + 1900);
@@ -1676,7 +1676,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int Timestamp referring to the same year but on Jan 01, at 00:00:00
 	 */
-	public function yearStartOf($date) {
+	public function yearStartOf(int $date): int|false {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, 1, 1, $time1["tm_year"] + 1900);
