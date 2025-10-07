@@ -302,7 +302,7 @@ class TaskRequest {
 	 *
 	 * @return bool true if task request is updated later
 	 */
-	public function isTaskRequestUpdated() {
+	public function isTaskRequestUpdated(): bool {
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->props['task_goid'], $this->props['updatecount']]);
 		$result = false;
 		$associatedTask = $this->getAssociatedTask(false);
@@ -486,7 +486,7 @@ class TaskRequest {
 	 *
 	 * @return bool
 	 */
-	public function updateSentTaskRequest() {
+	public function updateSentTaskRequest(): bool {
 		$props = mapi_getprops($this->message, [
 			$this->props['taskhistory'],
 			$this->props["taskstate"],
