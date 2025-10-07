@@ -1526,7 +1526,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return int the timestamp of the given date, timezone-independent
 	 */
-	public function getDateByYearMonthWeekDayHour($year, $month, $week, $day, $hour) {
+	public function getDateByYearMonthWeekDayHour(int $year, int $month, int $week, int $day, int $hour): int {
 		// get first day of month
 		$date = gmmktime(0, 0, 0, $month, 0, $year + 1900);
 
@@ -1558,7 +1558,7 @@ abstract class BaseRecurrence {
 	 * @param mixed $tz
 	 * @param mixed $date
 	 */
-	public function getTimezone($tz, $date) {
+	public function getTimezone(mixed $tz, mixed $date): int {
 		// No timezone -> GMT (+0)
 		if (!isset($tz["timezone"])) {
 			return 0;
