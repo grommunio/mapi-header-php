@@ -1622,7 +1622,7 @@ abstract class BaseRecurrence {
 	 * @param mixed $tz
 	 * @param mixed $date
 	 */
-	public function toGMT($tz, $date) {
+	public function toGMT(mixed $tz, int $date): int {
 		if (!isset($tz['timezone'])) {
 			return $date;
 		}
@@ -1637,7 +1637,7 @@ abstract class BaseRecurrence {
 	 * @param mixed $tz
 	 * @param mixed $date
 	 */
-	public function fromGMT($tz, $date) {
+	public function fromGMT(mixed $tz, int $date): int {
 		$offset = $this->getTimezone($tz, $date);
 
 		return $date - $offset * 60;
@@ -1650,7 +1650,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int timestamp referring to same day but at 00:00:00
 	 */
-	public function dayStartOf($date) {
+	public function dayStartOf(int $date): int|false {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, $time1["tm_mon"] + 1, $time1["tm_mday"], $time1["tm_year"] + 1900);
