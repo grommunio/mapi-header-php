@@ -65,7 +65,7 @@ abstract class BaseRecurrence {
 		}
 	}
 
-	public function getRecurrence() {
+	public function getRecurrence(): array {
 		return $this->recur;
 	}
 
