@@ -634,7 +634,7 @@ class TaskRequest {
 	 *
 	 * @return bool
 	 */
-	public function processTaskRequest() {
+	public function processTaskRequest(): bool {
 		if (!$this->isTaskRequest()) {
 			return false;
 		}
@@ -695,7 +695,7 @@ class TaskRequest {
 	 *
 	 * @return array|false PR_ENTRYID, PR_STORE_ENTRYID and PR_PARENT_ENTRYID of the task
 	 */
-	public function doAccept() {
+	public function doAccept(): array|false {
 		$prefix = _("Task Accepted:") . " ";
 		$messageProps = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->props['taskstate']]);
 
@@ -745,7 +745,7 @@ class TaskRequest {
 	 *
 	 * @return array|false TRUE on success, FALSE on failure
 	 */
-	public function doDecline() {
+	public function doDecline(): array|false {
 		$prefix = _("Task Declined:") . " ";
 		$messageProps = mapi_getprops($this->message, [$this->props['taskstate']]);
 
