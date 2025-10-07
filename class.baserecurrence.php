@@ -98,6 +98,7 @@ abstract class BaseRecurrence {
 	 * start - unix timestamp of first occurrence
 	 * end  - unix timestamp of last occurrence (up to and including), so when start == end -> occurrences = 1
 	 * numoccur     - occurrences (may be very large when there is no end data)
+	 * first_dow    - first day-of-week for weekly recurrences (0 = Sunday, 1 = Monday, ...)
 	 *
 	 * then, for each type:
 	 *
@@ -137,7 +138,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return null|(((false|int|mixed|string)[]|int)[]|int|mixed)[] recurrence data
 	 *
-	 * @psalm-return array{changed_occurrences: array<int, array{basedate: false|int, start: int, end: int, bitmask: mixed, subject?: false|string, remind_before?: mixed, reminder_set?: mixed, location?: false|string, busystatus?: mixed, alldayevent?: mixed, label?: mixed, ex_start_datetime?: mixed, ex_end_datetime?: mixed, ex_orig_date?: mixed}>, deleted_occurrences: list<int>, type?: int|mixed, subtype?: mixed, month?: mixed, everyn?: mixed, regen?: mixed, monthday?: mixed, weekdays?: 0|mixed, nday?: mixed, term?: int|mixed, numoccur?: mixed, numexcept?: mixed, numexceptmod?: mixed, start?: int, end?: int, startocc?: mixed, endocc?: mixed}|null
+	 * @psalm-return array{changed_occurrences: array<int, array{basedate: false|int, start: int, end: int, bitmask: mixed, subject?: false|string, remind_before?: mixed, reminder_set?: mixed, location?: false|string, busystatus?: mixed, alldayevent?: mixed, label?: mixed, ex_start_datetime?: mixed, ex_end_datetime?: mixed, ex_orig_date?: mixed}>, deleted_occurrences: list<int>, type?: int|mixed, subtype?: mixed, month?: mixed, everyn?: mixed, regen?: mixed, monthday?: mixed, weekdays?: 0|mixed, nday?: mixed, term?: int|mixed, numoccur?: mixed, numexcept?: mixed, first_dow?: mixed, numexceptmod?: mixed, start?: int, end?: int, startocc?: mixed, endocc?: mixed}|null
 	 */
 	public function parseRecurrence($rdata) {
 		if (strlen($rdata) < 10) {
@@ -309,6 +310,7 @@ abstract class BaseRecurrence {
 
 		$ret["term"] = (int) $data["term"] > 0x2000 ? (int) $data["term"] - 0x2000 : $data["term"];
 		$ret["numoccur"] = $data["numoccur"];
+		$ret["first_dow"] = $data["const2"];
 		$ret["numexcept"] = $data["numexcept"];
 
 		// exc_base_dates are *all* the base dates that have been either deleted or modified
@@ -999,13 +1001,9 @@ abstract class BaseRecurrence {
 				break;
 		}
 
-		// Strange little thing for the recurrence type "every workday"
-		if ($rtype == IDC_RCEV_PAT_ORB_WEEKLY && ((int) $this->recur["subtype"]) == 1) {
-			$rdata .= pack("V", 1);
-		}
-		else { // Other recurrences
-			$rdata .= pack("V", 0);
-		}
+		// Persist first day of week (defaults to Monday for weekly recurrences)
+		$firstDow = $this->recur["first_dow"] ?? ($rtype == IDC_RCEV_PAT_ORB_WEEKLY && ((int) $this->recur["subtype"]) == 1 ? 1 : 0);
+		$rdata .= pack("V", (int) $firstDow);
 
 		// Exception data
 
@@ -1788,21 +1786,34 @@ abstract class BaseRecurrence {
 				}
 
 				// If sliding flag is set then move to 'n' weeks
+				$weekSeconds = 60 * 60 * 24 * 7;
 				if ($this->recur['regen']) {
-					$daystart += (60 * 60 * 24 * 7 * $this->recur["everyn"]);
+					$daystart += ($weekSeconds * $this->recur["everyn"]);
 				}
 
-				for ($now = $daystart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += (60 * 60 * 24 * 7 * $this->recur["everyn"])) {
+				$loopStart = $daystart;
+				if (!$this->recur['regen']) {
+					$weekStartDow = isset($this->recur["first_dow"]) ? (int) $this->recur["first_dow"] : 1;
+					$weekStartDow = ($weekStartDow % 7 + 7) % 7;
+					$currentDow = (int) $this->gmtime($loopStart)["tm_wday"];
+					$offset = ($currentDow - $weekStartDow + 7) % 7;
+					$loopStart -= $offset * 24 * 60 * 60;
+				}
+
+				for ($now = $loopStart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += ($weekSeconds * $this->recur["everyn"])) {
 					if ($this->recur['regen']) {
 						$this->processOccurrenceItem($items, $start, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
 						break;
 					}
 					// Loop through the whole following week to the first occurrence of the week, add each day that is specified
-					for ($wday = 0; $wday < 7; ++$wday) {
+					for ($wday = 0; $wday < 7 && ($limit == 0 || count($items) < $limit); ++$wday) {
 						$daynow = $now + $wday * 60 * 60 * 24;
-						// checks weather the next coming day in recurring pattern is less than or equal to end day of the recurring item
-						if ($daynow > $dayend) {
+						if ($daynow < $daystart) {
 							continue;
+						}
+						// checks whether the next coming day in recurring pattern is less than or equal to end day of the recurring item
+						if ($daynow > $dayend) {
+							break;
 						}
 						$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
 						if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
