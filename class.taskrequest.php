@@ -784,7 +784,7 @@ class TaskRequest {
 	 *
 	 * @return bool TRUE if the update succeeded, FALSE otherwise
 	 */
-	public function doUpdate() {
+	public function doUpdate(): bool {
 		$messageProps = mapi_getprops($this->message, [$this->props['taskstate'], PR_SUBJECT]);
 
 		if (!isset($messageProps[$this->props['taskstate']]) || $messageProps[$this->props['taskstate']] != tdsOWN) {
@@ -816,7 +816,7 @@ class TaskRequest {
 	 * Normally this will just open the store that the processed message is in. However, if the message is opened
 	 * by a delegate, this function opens the store that the message was delegated from.
 	 */
-	public function getTaskFolderStore() {
+	public function getTaskFolderStore(): mixed {
 		$ownerentryid = false;
 
 		$rcvdprops = mapi_getprops($this->message, [PR_RCVD_REPRESENTING_ENTRYID]);
