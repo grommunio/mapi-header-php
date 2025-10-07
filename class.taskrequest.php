@@ -1250,7 +1250,7 @@ class TaskRequest {
 	 * @param mixed $outgoing     outgoing mapi message
 	 * @param int   $responseType response type (tdmtTaskAcc, tdmtTaskDec, tdmtTaskUpd)
 	 */
-	public function setRecipientsForResponse($outgoing, $responseType): bool {
+	public function setRecipientsForResponse(mixed $outgoing, int $responseType): bool {
 		// Clear recipients from outgoing msg
 		$this->deleteAllRecipients($outgoing);
 
@@ -1307,7 +1307,7 @@ class TaskRequest {
 	 *
 	 * @param mixed $message MAPI message from which recipients are to be removed
 	 */
-	public function deleteAllRecipients($message): void {
+	public function deleteAllRecipients(mixed $message): void {
 		$recipTable = mapi_message_getrecipienttable($message);
 		$recipRows = mapi_table_queryallrows($recipTable, [PR_ROWID]);
 
@@ -1322,7 +1322,7 @@ class TaskRequest {
 	 *
 	 * @return bool TRUE if the update succeeded, FALSE otherwise
 	 */
-	public function sendCompleteUpdate() {
+	public function sendCompleteUpdate(): bool {
 		$messageprops = mapi_getprops($this->message, [$this->props['taskstate']]);
 
 		if (!isset($messageprops[$this->props['taskstate']]) || $messageprops[$this->props['taskstate']] != tdsOWN) {
