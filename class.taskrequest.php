@@ -256,7 +256,18 @@ class TaskRequest {
 			$task = mapi_folder_createmessage($taskFolder);
 
 			$sub = $this->getEmbeddedTask();
-			mapi_copyto($sub, [], [$this->props['categories']], $task);
+			try {
+				mapi_copyto($sub, [], [$this->props['categories']], $task);
+			}
+			catch (MAPIException $e) {
+				if ($e->getCode() !== MAPI_E_INVALID_PARAMETER) {
+					throw $e;
+				}
+				// Some stores reject excluding categories during copy when attachments are present.
+				// Retry without exclusions to keep attachments intact and drop categories afterwards.
+				mapi_copyto($sub, [], [], $task);
+				mapi_deleteprops($task, [$this->props['categories']]);
+			}
 
 			$senderProps = [
 				PR_SENT_REPRESENTING_NAME,
