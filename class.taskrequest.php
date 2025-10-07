@@ -205,7 +205,7 @@ class TaskRequest {
 	 *
 	 * @return bool true if this is an incoming task request/response else false
 	 */
-	public function isReceivedItem($props) {
+	public function isReceivedItem(array $props): bool {
 		return $props[PR_MESSAGE_TO_ME] ?? false;
 	}
 
@@ -220,7 +220,7 @@ class TaskRequest {
 	 *
 	 * @return bool|resource associated task of task request else false
 	 */
-	public function getAssociatedTask($create) {
+	public function getAssociatedTask(bool $create): mixed {
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->props['task_goid']]);
 
 		if ($props[PR_MESSAGE_CLASS] == "IPM.Task") {
