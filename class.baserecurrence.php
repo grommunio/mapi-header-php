@@ -1479,7 +1479,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return array GMT Time
 	 */
-	public function gmtime($time) {
+	public function gmtime(int $time): array {
 		$TZOffset = $this->GetTZOffset($time);
 
 		$t_time = $time - $TZOffset * 60; # Counter adjust for localtime()
@@ -1490,7 +1490,7 @@ abstract class BaseRecurrence {
 	/**
 	 * @param float|string $year
 	 */
-	public function isLeapYear($year): bool {
+	public function isLeapYear(float|string $year): bool {
 		return $year % 4 == 0 && ($year % 100 != 0 || $year % 400 == 0);
 	}
 
@@ -1498,7 +1498,7 @@ abstract class BaseRecurrence {
 	 * @param float|string $year
 	 * @param int|string   $month
 	 */
-	public function getMonthInSeconds($year, $month): int {
+	public function getMonthInSeconds(float|string $year, int|string $month): int {
 		if (in_array($month, [1, 3, 5, 7, 8, 10, 12])) {
 			$day = 31;
 		}
