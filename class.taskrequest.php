@@ -936,7 +936,7 @@ class TaskRequest {
 	 *
 	 * @return bool TRUE on success
 	 */
-	public function sendResponse($type, $prefix) {
+	public function sendResponse(int $type, mixed $prefix): bool {
 		// Create a message in our outbox
 		$outgoing = $this->createOutgoingMessage();
 		$messageprops = mapi_getprops($this->message, [PR_CONVERSATION_TOPIC, PR_MESSAGE_CLASS, $this->props['complete']]);
@@ -1006,7 +1006,7 @@ class TaskRequest {
 		return true;
 	}
 
-	public function getDefaultStore() {
+	public function getDefaultStore(): mixed {
 		$table = mapi_getmsgstorestable($this->session);
 		$rows = mapi_table_queryallrows($table, [PR_DEFAULT_STORE, PR_ENTRYID]);
 
