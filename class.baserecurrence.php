@@ -1599,9 +1599,9 @@ abstract class BaseRecurrence {
 	 *
 	 * @return null|array|false
 	 */
-	public function parseTimezone($data) {
+	public function parseTimezone(mixed $data): null|array|false {
 		if (strlen((string) $data) < 48) {
-			return;
+			return null;
 		}
 
 		return unpack("ltimezone/lunk/ltimezonedst/lunk/ldstendmonth/vdstendweek/vdstendhour/lunk/lunk/vunk/ldststartmonth/vdststartweek/vdststarthour/lunk/vunk", (string) $data);
@@ -1612,7 +1612,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|string
 	 */
-	public function getTimezoneData($tz) {
+	public function getTimezoneData(mixed $tz): false|string {
 		return pack("lllllvvllvlvvlv", $tz["timezone"], 0, $tz["timezonedst"], 0, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendhour"], 0, 0, 0, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststarthour"], 0, 0);
 	}
 
