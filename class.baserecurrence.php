@@ -2020,7 +2020,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @psalm-return -1|0|1
 	 */
-	public function sortExceptionStart($a, $b): int {
+	public function sortExceptionStart(mixed $a, mixed $b): int {
 		return $a["start"] == $b["start"] ? 0 : ($a["start"] > $b["start"] ? 1 : -1);
 	}
 
@@ -2033,7 +2033,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @psalm-return array<mixed|true>
 	 */
-	public function getExceptionProperties($exception): array {
+	public function getExceptionProperties(mixed $exception): array {
 		// Exception has same properties as main object, with some properties overridden:
 		$item = $this->messageprops;
 
