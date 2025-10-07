@@ -1972,7 +1972,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @psalm-return -1|0|1
 	 */
-	public function sortStarttime($a, $b): int {
+	public function sortStarttime(mixed $a, mixed $b): int {
 		$aTime = $a[$this->proptags["startdate"]];
 		$bTime = $b[$this->proptags["startdate"]];
 
@@ -1993,7 +1993,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return float|int number of days in the specified amount of months
 	 */
-	public function daysInMonth($date, $months) {
+	public function daysInMonth(int $date, int $months): float|int {
 		$days = 0;
 
 		for ($i = 0; $i < $months; ++$i) {
@@ -2004,7 +2004,7 @@ abstract class BaseRecurrence {
 	}
 
 	// Converts MAPI-style 'minutes' into the month of the year [0..11]
-	public function monthOfYear($minutes) {
+	public function monthOfYear(int $minutes): int {
 		$d = gmmktime(0, 0, 0, 1, 1, 2001); // The year 2001 was a non-leap year, and the minutes provided are always in non-leap-year-minutes
 
 		$d += $minutes * 60;
