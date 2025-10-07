@@ -165,7 +165,7 @@ class TaskRequest {
 	 *
 	 * @return bool true if this is a task request else false
 	 */
-	public function isTaskRequest($messageClass = false) {
+	public function isTaskRequest(string|false $messageClass = false): bool {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
@@ -185,7 +185,7 @@ class TaskRequest {
 	 *
 	 * @return bool true if this is a task request else false
 	 */
-	public function isTaskRequestResponse($messageClass = false) {
+	public function isTaskRequestResponse(string|false $messageClass = false): bool {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
