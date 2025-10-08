@@ -161,5 +161,4 @@ class BaseException extends Exception {
 		return $this->allowToShowDetailsMessage ? $this->__toString() : '';
 	}
 
-	// @TODO getTrace and getTraceAsString
 }
