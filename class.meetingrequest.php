@@ -1650,7 +1650,7 @@ class Meetingrequest {
 	 * Function returns MAPIFolder resource of the folder that currently holds this meeting/meeting request
 	 * object.
 	 */
-	public function openParentFolder() {
+	public function openParentFolder(): mixed {
 		$messageprops = mapi_getprops($this->message, [PR_PARENT_ENTRYID]);
 
 		return mapi_msgstore_openentry($this->store, $messageprops[PR_PARENT_ENTRYID]);
@@ -1663,7 +1663,7 @@ class Meetingrequest {
 	 *
 	 * @return resource default calendar folder of store
 	 */
-	public function openDefaultCalendar($store = false) {
+	public function openDefaultCalendar(mixed $store = false): mixed {
 		return $this->openDefaultFolder(PR_IPM_APPOINTMENT_ENTRYID, $store);
 	}
 
@@ -1674,7 +1674,7 @@ class Meetingrequest {
 	 *
 	 * @return resource default outbox folder of store
 	 */
-	public function openDefaultOutbox($store = false) {
+	public function openDefaultOutbox(mixed $store = false): mixed {
 		return $this->openBaseFolder(PR_IPM_OUTBOX_ENTRYID, $store);
 	}
 
@@ -1685,7 +1685,7 @@ class Meetingrequest {
 	 *
 	 * @return resource default wastebasket folder of store
 	 */
-	public function openDefaultWastebasket($store = false) {
+	public function openDefaultWastebasket(mixed $store = false): mixed {
 		return $this->openBaseFolder(PR_IPM_WASTEBASKET_ENTRYID, $store);
 	}
 
@@ -1696,7 +1696,7 @@ class Meetingrequest {
 	 *
 	 * @return bool|string default calendar folder of store
 	 */
-	public function getDefaultWastebasketEntryID($store = false) {
+	public function getDefaultWastebasketEntryID(mixed $store = false): bool|string {
 		return $this->getBaseEntryID(PR_IPM_WASTEBASKET_ENTRYID, $store);
 	}
 
@@ -1707,7 +1707,7 @@ class Meetingrequest {
 	 *
 	 * @return bool|string default sent mail folder of store
 	 */
-	public function getDefaultSentmailEntryID($store = false) {
+	public function getDefaultSentmailEntryID(mixed $store = false): bool|string {
 		return $this->getBaseEntryID(PR_IPM_SENTMAIL_ENTRYID, $store);
 	}
 
@@ -1721,7 +1721,7 @@ class Meetingrequest {
 	 *
 	 * @return bool|string entryid of folder pointed by $prop
 	 */
-	public function getDefaultFolderEntryID($prop, $store = false) {
+	public function getDefaultFolderEntryID(int $prop, mixed $store = false): bool|string {
 		try {
 			$inbox = mapi_msgstore_getreceivefolder($store ?: $this->store);
 			$inboxprops = mapi_getprops($inbox, [$prop]);
