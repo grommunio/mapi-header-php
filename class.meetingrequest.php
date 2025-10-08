@@ -3710,7 +3710,7 @@ class Meetingrequest {
 	 * @param array $messageProps message properties
 	 * @param array $recipients   recipients list of message
 	 */
-	public function addDelegator($messageProps, &$recipients): void {
+	public function addDelegator(array $messageProps, array &$recipients): void {
 		$hasDelegator = false;
 		// Check if meeting already has an organizer.
 		foreach ($recipients as $key => $recipient) {
@@ -3842,7 +3842,7 @@ class Meetingrequest {
 	 * @param mixed $store           store containing calendar folder
 	 * @param array $localCategories array contains basedate and array of categories
 	 */
-	public function applyLocalCategories($calendarItem, $store, $localCategories): void {
+	public function applyLocalCategories(mixed $calendarItem, mixed $store, array $localCategories): void {
 		$calendarItemProps = mapi_getprops($calendarItem, [PR_PARENT_ENTRYID, PR_ENTRYID]);
 		$message = mapi_msgstore_openentry($store, $calendarItemProps[PR_ENTRYID]);
 		$recurrence = new Recurrence($store, $message);
