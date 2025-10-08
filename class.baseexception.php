@@ -69,7 +69,7 @@ class BaseException extends Exception {
 	 * @param Throwable $previous
 	 * @param string    $displayMessage
 	 */
-	public function __construct($errorMessage, $code = 0, $previous = null, $displayMessage = null) {
+	public function __construct(string $errorMessage, int $code = 0, ?Throwable $previous = null, ?string $displayMessage = null) {
 		parent::__construct($errorMessage, (int) $code, $previous);
 		$this->displayMessage = $displayMessage;
 	}
