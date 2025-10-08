@@ -365,7 +365,7 @@ class Meetingrequest {
 	 *
 	 * @return null|false
 	 */
-	public function processResponse($store, $calendarItem, $basedate, $messageprops) {
+	public function processResponse(mixed $store, mixed $calendarItem, mixed $basedate, array $messageprops): null|false {
 		$senderentryid = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
 		$messageclass = $messageprops[PR_MESSAGE_CLASS];
 		$deliverytime = $messageprops[PR_MESSAGE_DELIVERY_TIME];
@@ -646,7 +646,7 @@ class Meetingrequest {
 	 *
 	 * @return bool|string $entryid entryid of item which created/updated in calendar
 	 */
-	public function doAccept($tentative, $sendresponse, $move, $newProposedStartTime = false, $newProposedEndTime = false, $body = false, $userAction = false, $store = false, $basedate = false, $isImported = false) {
+	public function doAccept(bool $tentative, bool $sendresponse, bool $move, mixed $newProposedStartTime = false, mixed $newProposedEndTime = false, mixed $body = false, mixed $userAction = false, mixed $store = false, mixed $basedate = false, bool $isImported = false): bool|string {
 		if ($this->isLocalOrganiser()) {
 			return false;
 		}
@@ -763,7 +763,7 @@ class Meetingrequest {
 	 *
 	 * @psalm-param array<float|mixed|true> $proposeNewTimeProps
 	 */
-	public function accept(bool $tentative, bool $sendresponse, bool $move, array $proposeNewTimeProps, $body, bool $userAction, $store, $calFolder, $basedate = false) {
+	public function accept(bool $tentative, bool $sendresponse, bool $move, array $proposeNewTimeProps, mixed $body, bool $userAction, mixed $store, mixed $calFolder, mixed $basedate = false): mixed {
 		$messageprops = mapi_getprops($this->message);
 		$isDelegate = $this->isMessageFromDelegate($messageprops);
 		$entryid = '';
