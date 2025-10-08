@@ -184,7 +184,7 @@ function propIsError(int $property, array $propArray): mixed {
  *
  * @psalm-return list<mixed>
  */
-function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested): array {
+function getCalendarItems(mixed $store, mixed $calendar, int $viewstart, int $viewend, array $propsrequested): array {
 	$result = [];
 	$properties = getPropIdsFromStrings($store, [
 		"duedate" => "PT_SYSTIME:PSETID_Appointment:" . PidLidAppointmentEndWhole,
@@ -363,7 +363,7 @@ function prop2Str(mixed $property): string {
  *
  * @return string
  */
-function relOpToString($relOp) {
+function relOpToString(int $relOp): string {
 	return match ($relOp) {
 		RELOP_LT => "RELOP_LT",
 		RELOP_LE => "RELOP_LE",
@@ -381,7 +381,7 @@ function relOpToString($relOp) {
  *
  * @param mixed $restriction
  */
-function simplifyRestriction($restriction) {
+function simplifyRestriction(mixed $restriction): mixed {
 	if (!is_array($restriction)) {
 		return $restriction;
 	}
