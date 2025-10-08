@@ -1160,18 +1160,7 @@ class Meetingrequest {
 		// Remove any previous calendar items with this goid and appt id
 		$messageprops = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2'], PR_RCVD_REPRESENTING_ENTRYID]);
 
-		$store = $this->store;
-		$calFolder = $this->openDefaultCalendar();
-		// If this meeting request is received by a delegate then open delegator's store.
-		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
-			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-			if (!empty($delegatorStore['store'])) {
-				$store = $delegatorStore['store'];
-			}
-			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
-				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
-			}
-		}
+		['store' => $store, 'calFolder' => $calFolder] = $this->resolveDelegateStoreAndCalendar($messageprops);
 
 		// check for calendar access before deleting the calendar item
 		if ($this->checkCalendarWriteAccess($store) !== true) {
@@ -1258,16 +1247,7 @@ class Meetingrequest {
 		$goid = $messageprops[$this->proptags['goid']];
 
 		$store = $this->store;
-		$calFolder = $this->openDefaultCalendar();
-		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
-			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-			if (!empty($delegatorStore['store'])) {
-				$store = $delegatorStore['store'];
-			}
-			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
-				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
-			}
-		}
+		['store' => $store, 'calFolder' => $calFolder] = $this->resolveDelegateStoreAndCalendar($messageprops);
 
 		// check for calendar access before deleting the calendar item
 		if ($this->checkCalendarWriteAccess($store) !== true) {
@@ -3486,18 +3466,7 @@ class Meetingrequest {
 		}
 		$globalId = $props[$this->proptags['goid']];
 
-		$store = $this->store;
-		$calFolder = $this->openDefaultCalendar();
-		// If Delegate is processing Meeting Request/Response for Delegator then retrieve Delegator's store and calendar.
-		if (isset($props[PR_RCVD_REPRESENTING_ENTRYID])) {
-			$delegatorStore = $this->getDelegatorStore($props[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-			if (!empty($delegatorStore['store'])) {
-				$store = $delegatorStore['store'];
-			}
-			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
-				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
-			}
-		}
+		['store' => $store, 'calFolder' => $calFolder] = $this->resolveDelegateStoreAndCalendar($props);
 
 		$basedate = $this->getBasedateFromGlobalID($globalId);
 
@@ -3954,5 +3923,33 @@ class Meetingrequest {
 		$messageprops[constant("PR_{$prefix}_ADDRTYPE")] = $owneraddrtype;
 		$messageprops[constant("PR_{$prefix}_ENTRYID")] = $ownerentryid;
 		$messageprops[constant("PR_{$prefix}_SEARCH_KEY")] = $ownersearchkey;
+	}
+
+	/**
+	 * Resolves the appropriate store and calendar folder for delegate scenarios.
+	 *
+	 * When a meeting request is received by a delegate, this method opens the
+	 * delegator's store and calendar folder instead of the delegate's own.
+	 *
+	 * @param array $messageprops message properties containing delegate information
+	 *
+	 * @return array{store: mixed, calFolder: mixed} array with 'store' and 'calFolder' keys
+	 */
+	private function resolveDelegateStoreAndCalendar(array $messageprops): array {
+		$store = $this->store;
+		$calFolder = $this->openDefaultCalendar();
+
+		// If this meeting request is received by a delegate then open delegator's store
+		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
+			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
+			if (!empty($delegatorStore['store'])) {
+				$store = $delegatorStore['store'];
+			}
+			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
+				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
+			}
+		}
+
+		return ['store' => $store, 'calFolder' => $calFolder];
 	}
 }
