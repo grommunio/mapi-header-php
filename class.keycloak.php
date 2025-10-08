@@ -149,7 +149,7 @@ class KeyCloak {
 	 *
 	 * @return bool indicating if the request was successful nor not
 	 */
-	public function client_credential_grant_req($code) {
+	public function client_credential_grant_req(string $code): bool {
 		$params = ['grant_type' => 'authorization_code', 'code' => $code, 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_url];
 
 		return $this->request($params);
@@ -162,7 +162,7 @@ class KeyCloak {
 	 *
 	 * @return bool indicating if the request was successful nor not
 	 */
-	public function refresh_grant_req() {
+	public function refresh_grant_req(): bool {
 		// Ensure grant exists, grant is not expired, and we have a refresh token
 		if (!$this->grant || !$this->refresh_token) {
 			$this->grant = null;
@@ -181,7 +181,7 @@ class KeyCloak {
 	 *
 	 * @return bool indicating if the request was successful or not
 	 */
-	protected function request($params) {
+	protected function request(array $params): bool {
 		$headers = ['Content-Type: application/x-www-form-urlencoded'];
 		if ($this->is_public) {
 			$params['client_id'] = $this->client_id;
