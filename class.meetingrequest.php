@@ -1889,11 +1889,11 @@ class Meetingrequest {
 			if (!$mailuser) {
 				error_log(sprintf("Unable to open ab entry: 0x%08X", mapi_last_hresult()));
 
-				return;
+				return null;
 			}
 		}
 		catch (MAPIException) {
-			return;
+			return null;
 		}
 
 		$mailuserprops = mapi_getprops($mailuser, [PR_EMAIL_ADDRESS]);
@@ -2123,7 +2123,7 @@ class Meetingrequest {
 		$rows = mapi_table_queryallrows($calendarcontents, [PR_ENTRYID], $restrict);
 
 		if (empty($rows)) {
-			return;
+			return null;
 		}
 
 		$calendaritems = [];
