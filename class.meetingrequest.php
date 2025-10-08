@@ -1476,7 +1476,7 @@ class Meetingrequest {
 	 *
 	 * @psalm-return array{error: 1|3|4, displayname: mixed}|true
 	 */
-	public function sendMeetingRequest($cancel, $prefix = false, $basedate = false, $modifiedRecips = false, $deletedRecips = false) {
+	public function sendMeetingRequest(mixed $cancel, mixed $prefix = false, mixed $basedate = false, mixed $modifiedRecips = false, mixed $deletedRecips = false): array|true {
 		$this->includesResources = false;
 		$this->nonAcceptingResources = [];
 
@@ -3238,7 +3238,7 @@ class Meetingrequest {
 	 *
 	 * @return resource outgoing mail that is created and can be used for sending it
 	 */
-	public function createOutgoingMessage($store = false) {
+	public function createOutgoingMessage(mixed $store = false): mixed {
 		// get logged in user's store that will be used to send mail, for delegate this will be
 		// delegate store
 		$userStore = $this->openDefaultStore();
