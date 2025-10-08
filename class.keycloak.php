@@ -101,7 +101,7 @@ class KeyCloak {
 	 *
 	 * @return null|int
 	 */
-	public function get_last_refresh_time() {
+	public function get_last_refresh_time(): ?int {
 		return $this->last_refresh_time;
 	}
 
@@ -110,7 +110,7 @@ class KeyCloak {
 	 *
 	 * @param int $time
 	 */
-	public function set_last_refresh_time($time) {
+	public function set_last_refresh_time(int $time): void {
 		$this->last_refresh_time = $time;
 	}
 
@@ -133,7 +133,7 @@ class KeyCloak {
 	 *
 	 * @return bool indicating if the request was successful nor not
 	 */
-	public function password_grant_req($username, $password) {
+	public function password_grant_req(string $username, string $password): bool {
 		$params = ['grant_type' => 'password', 'username' => $username, 'password' => $password];
 
 		return $this->request($params);
