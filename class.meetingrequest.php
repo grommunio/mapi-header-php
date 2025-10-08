@@ -1149,7 +1149,7 @@ class Meetingrequest {
 	 *
 	 * @return bool true if item is deleted from Calendar else false
 	 */
-	public function doDecline($sendresponse, $basedate = false, $body = false) {
+	public function doDecline(bool $sendresponse, mixed $basedate = false, mixed $body = false): bool {
 		if ($this->isLocalOrganiser()) {
 			return false;
 		}
@@ -1248,7 +1248,7 @@ class Meetingrequest {
 	 *
 	 * @return null|false
 	 */
-	public function doRemoveFromCalendar($basedate) {
+	public function doRemoveFromCalendar(mixed $basedate): null|false {
 		if ($this->isLocalOrganiser()) {
 			return false;
 		}
