@@ -1000,14 +1000,7 @@ class Recurrence extends BaseRecurrence {
 	public function deleteExceptionAttachment($base_date): void {
 		$attachments = mapi_message_getattachmenttable($this->message);
 		// Retrieve only exceptions which are stored as embedded messages
-		$attach_res = [
-			RES_PROPERTY,
-			[
-				RELOP => RELOP_EQ,
-				ULPROPTAG => PR_ATTACH_METHOD,
-				VALUE => [PR_ATTACH_METHOD => ATTACH_EMBEDDED_MSG],
-			],
-		];
+		$attach_res = $this->getEmbeddedMessageRestriction();
 		$attachRows = mapi_table_queryallrows($attachments, [PR_ATTACH_NUM], $attach_res);
 
 		foreach ($attachRows as $attachRow) {
@@ -1043,14 +1036,7 @@ class Recurrence extends BaseRecurrence {
 	 */
 	public function getExceptionAttachment(int $base_date): mixed {
 		// Retrieve only exceptions which are stored as embedded messages
-		$attach_res = [
-			RES_PROPERTY,
-			[
-				RELOP => RELOP_EQ,
-				ULPROPTAG => PR_ATTACH_METHOD,
-				VALUE => [PR_ATTACH_METHOD => ATTACH_EMBEDDED_MSG],
-			],
-		];
+		$attach_res = $this->getEmbeddedMessageRestriction();
 		$attachments = mapi_message_getattachmenttable($this->message);
 		$attachRows = mapi_table_queryallrows($attachments, [PR_ATTACH_NUM], $attach_res);
 
@@ -1448,6 +1434,22 @@ class Recurrence extends BaseRecurrence {
 			// Add organizer to recipients list.
 			array_unshift($recipients, $organizer);
 		}
+	}
+
+	/**
+	 * Returns restriction array for filtering embedded message attachments.
+	 *
+	 * @return array restriction array for ATTACH_EMBEDDED_MSG
+	 */
+	private function getEmbeddedMessageRestriction(): array {
+		return [
+			RES_PROPERTY,
+			[
+				RELOP => RELOP_EQ,
+				ULPROPTAG => PR_ATTACH_METHOD,
+				VALUE => [PR_ATTACH_METHOD => ATTACH_EMBEDDED_MSG],
+			],
+		];
 	}
 }
 
