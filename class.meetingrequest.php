@@ -339,11 +339,7 @@ class Meetingrequest {
 		}
 
 		// check for calendar access
-		if ($this->checkCalendarWriteAccess($userStore) !== true) {
-			// Throw an exception that we don't have write permissions on calendar folder,
-			// allow caller to fill the error message
-			throw new MAPIException(null, MAPI_E_NO_ACCESS);
-		}
+		$this->ensureCalendarWriteAccess($userStore);
 
 		$calendarItem = $this->getCorrespondentCalendarItem(true);
 
@@ -576,11 +572,7 @@ class Meetingrequest {
 		}
 
 		// check for calendar access
-		if ($this->checkCalendarWriteAccess($store) !== true) {
-			// Throw an exception that we don't have write permissions on calendar folder,
-			// allow caller to fill the error message
-			throw new MAPIException(null, MAPI_E_NO_ACCESS);
-		}
+		$this->ensureCalendarWriteAccess($store);
 
 		$calendarItem = $this->getCorrespondentCalendarItem(true);
 		$basedate = $this->getBasedateFromGlobalID($goid);
@@ -678,11 +670,7 @@ class Meetingrequest {
 		}
 
 		// check for calendar access
-		if ($this->checkCalendarWriteAccess($store) !== true) {
-			// Throw an exception that we don't have write permissions on calendar folder,
-			// allow caller to fill the error message
-			throw new MAPIException(null, MAPI_E_NO_ACCESS);
-		}
+		$this->ensureCalendarWriteAccess($store);
 
 		// if meeting is out dated then don't process it
 		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && $this->isMeetingOutOfDate()) {
@@ -1161,11 +1149,7 @@ class Meetingrequest {
 		['store' => $store, 'calFolder' => $calFolder] = $this->resolveDelegateStoreAndCalendar($messageprops);
 
 		// check for calendar access before deleting the calendar item
-		if ($this->checkCalendarWriteAccess($store) !== true) {
-			// Throw an exception that we don't have write permissions on calendar folder,
-			// allow caller to fill the error message
-			throw new MAPIException(null, MAPI_E_NO_ACCESS);
-		}
+		$this->ensureCalendarWriteAccess($store);
 
 		$goid = $messageprops[$this->proptags['goid']];
 
@@ -1248,11 +1232,7 @@ class Meetingrequest {
 		['store' => $store, 'calFolder' => $calFolder] = $this->resolveDelegateStoreAndCalendar($messageprops);
 
 		// check for calendar access before deleting the calendar item
-		if ($this->checkCalendarWriteAccess($store) !== true) {
-			// Throw an exception that we don't have write permissions on calendar folder,
-			// allow caller to fill the error message
-			throw new MAPIException(null, MAPI_E_NO_ACCESS);
-		}
+		$this->ensureCalendarWriteAccess($store);
 
 		$wastebasket = $this->openDefaultWastebasket($this->openDefaultStore());
 		// get the source folder of the meeting message
@@ -3955,5 +3935,18 @@ class Meetingrequest {
 		$recipientTable = mapi_message_getrecipienttable($message);
 
 		return mapi_table_queryallrows($recipientTable, $this->recipprops, $restriction);
+	}
+
+	/**
+	 * Ensures calendar write access and throws exception if denied.
+	 *
+	 * @param mixed $store the store to check calendar write access for
+	 *
+	 * @throws MAPIException with MAPI_E_NO_ACCESS if write access is denied
+	 */
+	private function ensureCalendarWriteAccess(mixed $store): void {
+		if ($this->checkCalendarWriteAccess($store) !== true) {
+			throw new MAPIException(null, MAPI_E_NO_ACCESS);
+		}
 	}
 }
