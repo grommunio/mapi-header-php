@@ -16,7 +16,7 @@ class TaskRecurrence extends BaseRecurrence {
 
 	private $action;
 
-	public function __construct($store, $message) {
+	public function __construct(mixed $store, mixed $message) {
 		$this->store = $store;
 		$this->message = $message;
 
@@ -72,7 +72,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @return array|bool of properties of regenerated task else false
 	 */
-	public function setRecurrence(&$recur) {
+	public function setRecurrence(mixed &$recur): array|bool {
 		$this->recur = $recur;
 		$this->action = &$recur;
 
@@ -110,7 +110,7 @@ class TaskRecurrence extends BaseRecurrence {
 	/**
 	 * Sets task object to first occurrence if startdate/duedate of task object is different from first occurrence.
 	 */
-	public function setFirstOccurrence() {
+	public function setFirstOccurrence(): void {
 		// Check if it is already the first occurrence
 		if ($this->action['start'] == $this->recur["start"]) {
 			return;
@@ -134,7 +134,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 * @return array|bool properties of newly created task if moving to next occurrence succeeds
 	 *                    false if that was last occurrence
 	 */
-	public function moveToNextOccurrence() {
+	public function moveToNextOccurrence(): array|bool {
 		$result = false;
 		/*
 		 * Every recurring task should have a 'duedate'. If a recurring task is created with no start/end date
