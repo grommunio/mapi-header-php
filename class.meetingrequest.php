@@ -408,8 +408,7 @@ class Meetingrequest {
 			}
 			else {
 				// When we are creating an exception we need copy recipients from main recurring item
-				$recipTable = mapi_message_getrecipienttable($calendarItem);
-				$recips = mapi_table_queryallrows($recipTable, $this->recipprops);
+				$recips = $this->getMessageRecipients($calendarItem);
 
 				// Retrieve actual start/due dates from calendar item.
 				$exception_props[$this->proptags['startdate']] = $recurr->getOccurrenceStart($basedate);
@@ -431,8 +430,7 @@ class Meetingrequest {
 		}
 
 		// Get the recipients of the calendar item
-		$reciptable = mapi_message_getrecipienttable($calendarItem);
-		$recipients = mapi_table_queryallrows($reciptable, $this->recipprops);
+		$recipients = $this->getMessageRecipients($calendarItem);
 
 		// FIXME we should look at the updatecounter property and compare it
 		// to the counter in the recipient to see if this update is actually
@@ -3951,5 +3949,19 @@ class Meetingrequest {
 		}
 
 		return ['store' => $store, 'calFolder' => $calFolder];
+	}
+
+	/**
+	 * Gets all recipients from a message.
+	 *
+	 * @param resource $message      the message to get recipients from
+	 * @param array    $restriction  optional restriction to filter recipients
+	 *
+	 * @return array array of recipient rows
+	 */
+	private function getMessageRecipients(mixed $message, ?array $restriction = null): array {
+		$recipientTable = mapi_message_getrecipienttable($message);
+
+		return mapi_table_queryallrows($recipientTable, $this->recipprops, $restriction);
 	}
 }
