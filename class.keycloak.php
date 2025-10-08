@@ -37,7 +37,7 @@ class KeyCloak {
 	 *
 	 * @param mixed $keycloak_config
 	 */
-	public function __construct($keycloak_config) {
+	public function __construct(mixed $keycloak_config) {
 		if (is_string($keycloak_config)) {
 			$keycloak_config = json_decode($keycloak_config);
 		}
