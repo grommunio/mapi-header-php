@@ -2469,8 +2469,7 @@ class Meetingrequest {
 				VALUE => [PR_RECIPIENT_TYPE => MAPI_BCC],
 			],
 		];
-		$recipienttable = mapi_message_getrecipienttable($message);
-		$resourceRecipients = mapi_table_queryallrows($recipienttable, $this->recipprops, $getResourcesRestriction);
+		$resourceRecipients = $this->getMessageRecipients($message, $getResourcesRestriction);
 
 		$this->errorSetResource = false;
 		$resourceRecipData = [];
@@ -2701,8 +2700,7 @@ class Meetingrequest {
 			++$i;
 		}
 
-		$recipienttable = mapi_message_getrecipienttable($message);
-		$resourceRecipients = mapi_table_queryallrows($recipienttable, $this->recipprops);
+		$resourceRecipients = $this->getMessageRecipients($message);
 		if (!empty($resourceRecipients)) {
 			// Set Tracking status of resource recipients to olResponseAccepted (3)
 			for ($i = 0, $len = count($resourceRecipients); $i < $len; ++$i) {
@@ -2736,7 +2734,6 @@ class Meetingrequest {
 		$exception_props = mapi_getprops($occurrenceItem);
 
 		// Copy recipients list
-		$reciptable = mapi_message_getrecipienttable($occurrenceItem);
 		// If delegate, then do not add the delegate in recipients
 		if ($isDelegate) {
 			$delegate = mapi_getprops($this->message, [PR_RECEIVED_BY_EMAIL_ADDRESS]);
@@ -2748,10 +2745,10 @@ class Meetingrequest {
 					VALUE => [PR_EMAIL_ADDRESS => $delegate[PR_RECEIVED_BY_EMAIL_ADDRESS]],
 				],
 			];
-			$recips = mapi_table_queryallrows($reciptable, $this->recipprops, $res);
+			$recips = $this->getMessageRecipients($occurrenceItem, $res);
 		}
 		else {
-			$recips = mapi_table_queryallrows($reciptable, $this->recipprops);
+			$recips = $this->getMessageRecipients($occurrenceItem);
 		}
 
 		// add owner to recipient table
@@ -2825,8 +2822,7 @@ class Meetingrequest {
 		$exception_props = mapi_getprops($occurrenceItem);
 
 		// Get recipient list from message and add it to exception attachment
-		$reciptable = mapi_message_getrecipienttable($occurrenceItem);
-		$recips = mapi_table_queryallrows($reciptable, $this->recipprops);
+		$recips = $this->getMessageRecipients($occurrenceItem);
 
 		if ($recurr->isException($basedate)) {
 			$recurr->modifyException($exception_props, $basedate, $recips, $occurrenceItem);
@@ -2937,8 +2933,7 @@ class Meetingrequest {
 				];
 			}
 
-			$recipienttable = mapi_message_getrecipienttable($message);
-			$recipients = mapi_table_queryallrows($recipienttable, $this->recipprops, $restriction);
+			$recipients = $this->getMessageRecipients($message, $restriction);
 
 			if (!$deletedRecips) {
 				$deletedRecips = array_merge([], $recipients);
@@ -3043,19 +3038,17 @@ class Meetingrequest {
 		// If no recipients were explicitly provided, we will send the update to all
 		// recipients from the meeting.
 		if ($modifiedRecips === false) {
-			$recipienttable = mapi_message_getrecipienttable($message);
-			$modifiedRecips = mapi_table_queryallrows($recipienttable, $this->recipprops, $stripResourcesRestriction);
+			$modifiedRecips = $this->getMessageRecipients($message, $stripResourcesRestriction);
 
 			if ($basedate && empty($modifiedRecips)) {
 				// Retrieve full list
-				$recipienttable = mapi_message_getrecipienttable($this->message);
-				$modifiedRecips = mapi_table_queryallrows($recipienttable, $this->recipprops);
+				$modifiedRecips = $this->getMessageRecipients($this->message);
 
 				// Save recipients in exceptions
 				mapi_message_modifyrecipients($message, MODRECIP_ADD, $modifiedRecips);
 
 				// Now retrieve only those recipient who should receive this meeting request.
-				$modifiedRecips = mapi_table_queryallrows($recipienttable, $this->recipprops, $stripResourcesRestriction);
+				$modifiedRecips = $this->getMessageRecipients($this->message, $stripResourcesRestriction);
 			}
 		}
 
@@ -3430,9 +3423,8 @@ class Meetingrequest {
 	 * @param resource $message on which responses should be cleared
 	 */
 	public function clearRecipientResponse($message): void {
-		$recipTable = mapi_message_getrecipienttable($message);
-		$recipsRows = mapi_table_queryallrows($recipTable, $this->recipprops);
-		for ($i = 0, $recipsCnt = mapi_table_getrowcount($recipTable); $i < $recipsCnt; ++$i) {
+		$recipsRows = $this->getMessageRecipients($message);
+		for ($i = 0, $recipsCnt = count($recipsRows); $i < $recipsCnt; ++$i) {
 			// Clear track status for everyone in the recipients table
 			$recipsRows[$i][PR_RECIPIENT_TRACKSTATUS] = olRecipientTrackStatusNone;
 		}
