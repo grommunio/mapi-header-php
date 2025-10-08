@@ -1748,7 +1748,7 @@ class Meetingrequest {
 	 *
 	 * @return resource default folder of store
 	 */
-	public function openDefaultFolder($prop, $store = false) {
+	public function openDefaultFolder(int $prop, mixed $store = false): mixed {
 		$folder = false;
 		$entryid = $this->getDefaultFolderEntryID($prop, $store);
 
@@ -1769,7 +1769,7 @@ class Meetingrequest {
 	 *
 	 * @return bool|string entryid of default folder from store
 	 */
-	public function getBaseEntryID($prop, $store = false) {
+	public function getBaseEntryID(int $prop, mixed $store = false): bool|string {
 		$storeprops = mapi_getprops($store ?: $this->store, [$prop]);
 		if (!isset($storeprops[$prop])) {
 			return false;
@@ -1786,7 +1786,7 @@ class Meetingrequest {
 	 *
 	 * @return resource default folder of store
 	 */
-	public function openBaseFolder($prop, $store = false) {
+	public function openBaseFolder(int $prop, mixed $store = false): mixed {
 		$folder = false;
 		$entryid = $this->getBaseEntryID($prop, $store);
 
@@ -1805,7 +1805,7 @@ class Meetingrequest {
 	 *
 	 * @return bool true if user has an access over the folder, false if not
 	 */
-	public function checkFolderWriteAccess($entryid, $store = false) {
+	public function checkFolderWriteAccess(string $entryid, mixed $store = false): bool {
 		$accessToFolder = false;
 
 		if (!empty($entryid)) {
@@ -1841,7 +1841,7 @@ class Meetingrequest {
 	 *
 	 * @return bool true if user has an access over the folder, false if not
 	 */
-	public function checkCalendarWriteAccess($store = false) {
+	public function checkCalendarWriteAccess(mixed $store = false): bool {
 		if ($store === false) {
 			$messageProps = mapi_getprops($this->message, [PR_RCVD_REPRESENTING_ENTRYID]);
 			$store = $this->store;
@@ -1881,7 +1881,7 @@ class Meetingrequest {
 	 *
 	 * @return resource store of the user
 	 */
-	public function openCustomUserStore($ownerentryid) {
+	public function openCustomUserStore(string $ownerentryid): mixed {
 		$ab = mapi_openaddressbook($this->session);
 
 		try {
