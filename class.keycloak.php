@@ -217,7 +217,7 @@ class KeyCloak {
 	 *
 	 * @return bool
 	 */
-	public function validate_grant() {
+	public function validate_grant(): bool {
 		if ($this->validate_token($this->access_token) && $this->validate_token($this->refresh_token)) {
 			return true;
 		}
@@ -232,7 +232,7 @@ class KeyCloak {
 	 *
 	 * @return bool
 	 */
-	protected function validate_token($token) {
+	protected function validate_token(mixed $token): bool {
 		if (isset($token)) {
 			$path = "/protocol/openid-connect/token/introspect";
 			$headers = ['Content-Type: application/x-www-form-urlencoded'];
@@ -267,7 +267,7 @@ class KeyCloak {
 	 *
 	 * @return bool
 	 */
-	public function is_expired() {
+	public function is_expired(): bool {
 		if (!$this->access_token) {
 			return true;
 		}
@@ -282,7 +282,7 @@ class KeyCloak {
 	 *
 	 * @return string
 	 */
-	public function login_url($redirect_url) {
+	public function login_url(string $redirect_url): string {
 		$uuid = bin2hex(openssl_random_pseudo_bytes(32));
 
 		return $this->realm_url . '/protocol/openid-connect/auth?scope=openid&client_id=' . urlencode((string) $this->client_id) . '&state=' . urlencode($uuid) . '&redirect_uri=' . urlencode($redirect_url) . '&response_type=code';
