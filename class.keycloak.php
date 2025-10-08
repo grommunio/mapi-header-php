@@ -293,7 +293,7 @@ class KeyCloak {
 	 *
 	 * @return string
 	 */
-	public function logout() {
+	public function logout(): string {
 		$params = '?id_token_hint=' . $this->id_token->get_payload() . '&refresh_token=' . $this->refresh_token->get_payload();
 
 		return $this->realm_url . '/protocol/openid-connect/logout' . $params;
@@ -309,7 +309,7 @@ class KeyCloak {
 	 *
 	 * @return array associative array with 'code' for response code and 'body' for request body
 	 */
-	protected function http_curl_request($method, $domain, $headers = [], $data = '') {
+	protected function http_curl_request(string $method, string $domain, array $headers = [], string $data = ''): array {
 		$request = curl_init();
 		curl_setopt($request, CURLOPT_URL, $this->realm_url . $domain);
 		if (strcasecmp($method, 'POST') === 0) {
