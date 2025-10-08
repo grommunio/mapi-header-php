@@ -540,7 +540,7 @@ class TaskRequest {
 	 *
 	 * @return true
 	 */
-	public function sendTaskRequest($prefix): bool {
+	public function sendTaskRequest(string $prefix): bool {
 		// Check if the task is in a public folder (which is not mail-enabled)
 		$taskFolderStore = $this->getTaskFolderStore();
 		$storeType = mapi_getprops($taskFolderStore, [PR_MDB_PROVIDER]);
