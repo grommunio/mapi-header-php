@@ -484,7 +484,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @psalm-param list{0: mixed, 1: mixed, 2?: mixed} $propsrequested
 	 */
-	public static function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested) {
+	public static function getCalendarItems(mixed $store, mixed $calendar, int $viewstart, int $viewend, array $propsrequested): array {
 		return getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested);
 	}
 

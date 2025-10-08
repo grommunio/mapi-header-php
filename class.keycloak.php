@@ -82,7 +82,7 @@ class KeyCloak {
 	 *
 	 * @return KeyCloak
 	 */
-	public static function getInstance() {
+	public static function getInstance(): ?KeyCloak {
 		if (!defined('GROMOX_CONFIG_PATH')) {
 			define('GROMOX_CONFIG_PATH', '/etc/gromox/');
 		}
