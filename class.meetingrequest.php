@@ -378,7 +378,7 @@ class Meetingrequest {
 		// check if meeting response is already processed
 		if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] === true) {
 			// meeting is already processed
-			return;
+			return null;
 		}
 		mapi_setprops($this->message, [PR_PROCESSED => true]);
 		mapi_savechanges($this->message);
@@ -386,7 +386,7 @@ class Meetingrequest {
 		// if meeting is updated in organizer's calendar then we don't need to process
 		// old response
 		if ($this->isMeetingUpdated($basedate)) {
-			return;
+			return null;
 		}
 
 		// If basedate is found, then create/modify exception msg and do processing

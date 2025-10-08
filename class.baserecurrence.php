@@ -65,7 +65,7 @@ abstract class BaseRecurrence {
 		}
 	}
 
-	public function getRecurrence(): array {
+	public function getRecurrence(): ?array {
 		return $this->recur;
 	}
 
@@ -142,7 +142,7 @@ abstract class BaseRecurrence {
 	 */
 	public function parseRecurrence(string $rdata): ?array {
 		if (strlen($rdata) < 10) {
-			return;
+			return null;
 		}
 
 		$ret = [];
@@ -2086,5 +2086,5 @@ abstract class BaseRecurrence {
 	 * @param mixed     $tz
 	 * @param mixed     $reminderonly
 	 */
-	abstract public function processOccurrenceItem(array &$items, false|int $start, int $end, false|int $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): void;
+	abstract public function processOccurrenceItem(array &$items, false|int $start, int $end, false|int $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): null|false;
 }

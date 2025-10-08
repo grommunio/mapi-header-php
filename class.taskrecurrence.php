@@ -220,7 +220,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @param bool $markComplete true if existing occurrence has to be marked complete
 	 */
-	public function regenerateTask(bool $markComplete): void {
+	public function regenerateTask(bool $markComplete): array {
 		// Get all properties
 		$taskItemProps = mapi_getprops($this->message);
 
@@ -321,7 +321,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 * @param int   $tz           the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 	 * @param bool  $reminderonly If TRUE, only add the item if the reminder is set
 	 */
-	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): void {
+	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): null|false {
 		if ($basedate > $start) {
 			$newItem = [];
 			$newItem[$this->proptags['startdate']] = $basedate;
@@ -336,6 +336,8 @@ class TaskRecurrence extends BaseRecurrence {
 
 			$items[] = $newItem;
 		}
+
+		return null;
 	}
 
 	/**

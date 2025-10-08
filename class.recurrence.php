@@ -1113,7 +1113,7 @@ class Recurrence extends BaseRecurrence {
 		 * the occurrence and send it in response.
 		 */
 		if (($occstart >= $end || $occend <= $start) && !($occstart == $occend && $occstart == $start)) {
-			return;
+			return null;
 		}
 
 		// Properties for this occurrence are the same as the main object,
@@ -1127,7 +1127,7 @@ class Recurrence extends BaseRecurrence {
 
 		// If reminderonly is set, only add reminders
 		if ($reminderonly && (!isset($newitem[$this->proptags["reminder"]]) || $newitem[$this->proptags["reminder"]] === false)) {
-			return;
+			return null;
 		}
 
 		$items[] = $newitem;
