@@ -321,7 +321,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 * @param int   $tz           the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 	 * @param bool  $reminderonly If TRUE, only add the item if the reminder is set
 	 */
-	public function processOccurrenceItem(&$items, $start, $end, $basedate, $startocc, $endocc, $tz, $reminderonly) {
+	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): void {
 		if ($basedate > $start) {
 			$newItem = [];
 			$newItem[$this->proptags['startdate']] = $basedate;
@@ -345,7 +345,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @return array|bool of properties of regenerated task else false
 	 */
-	public function markOccurrenceComplete(&$recur) {
+	public function markOccurrenceComplete(array &$recur): array|bool {
 		// Fix timezone object
 		$this->tz = false;
 		$this->action = &$recur;
@@ -363,7 +363,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $nextOccurrence properties of next occurrence
 	 */
-	public function setReminder($nextOccurrence): void {
+	public function setReminder(mixed $nextOccurrence): void {
 		$props = [];
 		if (!empty($nextOccurrence)) {
 			// Check if reminder is reset. Default is 'false'
@@ -404,7 +404,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @return array|bool
 	 */
-	public function deleteOccurrence($action) {
+	public function deleteOccurrence(array $action): array|bool {
 		$this->tz = false;
 		$this->action = $action;
 		$result = $this->moveToNextOccurrence();
