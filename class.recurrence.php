@@ -49,7 +49,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed    $message  the MAPI (appointment) message
 	 * @param array    $proptags an associative array of protags and their values
 	 */
-	public function __construct($store, $message, $proptags = []) {
+	public function __construct(mixed $store, mixed $message, array $proptags = []) {
 		if (!empty($proptags)) {
 			$this->proptags = $proptags;
 		}
@@ -387,7 +387,7 @@ class Recurrence extends BaseRecurrence {
 		return true;
 	}
 
-	public function setRecurrence($tz, $recur): void {
+	public function setRecurrence(mixed $tz, mixed $recur): void {
 		// only reset timezone if specified
 		if ($tz) {
 			$this->tz = $tz;
@@ -1092,7 +1092,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @return null|false
 	 */
-	public function processOccurrenceItem(&$items, $start, $end, $basedate, $startocc, $endocc, $tz, $reminderonly) {
+	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): null|false {
 		$exception = $this->isException($basedate);
 		if ($exception) {
 			return false;
@@ -1241,7 +1241,7 @@ class Recurrence extends BaseRecurrence {
 	 *                                   message to the attachment by default. False if only the $exception_recips changes should
 	 *                                   be applied.
 	 */
-	public function setExceptionRecipients($message, $exception_recips, $copy_orig_recips = true): void {
+	public function setExceptionRecipients(mixed $message, array $exception_recips, bool $copy_orig_recips = true): void {
 		if (isset($exception_recips['add']) || isset($exception_recips['remove']) || isset($exception_recips['modify'])) {
 			$this->setDeltaExceptionRecipients($message, $exception_recips, $copy_orig_recips);
 		}
@@ -1264,7 +1264,7 @@ class Recurrence extends BaseRecurrence {
 	 *                                message to the attachment by default. False if only the $exception_recips changes should
 	 *                                be applied.
 	 */
-	public function setDeltaExceptionRecipients($exception, $exception_recips, $copy_orig_recips): void {
+	public function setDeltaExceptionRecipients(mixed $exception, array $exception_recips, bool $copy_orig_recips): void {
 		// Check if the recipients from the original message should be copied,
 		// if so, open the recipient table of the parent message and apply all
 		// rows on the target recipient.
@@ -1316,7 +1316,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param resource $message          exception attachment of recurring item
 	 * @param array    $exception_recips list of recipients
 	 */
-	public function setAllExceptionRecipients($message, $exception_recips): void {
+	public function setAllExceptionRecipients(mixed $message, array $exception_recips): void {
 		$deletedRecipients = [];
 		$useMessageRecipients = false;
 
