@@ -2598,8 +2598,7 @@ class Meetingrequest {
 				$storeProps = mapi_getprops($this->store, [PR_ENTRYID]);
 				$defaultStoreProps = mapi_getprops($defaultStore, [PR_ENTRYID]);
 
-				// @FIXME use entryid comparison functions here
-				if ($storeProps[PR_ENTRYID] !== $defaultStoreProps[PR_ENTRYID]) {
+				if (!compareEntryIds($storeProps[PR_ENTRYID], $defaultStoreProps[PR_ENTRYID])) {
 					// get delegate information
 					$addrInfo = $this->getOwnerAddress($defaultStore, false);
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
@@ -3204,8 +3203,7 @@ class Meetingrequest {
 			$storeProps = mapi_getprops($store, [PR_ENTRYID]);
 			$userStoreProps = mapi_getprops($userStore, [PR_ENTRYID]);
 
-			// @FIXME use entryid comparison functions here
-			if ($storeProps[PR_ENTRYID] !== $userStoreProps[PR_ENTRYID]) {
+			if (!compareEntryIds($storeProps[PR_ENTRYID], $userStoreProps[PR_ENTRYID])) {
 				// get the delegator properties and set it into outgoing mail
 				$delegatorDetails = $this->getOwnerAddress($store, false);
 				$this->setAddressProperties($sentprops, $delegatorDetails, 'SENT_REPRESENTING');
