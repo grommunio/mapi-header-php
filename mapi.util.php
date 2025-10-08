@@ -28,7 +28,7 @@ mapi_load_mapidefs(1);
  *
  * @param string $guid
  */
-function makeGuid($guid): string {
+function makeGuid(string $guid): string {
 	return pack("vvvv", hexdec(substr($guid, 5, 4)), hexdec(substr($guid, 1, 4)), hexdec(substr($guid, 10, 4)), hexdec(substr($guid, 15, 4))) . hex2bin(substr($guid, 20, 4)) . hex2bin(substr($guid, 25, 12));
 }
 
