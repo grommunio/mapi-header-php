@@ -197,7 +197,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @return null|array|false|T startdate/enddate of next occurrence
 	 */
-	public function getNextOccurrence() {
+	public function getNextOccurrence(): mixed {
 		if ($this->recur) {
 			// @TODO: fix start of range
 			$start = $this->messageprops[$this->proptags["duedate"]] ?? $this->action['start'];
@@ -220,7 +220,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @param bool $markComplete true if existing occurrence has to be marked complete
 	 */
-	public function regenerateTask($markComplete) {
+	public function regenerateTask(bool $markComplete): void {
 		// Get all properties
 		$taskItemProps = mapi_getprops($this->message);
 
