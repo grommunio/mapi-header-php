@@ -1408,6 +1408,7 @@ abstract class BaseRecurrence {
 		// Set props
 		$propsToSet[$this->proptags["recurring_data"]] = $rdata;
 		$propsToSet[$this->proptags["recurring"]] = true;
+		$propsToSet[$this->proptags["meetingrecurring"]] = true;
 		if (isset($this->tz) && $this->tz) {
 			$timezone = "GMT";
 			if ($this->tz["timezone"] != 0) {

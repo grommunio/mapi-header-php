@@ -3,7 +3,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2025 grommunio GmbH
  */
 
 class Meetingrequest {
@@ -2999,6 +2999,13 @@ class Meetingrequest {
 
 			// Set isRecurring to false, because this is an exception
 			$newmessageprops[$this->proptags['recurring']] = false;
+
+			// PidLidIsRecurring indicates a message associated with a recurring series object.
+			// It's true both for the series and an exception.
+			$newmessageprops[$this->proptags['meetingrecurring']] = true;
+
+			// Recurrence data is not necessary for an exception
+			unset($newmessageprops[$this->proptags['recurrence_data']]);
 
 			// set LID_IS_EXCEPTION to true
 			$newmessageprops[$this->proptags['is_exception']] = true;

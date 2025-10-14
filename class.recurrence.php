@@ -93,6 +93,7 @@ class Recurrence extends BaseRecurrence {
 			$properties["flagdueby"] = "PT_SYSTIME:PSETID_Common:" . PidLidReminderSignalTime;
 			$properties["side_effects"] = "PT_LONG:PSETID_Common:0x8510";
 			$properties["hideattachments"] = "PT_BOOLEAN:PSETID_Common:" . PidLidSmartNoAttach;
+			$properties['meetingrecurring'] = "PT_BOOLEAN:PSETID_Meeting:" . PidLidIsRecurring;
 
 			$this->proptags = getPropIdsFromStrings($store, $properties);
 		}
