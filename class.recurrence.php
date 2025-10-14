@@ -3,7 +3,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2025 grommunio GmbH
  */
 
 /**
@@ -228,6 +228,7 @@ class Recurrence extends BaseRecurrence {
 		for ($i = 0, $len = count($this->recur["changed_occurrences"]); $i < $len; ++$i) {
 			if ($this->isSameDay($this->recur["changed_occurrences"][$i]["basedate"], $baseday)) {
 				$extomodify = &$this->recur["changed_occurrences"][$i];
+				break;
 			}
 		}
 
