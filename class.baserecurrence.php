@@ -1284,7 +1284,7 @@ abstract class BaseRecurrence {
 
 		// Default data
 		// Second item (0x08) indicates the Outlook version (see documentation at the bottom of this file for more information)
-		$rdata .= pack("VV", 0x3006, 0x3008);
+		$rdata .= pack("VV", 0x3006, 0x3009);
 		if (isset($this->recur["startocc"], $this->recur["endocc"])) {
 			// Set start and endtime in minutes
 			$rdata .= pack("VV", (int) $this->recur["startocc"], (int) $this->recur["endocc"]);
@@ -1378,7 +1378,7 @@ abstract class BaseRecurrence {
 
 		// write extended data
 		foreach ($changed_items as $changed_item) {
-			$rdata .= pack("V", 0);
+			$rdata .= pack("VVV", 4, 0, 0); // ChangeHighlightSize, ChangeHighlightValue, ReservedBlockEE1Size
 			if (isset($changed_item["subject"]) || isset($changed_item["location"])) {
 				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"]));
 				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"]));
@@ -1404,7 +1404,7 @@ abstract class BaseRecurrence {
 			}
 		}
 
-		$rdata .= pack("V", 0);
+		$rdata .= pack("V", 0); // ReservedBlock2Size
 
 		// Set props
 		$propsToSet[$this->proptags["recurring_data"]] = $rdata;
