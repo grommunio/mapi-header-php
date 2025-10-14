@@ -1298,9 +1298,10 @@ abstract class BaseRecurrence {
 
 		foreach ($changed_items as $changed_item) {
 			// Set start and end time of exception
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"]));
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"]));
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["basedate"]));
+			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"])); // StartDateTime
+			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"])); // EndDateTime
+			$rdata .= pack("V", $this->unixDataToRecurData(
+				$this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60)); // OriginalStartDate
 
 			// Bitmask
 			$bitmask = 0;
@@ -1381,7 +1382,7 @@ abstract class BaseRecurrence {
 			if (isset($changed_item["subject"]) || isset($changed_item["location"])) {
 				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"]));
 				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"]));
-				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["basedate"]));
+				$rdata .= pack("V", $this->unixDataToRecurData($this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60));
 			}
 
 			if (isset($changed_item["subject"])) {

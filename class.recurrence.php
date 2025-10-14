@@ -160,7 +160,7 @@ class Recurrence extends BaseRecurrence {
 
 			$changed_item = [];
 
-			$changed_item["basedate"] = $basetime;
+			$changed_item["basedate"] = $baseday;
 			$changed_item["start"] = $this->fromGMT($this->tz, $props[$this->proptags["startdate"]]);
 			$changed_item["end"] = $this->fromGMT($this->tz, $props[$this->proptags["duedate"]]);
 
