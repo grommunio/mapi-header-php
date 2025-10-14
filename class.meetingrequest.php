@@ -3106,7 +3106,7 @@ class Meetingrequest {
 		}
 
 		// Send all recurrence info in mail, if this is a recurrence meeting.
-		if (isset($messageprops[$this->proptags['recurring']]) && $messageprops[$this->proptags['recurring']]) {
+		if (isset($newmessageprops[$this->proptags['recurring']]) && $newmessageprops[$this->proptags['recurring']]) {
 			if (!empty($messageprops[$this->proptags['recurring_pattern']])) {
 				$newmessageprops[$this->proptags['recurring_pattern']] = $messageprops[$this->proptags['recurring_pattern']];
 			}
