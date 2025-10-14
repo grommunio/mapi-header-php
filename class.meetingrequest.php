@@ -2914,6 +2914,14 @@ class Meetingrequest {
 			}
 		}
 
+		// In some cases the exception subject is not in the property list,
+		// so it's necessary to fetch it.
+		if (!isset($exception_props[PR_SUBJECT])) {
+			$exSubject = mapi_getprops($occurrenceItem, [PR_SUBJECT]);
+			if (!empty($exSubject[PR_SUBJECT])) {
+				$exception_props[PR_SUBJECT] = $exSubject[PR_SUBJECT];
+			}
+		}
 		if ($recurr->isException($basedate)) {
 			$recurr->modifyException($exception_props, $basedate, $recips, $occurrenceItem);
 		}
