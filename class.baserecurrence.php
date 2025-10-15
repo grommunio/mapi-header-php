@@ -1282,7 +1282,7 @@ abstract class BaseRecurrence {
 
 		// Default data
 		// Second item (0x08) indicates the Outlook version (see documentation at the bottom of this file for more information)
-		$rdata .= pack("VV", 0x3006, 0x3008);
+		$rdata .= pack("VV", 0x3006, 0x3009);
 		if (isset($this->recur["startocc"], $this->recur["endocc"])) {
 			// Set start and endtime in minutes
 			$rdata .= pack("VV", (int) $this->recur["startocc"], (int) $this->recur["endocc"]);
@@ -1296,9 +1296,10 @@ abstract class BaseRecurrence {
 
 		foreach ($changed_items as $changed_item) {
 			// Set start and end time of exception
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"]));
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"]));
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["basedate"]));
+			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"])); // StartDateTime
+			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"])); // EndDateTime
+			$rdata .= pack("V", $this->unixDataToRecurData(
+				$this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60)); // OriginalStartDate
 
 			// Bitmask
 			$bitmask = 0;
@@ -1375,11 +1376,11 @@ abstract class BaseRecurrence {
 
 		// write extended data
 		foreach ($changed_items as $changed_item) {
-			$rdata .= pack("V", 0);
+			$rdata .= pack("VVV", 4, 0, 0); // ChangeHighlightSize, ChangeHighlightValue, ReservedBlockEE1Size
 			if (isset($changed_item["subject"]) || isset($changed_item["location"])) {
 				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"]));
 				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"]));
-				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["basedate"]));
+				$rdata .= pack("V", $this->unixDataToRecurData($this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60));
 			}
 
 			if (isset($changed_item["subject"])) {
@@ -1401,11 +1402,12 @@ abstract class BaseRecurrence {
 			}
 		}
 
-		$rdata .= pack("V", 0);
+		$rdata .= pack("V", 0); // ReservedBlock2Size
 
 		// Set props
 		$propsToSet[$this->proptags["recurring_data"]] = $rdata;
 		$propsToSet[$this->proptags["recurring"]] = true;
+		$propsToSet[$this->proptags["meetingrecurring"]] = true;
 		if (isset($this->tz) && $this->tz) {
 			$timezone = "GMT";
 			if ($this->tz["timezone"] != 0) {

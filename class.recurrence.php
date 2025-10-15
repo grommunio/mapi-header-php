@@ -3,7 +3,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2025 grommunio GmbH
  */
 
 /**
@@ -93,6 +93,7 @@ class Recurrence extends BaseRecurrence {
 			$properties["flagdueby"] = "PT_SYSTIME:PSETID_Common:" . PidLidReminderSignalTime;
 			$properties["side_effects"] = "PT_LONG:PSETID_Common:0x8510";
 			$properties["hideattachments"] = "PT_BOOLEAN:PSETID_Common:" . PidLidSmartNoAttach;
+			$properties['meetingrecurring'] = "PT_BOOLEAN:PSETID_Meeting:" . PidLidIsRecurring;
 
 			$this->proptags = getPropIdsFromStrings($store, $properties);
 		}
@@ -122,10 +123,18 @@ class Recurrence extends BaseRecurrence {
 			if (isset($exception_props[$this->proptags["startdate"]]) && !$this->isValidExceptionDate($base_date, $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]))) {
 				return false;
 			}
+			$changed_item = [];
 			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date
 			foreach (["subject", "location", "label", "reminder", "reminder_minutes", "alldayevent", "busystatus"] as $propname) {
 				if (isset($this->messageprops[$this->proptags[$propname]])) {
 					$props[$this->proptags[$propname]] = $this->messageprops[$this->proptags[$propname]];
+					if (isset($exception_props[$this->proptags[$propname]]) &&
+					    $this->messageprops[$this->proptags[$propname]] != $exception_props[$this->proptags[$propname]]) {
+								$changed_item[$propname] = $exception_props[$this->proptags[$propname]];
+							}
+				}
+				elseif (isset($exception_props[$this->proptags[$propname]])) {
+					$changed_item[$propname] = $exception_props[$this->proptags[$propname]];
 				}
 			}
 
@@ -157,39 +166,9 @@ class Recurrence extends BaseRecurrence {
 			// Save the data into an attachment
 			$this->createExceptionAttachment($props, $exception_recips, $copy_attach_from);
 
-			$changed_item = [];
-
-			$changed_item["basedate"] = $basetime;
+			$changed_item["basedate"] = $baseday;
 			$changed_item["start"] = $this->fromGMT($this->tz, $props[$this->proptags["startdate"]]);
 			$changed_item["end"] = $this->fromGMT($this->tz, $props[$this->proptags["duedate"]]);
-
-			if (array_key_exists($this->proptags["subject"], $exception_props)) {
-				$changed_item["subject"] = $exception_props[$this->proptags["subject"]];
-			}
-
-			if (array_key_exists($this->proptags["location"], $exception_props)) {
-				$changed_item["location"] = $exception_props[$this->proptags["location"]];
-			}
-
-			if (array_key_exists($this->proptags["label"], $exception_props)) {
-				$changed_item["label"] = $exception_props[$this->proptags["label"]];
-			}
-
-			if (array_key_exists($this->proptags["reminder"], $exception_props)) {
-				$changed_item["reminder_set"] = $exception_props[$this->proptags["reminder"]];
-			}
-
-			if (array_key_exists($this->proptags["reminder_minutes"], $exception_props)) {
-				$changed_item["remind_before"] = $exception_props[$this->proptags["reminder_minutes"]];
-			}
-
-			if (array_key_exists($this->proptags["alldayevent"], $exception_props)) {
-				$changed_item["alldayevent"] = $exception_props[$this->proptags["alldayevent"]];
-			}
-
-			if (array_key_exists($this->proptags["busystatus"], $exception_props)) {
-				$changed_item["busystatus"] = $exception_props[$this->proptags["busystatus"]];
-			}
 
 			// Add the changed occurrence to the list
 			array_push($this->recur["changed_occurrences"], $changed_item);
@@ -228,6 +207,7 @@ class Recurrence extends BaseRecurrence {
 		for ($i = 0, $len = count($this->recur["changed_occurrences"]); $i < $len; ++$i) {
 			if ($this->isSameDay($this->recur["changed_occurrences"][$i]["basedate"], $baseday)) {
 				$extomodify = &$this->recur["changed_occurrences"][$i];
+				break;
 			}
 		}
 
