@@ -99,7 +99,7 @@ class KeyCloak {
 	/**
 	 * Returns the last known refresh time.
 	 *
-	 * @return long
+	 * @return int|null
 	 */
 	public function get_last_refresh_time() {
 		return $this->last_refresh_time;
@@ -108,7 +108,7 @@ class KeyCloak {
 	/**
 	 * Sets  the last refresh time.
 	 *
-	 * @param long $time
+	 * @param int $time
 	 */
 	public function set_last_refresh_time($time) {
 		$this->last_refresh_time = $time;
