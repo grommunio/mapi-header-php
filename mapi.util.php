@@ -38,6 +38,8 @@ function makeGuid(string $guid): string {
  * @return string The defined name for the MAPI error code
  */
 function get_mapi_error_name(mixed $errcode = null): string {
+	static $errorCache = null;
+
 	if ($errcode === null) {
 		$errcode = mapi_last_hresult();
 	}
@@ -46,7 +48,13 @@ function get_mapi_error_name(mixed $errcode = null): string {
 		$errcode = hexdec($errcode);
 	}
 
-	if ($errcode !== 0) {
+	if ($errcode === 0) {
+		return "NOERROR";
+	}
+
+	// Build cache on first call for performance
+	if ($errorCache === null) {
+		$errorCache = [];
 		// Retrieve constants categories, MAPI error names are defined in gromox.
 		foreach (get_defined_constants(true)['Core'] as $key => $value) {
 			/*
@@ -55,21 +63,19 @@ function get_mapi_error_name(mixed $errcode = null): string {
 			 * we have to manually typecast value to integer, so float will be converted in integer,
 			 * but still its out of bound for integer limit so it will be auto adjusted to minus value
 			 */
-			if ($errcode == (int) $value) {
-				// Check that we have an actual MAPI error or warning definition
-				$prefix = substr($key, 0, 7);
-				if ($prefix === "MAPI_E_" || $prefix === "MAPI_W_") {
-					return $key;
-				}
-				$prefix = substr($key, 0, 2);
-				if ($prefix === "ec") {
-					return $key;
-				}
+			$intValue = (int) $value;
+			$prefix = substr($key, 0, 7);
+			if ($prefix === "MAPI_E_" || $prefix === "MAPI_W_") {
+				$errorCache[$intValue] = $key;
+			}
+			elseif (substr($key, 0, 2) === "ec") {
+				$errorCache[$intValue] = $key;
 			}
 		}
 	}
-	else {
-		return "NOERROR";
+
+	if (isset($errorCache[$errcode])) {
+		return $errorCache[$errcode];
 	}
 
 	// error code not found, return hex value (this is a fix for 64-bit systems, we can't use the dechex() function for this)
@@ -342,15 +348,20 @@ function getUidFromGoid(string $goid): ?string {
  * @return string the symbolic name of the property tag
  */
 function prop2Str(mixed $property): string {
+	static $propertyCache = null;
+
 	if (is_int($property)) {
-		// Retrieve constants categories, zcore provides them in 'Core'
-		foreach (get_defined_constants(true)['Core'] as $key => $value) {
-			if ($property === $value && str_starts_with($key, 'PR_')) {
-				return $key;
+		// Build cache on first call for performance
+		if ($propertyCache === null) {
+			$propertyCache = [];
+			foreach (get_defined_constants(true)['Core'] as $key => $value) {
+				if (str_starts_with($key, 'PR_')) {
+					$propertyCache[$value] = $key;
+				}
 			}
 		}
 
-		return sprintf("0x%08X", $property);
+		return $propertyCache[$property] ?? sprintf("0x%08X", $property);
 	}
 
 	return $property;
