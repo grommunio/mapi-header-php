@@ -34,6 +34,31 @@ profile php-fpm /usr/sbin/php-fpm flags=(attach_disconnected) {
   @{run}/php{,-fpm}/php*-fpm.pid rw,
   @{run}/php{,-fpm}/php*-fpm.sock rwlk,
 
+  # shared grommunio php libraries and configuration
+  /usr/share/php-mapi/** r,
+  /etc/gromox/** r,
+
+  # grommunio web component
+  /etc/grommunio-web/** r,
+  /usr/share/grommunio-web/** r,
+  /var/lib/grommunio-web/tmp/** rwk,
+  /var/lib/grommunio-web/session/** rwk,
+  /var/lib/grommunio-web/sqlite-index/** rwk,
+  /var/lib/grommunio-web/plugin_files/** rwk,
+  /usr/share/grommunio-web/debug.txt rw,
+
+  # grommunio sync component
+  /etc/grommunio-sync/** r,
+  /usr/share/grommunio-sync/** r,
+  /var/lib/grommunio-sync/** rwk,
+  /var/log/grommunio-sync/** rwk,
+
+  # grommunio dav component
+  /etc/grommunio-dav/** r,
+  /usr/share/grommunio-dav/** r,
+  /var/lib/grommunio-dav/** rwk,
+  /var/log/grommunio-dav/** rwk,
+
   deny / rw,
 
   signal (send) peer=php-fpm//*,
