@@ -346,6 +346,16 @@ define('DT_LOCAL', 0x00030000);
 define('DT_WAN', 0x00040000);
 define('DT_NOT_SPECIFIC', 0x00050000);
 
+/* Distribution list member types */
+define('DL_USER', 0xC3);              // 195 - Individual user
+define('DL_USER2', 0xD3);             // 211 - Individual user variant
+define('DL_USER3', 0xE3);             // 227 - Individual user variant
+define('DL_EXTERNAL_MEMBER', 0x00);   // 0 - One-off (external) contact
+define('DL_DIST', 0xB4);              // 180 - Distribution list
+define('DL_USER_AB', 0xB5);           // 181 - Address book user
+define('DL_DIST_AB', 0xB6);           // 182 - Address book distribution list
+define('WAB_GUID', pack("H*", "C091ADD3519DCF11A4A900AA0047FAA4"));
+
 /* For folder hierarchy tables */
 define('DT_FOLDER', 0x01000000);
 define('DT_FOLDER_LINK', 0x02000000);
