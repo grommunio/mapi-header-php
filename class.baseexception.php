@@ -125,6 +125,13 @@ class BaseException extends Exception {
 	}
 
 	/**
+	 * Returns whether this exception has been handled.
+	 */
+	public function isHandled(): bool {
+		return $this->isHandled;
+	}
+
+	/**
 	 * Returns base path of the file where exception occurred.
 	 */
 	public function getBaseFile(): string {
@@ -150,6 +157,13 @@ class BaseException extends Exception {
 	 */
 	public function getNotificationType(): string {
 		return $this->notificationType;
+	}
+
+	/**
+	 * Sets the flag to allow showing detailed exception messages.
+	 */
+	public function setShowDetailsMessage(): void {
+		$this->allowToShowDetailsMessage = true;
 	}
 
 	/**
