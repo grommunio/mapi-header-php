@@ -171,11 +171,7 @@ class TaskRequest {
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
-		if ($messageClass !== false && $messageClass === "IPM.TaskRequest") {
-			return true;
-		}
-
-		return false;
+		return $messageClass !== false && $messageClass === "IPM.TaskRequest";
 	}
 
 	/**
@@ -191,11 +187,7 @@ class TaskRequest {
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
-		if ($messageClass !== false && str_starts_with((string) $messageClass, "IPM.TaskRequest.")) {
-			return true;
-		}
-
-		return false;
+		return $messageClass !== false && str_starts_with((string) $messageClass, "IPM.TaskRequest.");
 	}
 
 	/**

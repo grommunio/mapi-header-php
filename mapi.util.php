@@ -167,11 +167,9 @@ function getPropIdsFromStrings(mixed $store, array $mapping): array {
  * @return false|mixed Gives back false when there is no error, if there is, gives the error
  */
 function propIsError(int $property, array $propArray): mixed {
-	if (array_key_exists(mapi_prop_tag(PT_ERROR, mapi_prop_id($property)), $propArray)) {
-		return $propArray[mapi_prop_tag(PT_ERROR, mapi_prop_id($property))];
-	}
+	$errorTag = mapi_prop_tag(PT_ERROR, mapi_prop_id($property));
 
-	return false;
+	return $propArray[$errorTag] ?? false;
 }
 
 /**
