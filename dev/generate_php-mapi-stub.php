@@ -111,6 +111,11 @@ try {
 	// Generate autoloader.php content
 	$autoloaderContent = "<?php\n";
 	$autoloaderContent .= "/*\n * SPDX-License-Identifier: AGPL-3.0-only\n * SPDX-FileCopyrightText: Copyright " . date('Y') . " grommunio GmbH\n */\n\n";
+	$autoloaderContent .= "// Guard to prevent multiple inclusions and conflicts with real MAPI extension\n";
+	$autoloaderContent .= "if (defined('MAPI_STUB_LOADED') || extension_loaded('mapi')) {\n";
+	$autoloaderContent .= "\treturn;\n";
+	$autoloaderContent .= "}\n";
+	$autoloaderContent .= "define('MAPI_STUB_LOADED', true);\n\n";
 	$autoloaderContent .= $stubFunctions;
 
 	if (extension_loaded('mapi')) {
