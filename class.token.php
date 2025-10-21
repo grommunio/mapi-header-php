@@ -19,6 +19,9 @@ class Token {
 	 * @param string $_raw holding
 	 */
 	public function __construct(protected $_raw) {
+		// Initialize with default empty payload
+		$this->token_payload = ['expires_at' => 0];
+
 		if ($this->_raw) {
 			try {
 				$parts = explode('.', (string) $this->_raw);
@@ -29,14 +32,16 @@ class Token {
 				$tp = base64_decode($parts[1]);
 				$ts = base64_decode($parts[2]);
 				$this->token_header = json_decode($th, true);
-				$this->token_payload = json_decode($tp, true);
+				$payload = json_decode($tp, true);
+				// Only use decoded payload if it's valid
+				if (is_array($payload)) {
+					$this->token_payload = $payload;
+				}
 				$this->token_signature = $ts;
 				$this->signed = $parts[0] . '.' . $parts[1];
 			}
 			catch (Exception) {
-				$this->token_payload = [
-					'expires_at' => 0,
-				];
+				// Keep default payload on error
 			}
 		}
 	}
@@ -67,13 +72,13 @@ class Token {
 	 * Otherwise returns an empty string.
 	 */
 	public function get_claims(string $claim): mixed {
-		return $this->token_payload[$claim] ?? '';
+		return array_key_exists($claim, $this->token_payload) ? $this->token_payload[$claim] : '';
 	}
 
 	/**
 	 * Checks if a token is expired comparing to the current time.
 	 */
 	public function is_expired(): bool {
-		return ($this->token_payload['exp'] ?? 0) < time() || ($this->token_payload['iat'] ?? 0) < time() - SECONDS_PER_DAY;
+		return ($this->token_payload['exp'] ?? 0) <= time();
 	}
 }

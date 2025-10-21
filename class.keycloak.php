@@ -39,7 +39,7 @@ class KeyCloak {
 	 */
 	public function __construct(mixed $keycloak_config) {
 		if (is_string($keycloak_config)) {
-			$keycloak_config = json_decode($keycloak_config);
+			$keycloak_config = json_decode($keycloak_config, true);
 		}
 
 		// redirect_url
