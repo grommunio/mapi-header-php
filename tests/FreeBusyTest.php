@@ -65,22 +65,38 @@ class FreeBusyTest extends TestCase {
 
 	// Test method signatures and return types
 	public function testGetLocalFreeBusyMessageReturnsFalseWithoutStore(): void {
+		// Suppress error_log output
+		$this->expectOutputString('');
+		ob_start();
 		$result = FreeBusy::getLocalFreeBusyMessage(false);
+		ob_end_clean();
 		$this->assertFalse($result);
 	}
 
 	public function testGetLocalFreeBusyMessageReturnsFalseWithNull(): void {
+		// Suppress error_log output
+		$this->expectOutputString('');
+		ob_start();
 		$result = FreeBusy::getLocalFreeBusyMessage(null);
+		ob_end_clean();
 		$this->assertFalse($result);
 	}
 
 	public function testGetLocalFreeBusyFolderReturnsFalseWithoutStore(): void {
+		// Suppress error_log output
+		$this->expectOutputString('');
+		ob_start();
 		$result = FreeBusy::getLocalFreeBusyFolder(false);
+		ob_end_clean();
 		$this->assertFalse($result);
 	}
 
 	public function testGetLocalFreeBusyFolderReturnsFalseWithNull(): void {
+		// Suppress error_log output
+		$this->expectOutputString('');
+		ob_start();
 		$result = FreeBusy::getLocalFreeBusyFolder(null);
+		ob_end_clean();
 		$this->assertFalse($result);
 	}
 
