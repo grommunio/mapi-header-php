@@ -94,7 +94,8 @@ class MAPIExceptionTest extends TestCase {
 		$exception->setDisplayMessage('Custom display message');
 
 		$displayMessage = $exception->getDisplayMessage();
-		$this->assertEquals('Custom display message', $displayMessage);
+		$this->assertStringContainsString('Custom display message', $displayMessage);
+		$this->assertStringContainsString(mapi_strerror(MAPI_E_NO_ACCESS), $displayMessage);
 	}
 
 	public function testGetDisplayMessageWithZeroCode(): void {
