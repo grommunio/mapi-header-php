@@ -2080,14 +2080,7 @@ class Meetingrequest {
 			return $entryid1 == $entryid2;
 		}
 
-		$smtp1 = $this->getSMTPAddress($entryid1);
-		$smtp2 = $this->getSMTPAddress($entryid2);
-
-		if ($smtp1 == $smtp2) {
-			return true;
-		}
-
-		return false;
+		return $this->getSMTPAddress($entryid1) == $this->getSMTPAddress($entryid2);
 	}
 
 	// Gets the SMTP address of the passed addressbook entryid
@@ -2253,11 +2246,7 @@ class Meetingrequest {
 		$month = (int) hexdec(substr($hexbase, 4, 2));
 		$year = (int) hexdec(substr($hexbase, 0, 4));
 
-		if ($day && $month && $year) {
-			return gmmktime(0, 0, 0, $month, $day, $year);
-		}
-
-		return false;
+		return ($day && $month && $year) ? gmmktime(0, 0, 0, $month, $day, $year) : false;
 	}
 
 	/**
