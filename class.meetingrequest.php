@@ -1693,14 +1693,13 @@ class Meetingrequest {
 	 * @return resource default folder of store
 	 */
 	public function openDefaultFolder(int $prop, mixed $store = false): mixed {
-		$folder = false;
 		$entryid = $this->getDefaultFolderEntryID($prop, $store);
 
-		if ($entryid !== false) {
-			$folder = mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		if ($entryid === false) {
+			return false;
 		}
 
-		return $folder;
+		return mapi_msgstore_openentry($store ?: $this->store, $entryid);
 	}
 
 	/**
@@ -1731,14 +1730,13 @@ class Meetingrequest {
 	 * @return resource default folder of store
 	 */
 	public function openBaseFolder(int $prop, mixed $store = false): mixed {
-		$folder = false;
 		$entryid = $this->getBaseEntryID($prop, $store);
 
-		if ($entryid !== false) {
-			$folder = mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		if ($entryid === false) {
+			return false;
 		}
 
-		return $folder;
+		return mapi_msgstore_openentry($store ?: $this->store, $entryid);
 	}
 
 	/**
@@ -2142,35 +2140,31 @@ class Meetingrequest {
 
 		$storeProps = mapi_getprops($store, [PR_MAILBOX_OWNER_ENTRYID, PR_USER_ENTRYID]);
 
-		$ownerEntryId = false;
-		if (isset($storeProps[PR_USER_ENTRYID]) && $storeProps[PR_USER_ENTRYID]) {
-			$ownerEntryId = $storeProps[PR_USER_ENTRYID];
+		// Determine owner entry ID: use mailbox owner if not falling back, otherwise use user entry ID
+		$ownerEntryId = (!$fallbackToLoggedInUser && !empty($storeProps[PR_MAILBOX_OWNER_ENTRYID]))
+			? $storeProps[PR_MAILBOX_OWNER_ENTRYID]
+			: ($storeProps[PR_USER_ENTRYID] ?? false);
+
+		if (!$ownerEntryId) {
+			return false;
 		}
 
-		if (isset($storeProps[PR_MAILBOX_OWNER_ENTRYID]) && $storeProps[PR_MAILBOX_OWNER_ENTRYID] && !$fallbackToLoggedInUser) {
-			$ownerEntryId = $storeProps[PR_MAILBOX_OWNER_ENTRYID];
+		$ab = mapi_openaddressbook($this->session);
+
+		$zarafaUser = mapi_ab_openentry($ab, $ownerEntryId);
+		if (!$zarafaUser) {
+			return false;
 		}
 
-		if ($ownerEntryId) {
-			$ab = mapi_openaddressbook($this->session);
+		$ownerProps = mapi_getprops($zarafaUser, [PR_ADDRTYPE, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_SEARCH_KEY]);
 
-			$zarafaUser = mapi_ab_openentry($ab, $ownerEntryId);
-			if (!$zarafaUser) {
-				return false;
-			}
-
-			$ownerProps = mapi_getprops($zarafaUser, [PR_ADDRTYPE, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_SEARCH_KEY]);
-
-			$addrType = $ownerProps[PR_ADDRTYPE];
-			$name = $ownerProps[PR_DISPLAY_NAME];
-			$emailAddr = $ownerProps[PR_EMAIL_ADDRESS];
-			$searchKey = $ownerProps[PR_SEARCH_KEY];
-			$entryId = $ownerEntryId;
-
-			return [$name, $emailAddr, $addrType, $entryId, $searchKey];
-		}
-
-		return false;
+		return [
+			$ownerProps[PR_DISPLAY_NAME],
+			$ownerProps[PR_EMAIL_ADDRESS],
+			$ownerProps[PR_ADDRTYPE],
+			$ownerEntryId,
+			$ownerProps[PR_SEARCH_KEY],
+		];
 	}
 
 	// Opens this session's default message store
