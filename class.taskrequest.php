@@ -542,6 +542,13 @@ class TaskRequest {
 	 * @return true
 	 */
 	public function sendTaskRequest($prefix): bool {
+		// Check if the task is in a public folder (which is not mail-enabled)
+		$taskFolderStore = $this->getTaskFolderStore();
+		$storeType = mapi_getprops($taskFolderStore, [PR_MDB_PROVIDER]);
+		if (isset($storeType[PR_MDB_PROVIDER]) && $storeType[PR_MDB_PROVIDER] === ZARAFA_STORE_PUBLIC_GUID) {
+			throw new MAPIException(_("Cannot assign tasks in public folders. Public folders are not mail-enabled and cannot send task assignment notifications."), MAPI_E_NO_SUPPORT);
+		}
+
 		// Generate a TaskGlobalObjectId
 		$taskid = $this->createTGOID();
 		$messageprops = mapi_getprops($this->message, [PR_SUBJECT]);
@@ -911,7 +918,11 @@ class TaskRequest {
 		// Set SENT_REPRESENTING in case we're sending as a delegate
 		$ownerstore = $this->getTaskFolderStore();
 		$sentreprprops = $this->getSentReprProps($ownerstore);
-		mapi_setprops($outgoing, $sentreprprops);
+
+		// Check if getSentReprProps returned false (e.g., for public folders which are not mail-enabled)
+		if ($sentreprprops !== false) {
+			mapi_setprops($outgoing, $sentreprprops);
+		}
 
 		mapi_setprops($outgoing, [PR_SENTMAIL_ENTRYID => $storeprops[PR_IPM_SENTMAIL_ENTRYID]]);
 
