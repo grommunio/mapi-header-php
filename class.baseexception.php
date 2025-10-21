@@ -85,11 +85,7 @@ class BaseException extends Exception {
 	 * Returns message that should be sent to client to display.
 	 */
 	public function getDisplayMessage(): string {
-		if (!is_null($this->displayMessage)) {
-			return $this->displayMessage;
-		}
-
-		return $this->getMessage();
+		return $this->displayMessage ?? $this->getMessage();
 	}
 
 	/**
