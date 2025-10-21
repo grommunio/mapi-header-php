@@ -225,11 +225,7 @@ class Meetingrequest {
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
-		if ($messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.request') === 0) {
-			return true;
-		}
-
-		return false;
+		return $messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.request') === 0;
 	}
 
 	/**
@@ -245,11 +241,7 @@ class Meetingrequest {
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
-		if ($messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.resp') === 0) {
-			return true;
-		}
-
-		return false;
+		return $messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.resp') === 0;
 	}
 
 	/**
@@ -265,11 +257,7 @@ class Meetingrequest {
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
-		if ($messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.canceled') === 0) {
-			return true;
-		}
-
-		return false;
+		return $messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.canceled') === 0;
 	}
 
 	/**
@@ -1557,28 +1545,26 @@ class Meetingrequest {
 	public function isLocalOrganiser(): bool {
 		$props = mapi_getprops($this->message, [$this->proptags['goid'], PR_MESSAGE_CLASS]);
 
-		if (!$this->isMeetingRequest($props[PR_MESSAGE_CLASS]) && !$this->isMeetingRequestResponse($props[PR_MESSAGE_CLASS]) && !$this->isMeetingCancellation($props[PR_MESSAGE_CLASS])) {
-			// we are checking with calendar item
-			$calendarItem = $this->message;
-		}
-		else {
-			// we are checking with meeting request / response / cancellation mail
-			// get calendar items
-			$calendarItem = $this->getCorrespondentCalendarItem(true);
-		}
+		// Determine which item to check based on message class
+		$messageClass = $props[PR_MESSAGE_CLASS] ?? '';
+		$isMeetingMessage = $this->isMeetingRequest($messageClass) ||
+		                    $this->isMeetingRequestResponse($messageClass) ||
+		                    $this->isMeetingCancellation($messageClass);
 
-		// even if we have received request/response for exception/occurrence then also
+		$calendarItem = $isMeetingMessage
+			? $this->getCorrespondentCalendarItem(true)  // Meeting request/response/cancellation mail
+			: $this->message;  // Calendar item
+
+		// Even if we have received request/response for exception/occurrence then also
 		// we can check recurring series for organizer, no need to check with exception/occurrence
-
-		if ($calendarItem !== false) {
-			$messageProps = mapi_getprops($calendarItem, [$this->proptags['responsestatus']]);
-
-			if (isset($messageProps[$this->proptags['responsestatus']]) && $messageProps[$this->proptags['responsestatus']] === olResponseOrganized) {
-				return true;
-			}
+		if ($calendarItem === false) {
+			return false;
 		}
 
-		return false;
+		$messageProps = mapi_getprops($calendarItem, [$this->proptags['responsestatus']]);
+
+		return isset($messageProps[$this->proptags['responsestatus']]) &&
+		       $messageProps[$this->proptags['responsestatus']] === olResponseOrganized;
 	}
 
 	/*
@@ -1764,32 +1750,29 @@ class Meetingrequest {
 	 * @return bool true if user has an access over the folder, false if not
 	 */
 	public function checkFolderWriteAccess(string $entryid, mixed $store = false): bool {
-		$accessToFolder = false;
-
-		if (!empty($entryid)) {
-			if ($store === false) {
-				$store = $this->store;
-			}
-
-			try {
-				$folder = mapi_msgstore_openentry($store, $entryid);
-				$folderProps = mapi_getprops($folder, [PR_ACCESS]);
-				if (($folderProps[PR_ACCESS] & MAPI_ACCESS_CREATE_CONTENTS) === MAPI_ACCESS_CREATE_CONTENTS) {
-					$accessToFolder = true;
-				}
-			}
-			catch (MAPIException $e) {
-				// we don't have rights to open folder, so return false
-				if ($e->getCode() == MAPI_E_NO_ACCESS) {
-					return $accessToFolder;
-				}
-
-				// rethrow other errors
-				throw $e;
-			}
+		if (empty($entryid)) {
+			return false;
 		}
 
-		return $accessToFolder;
+		if ($store === false) {
+			$store = $this->store;
+		}
+
+		try {
+			$folder = mapi_msgstore_openentry($store, $entryid);
+			$folderProps = mapi_getprops($folder, [PR_ACCESS]);
+
+			return ($folderProps[PR_ACCESS] & MAPI_ACCESS_CREATE_CONTENTS) === MAPI_ACCESS_CREATE_CONTENTS;
+		}
+		catch (MAPIException $e) {
+			// We don't have rights to open folder, so return false
+			if ($e->getCode() == MAPI_E_NO_ACCESS) {
+				return false;
+			}
+
+			// Rethrow other errors
+			throw $e;
+		}
 	}
 
 	/**
