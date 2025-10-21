@@ -218,11 +218,8 @@ class KeyCloak {
 	 * @return bool
 	 */
 	public function validate_grant(): bool {
-		if ($this->validate_token($this->access_token) && $this->validate_token($this->refresh_token)) {
-			return true;
-		}
-
-		return $this->refresh_grant_req();
+		return ($this->validate_token($this->access_token) && $this->validate_token($this->refresh_token))
+			|| $this->refresh_grant_req();
 	}
 
 	/**
@@ -233,33 +230,33 @@ class KeyCloak {
 	 * @return bool
 	 */
 	protected function validate_token(mixed $token): bool {
-		if (isset($token)) {
-			$path = "/protocol/openid-connect/token/introspect";
-			$headers = ['Content-Type: application/x-www-form-urlencoded'];
-			$params = ['token' => $token->get_payload()];
-			if ($this->is_public) {
-				$params['client_id'] = $this->client_id;
-			}
-			else {
-				$headers[] = 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret);
-			}
-			$response = $this->http_curl_request('POST', $path, $headers, http_build_query($params));
-
-			if ($response['code'] < 200 || $response['code'] > 299) {
-				return false;
-			}
-
-			try {
-				$data = json_decode((string) $response['body'], true);
-			}
-			catch (Exception) {
-				return false;
-			}
-
-			return !array_key_exists('error', $data);
+		if (!isset($token)) {
+			return false;
 		}
 
-		return false;
+		$path = "/protocol/openid-connect/token/introspect";
+		$headers = ['Content-Type: application/x-www-form-urlencoded'];
+		$params = ['token' => $token->get_payload()];
+		if ($this->is_public) {
+			$params['client_id'] = $this->client_id;
+		}
+		else {
+			$headers[] = 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret);
+		}
+		$response = $this->http_curl_request('POST', $path, $headers, http_build_query($params));
+
+		if ($response['code'] < 200 || $response['code'] > 299) {
+			return false;
+		}
+
+		try {
+			$data = json_decode((string) $response['body'], true);
+		}
+		catch (Exception) {
+			return false;
+		}
+
+		return !array_key_exists('error', $data);
 	}
 
 	/**
@@ -268,11 +265,7 @@ class KeyCloak {
 	 * @return bool
 	 */
 	public function is_expired(): bool {
-		if (!$this->access_token) {
-			return true;
-		}
-
-		return $this->access_token->is_expired();
+		return !$this->access_token || $this->access_token->is_expired();
 	}
 
 	/**
