@@ -93,7 +93,7 @@ class BaseException extends Exception {
 	 * to show it to user.
 	 */
 	public function setDisplayMessage(string $message): void {
-		$this->displayMessage = $message . " (" . mapi_strerror($this->getCode()) . ")";
+		$this->displayMessage = $message;
 	}
 
 	/**
@@ -163,12 +163,40 @@ class BaseException extends Exception {
 	}
 
 	/**
+	 * Returns the JSON request as a string from the backtrace.
+	 */
+	private function getJSONRequest(): false|string {
+		$jsonrequest = false;
+		foreach ($this->getTrace() as $frame) {
+			if (in_array('JSONRequest', $frame)) {
+				// If there are multiple requests, we print each one on a new line
+				$jsonrequest = implode(PHP_EOL, $frame['args']);
+			}
+		}
+
+		return $jsonrequest;
+	}
+
+	/**
 	 * Returns details of the error message if allowToShowDetailsMessage is set.
+	 * Includes MAPI error code, JSON request, and backtrace.
 	 *
 	 * @return string returns details error message
 	 */
 	public function getDetailsMessage(): string {
-		return $this->allowToShowDetailsMessage ? $this->__toString() : '';
+		if (!$this->allowToShowDetailsMessage) {
+			return '';
+		}
+
+		$request = $this->getJSONRequest();
+		$message = 'MAPIException Code [' . get_mapi_error_name($this->getCode()) . ']' .
+			PHP_EOL . PHP_EOL . 'MAPIException in ' . $this->getFile() . ':' . $this->getLine() .
+			PHP_EOL . PHP_EOL . 'Request:' .
+			PHP_EOL . PHP_EOL . ($request === false ? _('Request is not available.') : $request) .
+			PHP_EOL . PHP_EOL . 'Stack trace:' .
+			PHP_EOL . PHP_EOL . $this->getTraceAsString();
+
+		return $message;
 	}
 
 }
