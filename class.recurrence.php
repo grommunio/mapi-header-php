@@ -219,40 +219,26 @@ class Recurrence extends BaseRecurrence {
 		// client will send basedate with time part as zero, so discard that value
 		unset($exception_props[$this->proptags["basedate"]]);
 
-		if (array_key_exists($this->proptags["startdate"], $exception_props)) {
-			$extomodify["start"] = $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]);
-		}
+		// Map of property keys to their target keys in $extomodify, with optional transformation
+		$propertyMappings = [
+			"startdate" => ["target" => "start", "transform" => true],
+			"duedate" => ["target" => "end", "transform" => true],
+			"subject" => ["target" => "subject", "transform" => false],
+			"location" => ["target" => "location", "transform" => false],
+			"label" => ["target" => "label", "transform" => false],
+			"reminder" => ["target" => "reminder_set", "transform" => false],
+			"reminder_minutes" => ["target" => "remind_before", "transform" => false],
+			"alldayevent" => ["target" => "alldayevent", "transform" => false],
+			"busystatus" => ["target" => "busystatus", "transform" => false],
+		];
 
-		if (array_key_exists($this->proptags["duedate"], $exception_props)) {
-			$extomodify["end"] = $this->fromGMT($this->tz, $exception_props[$this->proptags["duedate"]]);
-		}
-
-		if (array_key_exists($this->proptags["subject"], $exception_props)) {
-			$extomodify["subject"] = $exception_props[$this->proptags["subject"]];
-		}
-
-		if (array_key_exists($this->proptags["location"], $exception_props)) {
-			$extomodify["location"] = $exception_props[$this->proptags["location"]];
-		}
-
-		if (array_key_exists($this->proptags["label"], $exception_props)) {
-			$extomodify["label"] = $exception_props[$this->proptags["label"]];
-		}
-
-		if (array_key_exists($this->proptags["reminder"], $exception_props)) {
-			$extomodify["reminder_set"] = $exception_props[$this->proptags["reminder"]];
-		}
-
-		if (array_key_exists($this->proptags["reminder_minutes"], $exception_props)) {
-			$extomodify["remind_before"] = $exception_props[$this->proptags["reminder_minutes"]];
-		}
-
-		if (array_key_exists($this->proptags["alldayevent"], $exception_props)) {
-			$extomodify["alldayevent"] = $exception_props[$this->proptags["alldayevent"]];
-		}
-
-		if (array_key_exists($this->proptags["busystatus"], $exception_props)) {
-			$extomodify["busystatus"] = $exception_props[$this->proptags["busystatus"]];
+		foreach ($propertyMappings as $propKey => $mapping) {
+			$propTag = $this->proptags[$propKey];
+			if (array_key_exists($propTag, $exception_props)) {
+				$extomodify[$mapping["target"]] = $mapping["transform"]
+					? $this->fromGMT($this->tz, $exception_props[$propTag])
+					: $exception_props[$propTag];
+			}
 		}
 
 		$exception_props[PR_MESSAGE_CLASS] = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
