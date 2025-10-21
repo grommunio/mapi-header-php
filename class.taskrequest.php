@@ -608,12 +608,7 @@ class TaskRequest {
 	public function updateTaskRequest(): void {
 		$messageprops = mapi_getprops($this->message, [$this->props['updatecount']]);
 
-		if (isset($messageprops)) {
-			++$messageprops[$this->props['updatecount']];
-		}
-		else {
-			$messageprops[$this->props['updatecount']] = 1;
-		}
+		$messageprops[$this->props['updatecount']] = ($messageprops[$this->props['updatecount']] ?? 0) + 1;
 
 		mapi_setprops($this->message, $messageprops);
 	}
