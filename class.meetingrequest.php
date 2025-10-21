@@ -1321,7 +1321,7 @@ class Meetingrequest {
 			$this->updateMeetingRequest();
 
 			// send cancellation mails
-			$this->sendMeetingRequest(true, dgettext('zarafa', 'Canceled') . ': ', $basedate);
+			$this->sendMeetingRequest(true, _('Canceled') . ': ', $basedate);
 
 			// save changes in the message
 			mapi_savechanges($this->message);
@@ -1330,7 +1330,7 @@ class Meetingrequest {
 			// cancellation of normal meeting request
 			// Send the cancellation
 			$this->updateMeetingRequest();
-			$this->sendMeetingRequest(true, dgettext('zarafa', 'Canceled') . ': ');
+			$this->sendMeetingRequest(true, _('Canceled') . ': ');
 
 			// save changes in the message
 			mapi_savechanges($this->message);
@@ -1984,23 +1984,23 @@ class Meetingrequest {
 		switch ($status) {
 			case olResponseAccepted:
 				$classpostfix = 'Pos';
-				$subjectprefix = dgettext('zarafa', 'Accepted');
+				$subjectprefix = _('Accepted');
 				break;
 
 			case olResponseDeclined:
 				$classpostfix = 'Neg';
-				$subjectprefix = dgettext('zarafa', 'Declined');
+				$subjectprefix = _('Declined');
 				break;
 
 			case olResponseTentative:
 				$classpostfix = 'Tent';
-				$subjectprefix = dgettext('zarafa', 'Tentatively accepted');
+				$subjectprefix = _('Tentatively accepted');
 				break;
 		}
 
 		if (!empty($proposeNewTimeProps)) {
 			// if attendee has proposed new time then change subject prefix
-			$subjectprefix = dgettext('zarafa', 'New Time Proposed');
+			$subjectprefix = _('New Time Proposed');
 		}
 
 		$props[PR_SUBJECT] = $subjectprefix . ': ' . $messageprops[PR_SUBJECT];
@@ -3113,7 +3113,7 @@ class Meetingrequest {
 			$newmessageprops[$this->proptags['busystatus']] = fbFree; // set the busy status as free
 			$newmessageprops[PR_IMPORTANCE] = IMPORTANCE_HIGH;	// HIGH Importance
 			if (isset($newmessageprops[PR_SUBJECT])) {
-				$newmessageprops[PR_SUBJECT] = dgettext('zarafa', 'Canceled') . ': ' . $newmessageprops[PR_SUBJECT];
+				$newmessageprops[PR_SUBJECT] = _('Canceled') . ': ' . $newmessageprops[PR_SUBJECT];
 			}
 
 			mapi_setprops($new, $newmessageprops);

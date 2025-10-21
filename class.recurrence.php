@@ -500,18 +500,18 @@ class Recurrence extends BaseRecurrence {
 	public function getI18RecTypeDaily(mixed $type, mixed $interval, bool $occSingleDayRank): array {
 		switch ($interval) {
 			case 1: // workdays
-				$type = dgettext('zarafa', 'workday');
+				$type = _('workday');
 				$occSingleDayRank = true;
 				break;
 
 			case 1440: // daily
-				$type = dgettext('zarafa', 'day');
+				$type = _('day');
 				$occSingleDayRank = true;
 				break;
 
 			default: // every $interval days
 				$interval /= 1440;
-				$type = dgettext('zarafa', 'days');
+				$type = _('days');
 				$occSingleDayRank = false;
 				break;
 		}
@@ -529,24 +529,24 @@ class Recurrence extends BaseRecurrence {
 	 */
 	public function getI18RecTypeWeekly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
 		if ($interval == 1) {
-			$type = dgettext('zarafa', 'week');
+			$type = _('week');
 			$occSingleDayRank = true;
 		}
 		else {
-			$type = dgettext('zarafa', 'weeks');
+			$type = _('weeks');
 			$occSingleDayRank = false;
 		}
 		$daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-		$type .= sprintf(" %s ", dgettext('zarafa', 'on'));
+		$type .= sprintf(" %s ", _('on'));
 
 		for ($j = 0, $weekdays = (int) $this->recur["weekdays"]; $j < 7; ++$j) {
 			if ($weekdays & (1 << $j)) {
-				$type .= sprintf("%s, ", dgettext('zarafa', $daysOfWeek[$j]));
+				$type .= sprintf("%s, ", _($daysOfWeek[$j]));
 			}
 		}
 		$type = trim($type, ", ");
 		if (($pos = strrpos($type, ",")) !== false) {
-			$type = substr_replace($type, " " . dgettext('zarafa', 'and'), $pos, 1);
+			$type = substr_replace($type, " " . _('and'), $pos, 1);
 		}
 
 		return [
@@ -562,11 +562,11 @@ class Recurrence extends BaseRecurrence {
 	 */
 	public function getI18RecTypeMonthly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
 		if ($interval == 1) {
-			$type = dgettext('zarafa', 'month');
+			$type = _('month');
 			$occSingleDayRank = true;
 		}
 		else {
-			$type = dgettext('zarafa', 'months');
+			$type = _('months');
 			$occSingleDayRank = false;
 		}
 
@@ -584,12 +584,12 @@ class Recurrence extends BaseRecurrence {
 	public function getI18RecTypeYearly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
 		if ($interval <= 12) {
 			$interval = 1;
-			$type = dgettext('zarafa', 'year');
+			$type = _('year');
 			$occSingleDayRank = true;
 		}
 		else {
 			$interval = $interval / 12;
-			$type = dgettext('zarafa', 'years');
+			$type = _('years');
 			$occSingleDayRank = false;
 		}
 
@@ -643,7 +643,7 @@ class Recurrence extends BaseRecurrence {
 	 * Returns langified occurrence time.
 	 */
 	public function getI18nTime(string $format, mixed $occTime): string {
-		return gmdate(dgettext('zarafa', $format), $occTime);
+		return gmdate(_($format), $occTime);
 	}
 
 	/**
@@ -663,7 +663,7 @@ class Recurrence extends BaseRecurrence {
 			(
 				$occSingleDayRank ?
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s effective %s until %s from %s to %s.'),
+						_('Occurs every %s effective %s until %s from %s to %s.'),
 						$type,
 						$start,
 						$end,
@@ -671,7 +671,7 @@ class Recurrence extends BaseRecurrence {
 						$endocc
 					) :
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s %s effective %s until %s from %s to %s.'),
+						_('Occurs every %s %s effective %s until %s from %s to %s.'),
 						$interval,
 						$type,
 						$start,
@@ -683,13 +683,13 @@ class Recurrence extends BaseRecurrence {
 			(
 				$occSingleDayRank ?
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s effective %s until %s.'),
+						_('Occurs every %s effective %s until %s.'),
 						$type,
 						$start,
 						$end
 					) :
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s %s effective %s until %s.'),
+						_('Occurs every %s %s effective %s until %s.'),
 						$interval,
 						$type,
 						$start,
@@ -787,14 +787,14 @@ class Recurrence extends BaseRecurrence {
 			(
 				$occSingleDayRank ?
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s effective %s from %s to %s.'),
+						_('Occurs every %s effective %s from %s to %s.'),
 						$type,
 						$start,
 						$startocc,
 						$endocc
 					) :
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s %s effective %s from %s to %s.'),
+						_('Occurs every %s %s effective %s from %s to %s.'),
 						$interval,
 						$type,
 						$start,
@@ -805,12 +805,12 @@ class Recurrence extends BaseRecurrence {
 			(
 				$occSingleDayRank ?
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s effective %s.'),
+						_('Occurs every %s effective %s.'),
 						$type,
 						$start
 					) :
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s %s effective %s.'),
+						_('Occurs every %s %s effective %s.'),
 						$interval,
 						$type,
 						$start
