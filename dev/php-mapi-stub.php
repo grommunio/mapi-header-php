@@ -108,6 +108,15 @@ function mapi_logon_ex(string $username, string $password, int $flags): resource
 }
 
 /**
+ * @param string $username
+ * @param int $flags
+ * @return resource|bool
+ */
+function mapi_logon_np(string $username, int $flags): resource|bool {
+	return new resource();
+}
+
+/**
  * @param string $token
  * @return resource|bool
  */
@@ -1826,6 +1835,9 @@ if (!defined('PR_CREATOR_SID')) {
 if (!defined('PR_LAST_MODIFIER_SID')) {
 	define('PR_LAST_MODIFIER_SID', 0x0E590102);
 }
+if (!defined('PR_CI_SEARCH_ENABLED')) {
+	define('PR_CI_SEARCH_ENABLED', 0x0E5C000B);
+}
 if (!defined('PR_READ')) {
 	define('PR_READ', 0x0E69000B);
 }
@@ -2914,6 +2926,9 @@ if (!defined('PR_EMSABP_USER_UID')) {
 }
 if (!defined('PR_AB_CHOOSE_DIRECTORY_AUTOMATICALLY')) {
 	define('PR_AB_CHOOSE_DIRECTORY_AUTOMATICALLY', 0x3D1C000B);
+}
+if (!defined('PR_CORRELATION_ID')) {
+	define('PR_CORRELATION_ID', 0x3DD10048);
 }
 if (!defined('PR_IDENTITY_DISPLAY')) {
 	define('PR_IDENTITY_DISPLAY', 0x3E00001E);
@@ -4373,6 +4388,9 @@ if (!defined('PidLidClassificationKeep')) {
 if (!defined('ecSuccess')) {
 	define('ecSuccess', 0x00000000);
 }
+if (!defined('MAPI_E_UNBINDSUCCESS')) {
+	define('MAPI_E_UNBINDSUCCESS', 0x00000001);
+}
 if (!defined('MAPI_E_USER_ABORT')) {
 	define('MAPI_E_USER_ABORT', 0x00000001);
 }
@@ -5119,6 +5137,9 @@ if (!defined('MAPI_E_NETWORK_ERROR')) {
 }
 if (!defined('MAPI_E_DISK_ERROR')) {
 	define('MAPI_E_DISK_ERROR', 0x80040116);
+}
+if (!defined('ecWriteFault')) {
+	define('ecWriteFault', 0x80040116);
 }
 if (!defined('MAPI_E_TOO_COMPLEX')) {
 	define('MAPI_E_TOO_COMPLEX', 0x80040117);
