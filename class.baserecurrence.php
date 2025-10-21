@@ -1299,7 +1299,8 @@ abstract class BaseRecurrence {
 			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"])); // StartDateTime
 			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"])); // EndDateTime
 			$rdata .= pack("V", $this->unixDataToRecurData(
-				$this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60)); // OriginalStartDate
+				$this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60
+			)); // OriginalStartDate
 
 			// Bitmask
 			$bitmask = 0;
@@ -1413,7 +1414,7 @@ abstract class BaseRecurrence {
 			if ($this->tz["timezone"] != 0) {
 				// Create user readable timezone information
 				$timezone = sprintf(
-					"(GMT %s%02d:%02d)", -$this->tz["timezone"] > 0 ? "+" : "-",
+					"(GMT %s%02d:%02d)",-$this->tz["timezone"] > 0 ? "+" : "-",
 					abs($this->tz["timezone"] / 60),
 					abs($this->tz["timezone"] % 60)
 				);
@@ -1811,7 +1812,7 @@ abstract class BaseRecurrence {
 					for ($wday = 0; $wday < 7 && ($limit == 0 || count($items) < $limit); ++$wday) {
 						$daynow = $now + $wday * 60 * 60 * 24;
 						if ($daynow < $daystart) {
-							continue;
+							break;
 						}
 						// checks whether the next coming day in recurring pattern is less than or equal to end day of the recurring item
 						if ($daynow > $dayend) {
@@ -1966,10 +1967,10 @@ abstract class BaseRecurrence {
 	}
 
 	/**
-	 * @psalm-return -1|0|1
-	 *
 	 * @param mixed $a
 	 * @param mixed $b
+	 *
+	 * @psalm-return -1|0|1
 	 */
 	public function sortStarttime($a, $b): int {
 		$aTime = $a[$this->proptags["startdate"]];
@@ -2014,10 +2015,10 @@ abstract class BaseRecurrence {
 	}
 
 	/**
-	 * @psalm-return -1|0|1
-	 *
 	 * @param mixed $a
 	 * @param mixed $b
+	 *
+	 * @psalm-return -1|0|1
 	 */
 	public function sortExceptionStart($a, $b): int {
 		return $a["start"] == $b["start"] ? 0 : ($a["start"] > $b["start"] ? 1 : -1);

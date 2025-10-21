@@ -129,9 +129,9 @@ class Recurrence extends BaseRecurrence {
 				if (isset($this->messageprops[$this->proptags[$propname]])) {
 					$props[$this->proptags[$propname]] = $this->messageprops[$this->proptags[$propname]];
 					if (isset($exception_props[$this->proptags[$propname]]) &&
-					    $this->messageprops[$this->proptags[$propname]] != $exception_props[$this->proptags[$propname]]) {
-								$changed_item[$propname] = $exception_props[$this->proptags[$propname]];
-							}
+						$this->messageprops[$this->proptags[$propname]] != $exception_props[$this->proptags[$propname]]) {
+						$changed_item[$propname] = $exception_props[$this->proptags[$propname]];
+					}
 				}
 				elseif (isset($exception_props[$this->proptags[$propname]])) {
 					$changed_item[$propname] = $exception_props[$this->proptags[$propname]];

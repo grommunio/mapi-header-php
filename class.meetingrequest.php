@@ -2403,8 +2403,8 @@ class Meetingrequest {
 	/**
 	 * Function which sets basedate in globalID of changed occurrence which is to be sent.
 	 *
-	 * @param string               $goid       globalID
-	 * @param mixed                $basedate   of changed occurrence (UTC when $recurrence is provided)
+	 * @param string              $goid       globalID
+	 * @param mixed               $basedate   of changed occurrence (UTC when $recurrence is provided)
 	 * @param null|BaseRecurrence $recurrence recurrence helper for timezone conversion
 	 *
 	 * @return false|string globalID with basedate in it

@@ -256,6 +256,7 @@ class TaskRequest {
 			$task = mapi_folder_createmessage($taskFolder);
 
 			$sub = $this->getEmbeddedTask();
+
 			try {
 				mapi_copyto($sub, [], [$this->props['categories']], $task);
 			}
