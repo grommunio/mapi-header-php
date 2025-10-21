@@ -99,7 +99,7 @@ class KeyCloak {
 	/**
 	 * Returns the last known refresh time.
 	 *
-	 * @return int|null
+	 * @return null|int
 	 */
 	public function get_last_refresh_time() {
 		return $this->last_refresh_time;
@@ -145,13 +145,11 @@ class KeyCloak {
 	 * (keycloak), on successful authentication. the server replies with the credential
 	 * grant code. This code will be used to request the tokens.
 	 *
-	 * @param string      $code         The code from a successful login redirected from Keycloak
-	 * @param null|string $session_host
+	 * @param string $code The code from a successful login redirected from Keycloak
 	 *
 	 * @return bool indicating if the request was successful nor not
 	 */
-	public function client_credential_grant_req($code, $session_host = null) {
-		// TODO: $session_host not used here
+	public function client_credential_grant_req($code) {
 		$params = ['grant_type' => 'authorization_code', 'code' => $code, 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_url];
 
 		return $this->request($params);
