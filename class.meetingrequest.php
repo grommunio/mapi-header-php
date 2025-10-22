@@ -1574,13 +1574,11 @@ class Meetingrequest {
 	 * @return int tracking status constant
 	 */
 	public function getTrackStatus(string $class): int {
-		$status = olRecipientTrackStatusNone;
-
 		return match ($class) {
 			'IPM.Schedule.Meeting.Resp.Pos' => olRecipientTrackStatusAccepted,
 			'IPM.Schedule.Meeting.Resp.Tent' => olRecipientTrackStatusTentative,
 			'IPM.Schedule.Meeting.Resp.Neg' => olRecipientTrackStatusDeclined,
-			default => $status,
+			default => olRecipientTrackStatusNone,
 		};
 	}
 
