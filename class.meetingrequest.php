@@ -2059,14 +2059,8 @@ class Meetingrequest {
 			return null;
 		}
 
-		$calendaritems = [];
-
 		// In principle, there should only be one row, but we'll handle them all just in case
-		foreach ($rows as $row) {
-			$calendaritems[] = $row[PR_ENTRYID];
-		}
-
-		return $calendaritems;
+		return array_column($rows, PR_ENTRYID);
 	}
 
 	// Returns TRUE if both entryid's are equal. Equality is defined by both entryid's pointing at the
