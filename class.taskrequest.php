@@ -298,10 +298,10 @@ class TaskRequest {
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->props['task_goid'], $this->props['updatecount']]);
 		$result = false;
 		$associatedTask = $this->getAssociatedTask(false);
+		if ($this->isTaskRequest($props[PR_MESSAGE_CLASS]) && $associatedTask) {
+			return true;
+		}
 		if ($this->isTaskRequest($props[PR_MESSAGE_CLASS])) {
-			if ($associatedTask) {
-				return true;
-			}
 			$folder = $this->getDefaultTasksFolder();
 			$goid = $props[$this->props['task_goid']];
 
@@ -329,9 +329,7 @@ class TaskRequest {
 			 * if(message_counter >= task_counter) task is not updated, do normal processing
 			 */
 			if (isset($taskItemProps[$this->props['updatecount']], $props[$this->props['updatecount']])) {
-				if ($props[$this->props['updatecount']] < $taskItemProps[$this->props['updatecount']]) {
-					$result = true;
-				}
+				$result = $props[$this->props['updatecount']] < $taskItemProps[$this->props['updatecount']];
 			}
 		}
 
