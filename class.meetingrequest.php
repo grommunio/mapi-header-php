@@ -1524,7 +1524,7 @@ class Meetingrequest {
 			$this->setMeetingRequest($basedate);
 		}
 		else {
-			$counter = (isset($messageprops[$this->proptags['last_updatecounter']]) ?? 0) + 1;
+			$counter = ($messageprops[$this->proptags['last_updatecounter']] ?? 0) + 1;
 
 			// increment value of last_updatecounter, last_updatecounter will be common for recurring series
 			// so even if you sending an exception only you need to update the last_updatecounter in the recurring series message
