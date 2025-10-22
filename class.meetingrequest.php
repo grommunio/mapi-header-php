@@ -1896,8 +1896,8 @@ class Meetingrequest {
 		else {
 			// we are creating a response from meeting request mail (it could be recurring or non-recurring)
 			// Send all recurrence info in response, if this is a recurrence meeting.
-			$isRecurring = isset($messageprops[$this->proptags['recurring']]) && $messageprops[$this->proptags['recurring']];
-			$isException = isset($messageprops[$this->proptags['is_exception']]) && $messageprops[$this->proptags['is_exception']];
+			$isRecurring = !empty($messageprops[$this->proptags['recurring']]);
+			$isException = !empty($messageprops[$this->proptags['is_exception']]);
 			if ($isRecurring || $isException) {
 				if ($isRecurring) {
 					$props[$this->proptags['recurring']] = $messageprops[$this->proptags['recurring']];
