@@ -371,7 +371,7 @@ class Meetingrequest {
 		}
 
 		// If basedate is found, then create/modify exception msg and do processing
-		if ($basedate && isset($calendarItemProps[$this->proptags['recurring']]) && $calendarItemProps[$this->proptags['recurring']] === true) {
+		if ($basedate && !empty($calendarItemProps[$this->proptags['recurring']])) {
 			$recurr = new Recurrence($store, $calendarItem);
 
 			// Copy properties from meeting request
@@ -755,7 +755,7 @@ class Meetingrequest {
 		 */
 		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS])) {
 			// This meeting request item is recurring, so find all occurrences and saves them all as exceptions to this meeting request item.
-			if (isset($messageprops[$this->proptags['recurring']]) && $messageprops[$this->proptags['recurring']] === true && $basedate === false) {
+			if (!empty($messageprops[$this->proptags['recurring']]) && $basedate === false) {
 				$calendarItem = false;
 
 				// Find main recurring item based on GlobalID (0x3)
@@ -1290,7 +1290,7 @@ class Meetingrequest {
 
 		$messageProps = mapi_getprops($this->message, [PR_ENTRYID, $this->proptags['recurring']]);
 
-		if (isset($messageProps[$this->proptags['recurring']]) && $messageProps[$this->proptags['recurring']] === true) {
+		if (!empty($messageProps[$this->proptags['recurring']])) {
 			// cancellation of recurring series or one occurrence
 			$recurrence = new Recurrence($this->store, $this->message);
 
