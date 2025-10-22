@@ -1661,9 +1661,8 @@ class Meetingrequest {
 		try {
 			$inbox = mapi_msgstore_getreceivefolder($store ?: $this->store);
 			$inboxprops = mapi_getprops($inbox, [$prop]);
-			if (isset($inboxprops[$prop])) {
-				return $inboxprops[$prop];
-			}
+
+			return $inboxprops[$prop] ?? false;
 		}
 		catch (MAPIException $e) {
 			// public store doesn't support this method
@@ -1687,11 +1686,7 @@ class Meetingrequest {
 	public function openDefaultFolder(int $prop, mixed $store = false): mixed {
 		$entryid = $this->getDefaultFolderEntryID($prop, $store);
 
-		if ($entryid === false) {
-			return false;
-		}
-
-		return mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		return $entryid === false ? false : mapi_msgstore_openentry($store ?: $this->store, $entryid);
 	}
 
 	/**
@@ -1721,11 +1716,7 @@ class Meetingrequest {
 	public function openBaseFolder(int $prop, mixed $store = false): mixed {
 		$entryid = $this->getBaseEntryID($prop, $store);
 
-		if ($entryid === false) {
-			return false;
-		}
-
-		return mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		return $entryid === false ? false : mapi_msgstore_openentry($store ?: $this->store, $entryid);
 	}
 
 	/**
