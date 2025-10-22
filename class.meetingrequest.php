@@ -2490,7 +2490,7 @@ class Meetingrequest {
 							$ResourceMsg = mapi_msgstore_openentry($userStore, $row);
 							$ResourceMsgProps = mapi_getprops($ResourceMsg, [$this->proptags['recurring']]);
 
-							if (isset($ResourceMsgProps[$this->proptags['recurring']]) && $ResourceMsgProps[$this->proptags['recurring']]) {
+							if (!empty($ResourceMsgProps[$this->proptags['recurring']])) {
 								$newResourceMsg = $ResourceMsg;
 								break;
 							}
