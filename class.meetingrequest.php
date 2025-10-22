@@ -1706,11 +1706,8 @@ class Meetingrequest {
 	 */
 	public function getBaseEntryID(int $prop, mixed $store = false): bool|string {
 		$storeprops = mapi_getprops($store ?: $this->store, [$prop]);
-		if (!isset($storeprops[$prop])) {
-			return false;
-		}
 
-		return $storeprops[$prop];
+		return $storeprops[$prop] ?? false;
 	}
 
 	/**
@@ -1744,9 +1741,7 @@ class Meetingrequest {
 			return false;
 		}
 
-		if ($store === false) {
-			$store = $this->store;
-		}
+		$store = $store ?: $this->store;
 
 		try {
 			$folder = mapi_msgstore_openentry($store, $entryid);
