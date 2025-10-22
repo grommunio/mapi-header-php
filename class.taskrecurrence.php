@@ -76,20 +76,10 @@ class TaskRecurrence extends BaseRecurrence {
 		$this->recur = $recur;
 		$this->action = &$recur;
 
-		if (!isset($this->recur["changed_occurrences"])) {
-			$this->recur["changed_occurrences"] = [];
-		}
-
-		if (!isset($this->recur["deleted_occurrences"])) {
-			$this->recur["deleted_occurrences"] = [];
-		}
-
-		if (!isset($this->recur['startocc'])) {
-			$this->recur['startocc'] = 0;
-		}
-		if (!isset($this->recur['endocc'])) {
-			$this->recur['endocc'] = 0;
-		}
+		$this->recur["changed_occurrences"] ??= [];
+		$this->recur["deleted_occurrences"] ??= [];
+		$this->recur['startocc'] ??= 0;
+		$this->recur['endocc'] ??= 0;
 
 		// Save recurrence because we need proper startrecurrdate and endrecurrdate
 		$this->saveRecurrence();
