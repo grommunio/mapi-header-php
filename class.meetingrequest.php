@@ -490,14 +490,7 @@ class Meetingrequest {
 		*/
 		// If this is a counter proposal, set the counter proposal indicator boolean
 		if (isset($messageprops[$this->proptags['counter_proposal']])) {
-			$props = [];
-			if ($messageprops[$this->proptags['counter_proposal']]) {
-				$props[$this->proptags['counter_proposal']] = true;
-			}
-			else {
-				$props[$this->proptags['counter_proposal']] = false;
-			}
-
+			$props = [$this->proptags['counter_proposal'] => (bool)$messageprops[$this->proptags['counter_proposal']]];
 			mapi_setprops($calendarItem, $props);
 		}
 
