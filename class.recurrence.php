@@ -963,7 +963,7 @@ class Recurrence extends BaseRecurrence {
 		// to change an existing exception.
 		// remove mv properties when needed
 		foreach ($props as $propTag => $propVal) {
-			if ((mapi_prop_type($propTag) & MV_FLAG) == MV_FLAG && is_null($propVal)) {
+			if ((mapi_prop_type($propTag) & MV_FLAG) == MV_FLAG && $propVal === null) {
 				unset($props[$propTag]);
 			}
 		}
