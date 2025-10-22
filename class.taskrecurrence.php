@@ -311,7 +311,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 * @param int   $tz           the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 	 * @param bool  $reminderonly If TRUE, only add the item if the reminder is set
 	 */
-	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): null|false {
+	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): ?false {
 		if ($basedate > $start) {
 			$newItem = [];
 			$newItem[$this->proptags['startdate']] = $basedate;
@@ -391,10 +391,6 @@ class TaskRecurrence extends BaseRecurrence {
 	/**
 	 * Function which recurring task to next occurrence.
 	 * It simply doesn't regenerate task.
-	 *
-	 * @param array $action
-	 *
-	 * @return array|bool
 	 */
 	public function deleteOccurrence(array $action): array|bool {
 		$this->tz = false;

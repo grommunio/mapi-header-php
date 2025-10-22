@@ -9,6 +9,11 @@
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class FreeBusyTest extends TestCase {
 	// Test constants
 	public function testAssociatedFreeBusyFolderConstant(): void {

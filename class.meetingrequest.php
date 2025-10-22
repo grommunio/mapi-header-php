@@ -215,11 +215,11 @@ class Meetingrequest {
 	 * Returns TRUE if the message pointed to is an incoming meeting request and should
 	 * therefore be replied to with doAccept or doDecline().
 	 *
-	 * @param string|false $messageClass message class to use for checking
+	 * @param false|string $messageClass message class to use for checking
 	 *
 	 * @return bool returns true if this is a meeting request else false
 	 */
-	public function isMeetingRequest(string|false $messageClass = false): bool {
+	public function isMeetingRequest(false|string $messageClass = false): bool {
 		if ($messageClass === false) {
 			$messageClass = mapi_getprops($this->message, [PR_MESSAGE_CLASS])[PR_MESSAGE_CLASS] ?? false;
 		}
@@ -230,11 +230,11 @@ class Meetingrequest {
 	/**
 	 * Returns TRUE if the message pointed to is a returning meeting request response.
 	 *
-	 * @param string|false $messageClass message class to use for checking
+	 * @param false|string $messageClass message class to use for checking
 	 *
 	 * @return bool returns true if this is a meeting request else false
 	 */
-	public function isMeetingRequestResponse(string|false $messageClass = false): bool {
+	public function isMeetingRequestResponse(false|string $messageClass = false): bool {
 		if ($messageClass === false) {
 			$messageClass = mapi_getprops($this->message, [PR_MESSAGE_CLASS])[PR_MESSAGE_CLASS] ?? false;
 		}
@@ -245,11 +245,11 @@ class Meetingrequest {
 	/**
 	 * Returns TRUE if the message pointed to is a cancellation request.
 	 *
-	 * @param string|false $messageClass message class to use for checking
+	 * @param false|string $messageClass message class to use for checking
 	 *
 	 * @return bool returns true if this is a meeting request else false
 	 */
-	public function isMeetingCancellation(string|false $messageClass = false): bool {
+	public function isMeetingCancellation(false|string $messageClass = false): bool {
 		if ($messageClass === false) {
 			$messageClass = mapi_getprops($this->message, [PR_MESSAGE_CLASS])[PR_MESSAGE_CLASS] ?? false;
 		}
@@ -260,9 +260,9 @@ class Meetingrequest {
 	/**
 	 * Function is used to get the last update counter of meeting request.
 	 *
-	 * @return int|false false when last_updatecounter not found else return last_updatecounter
+	 * @return false|int false when last_updatecounter not found else return last_updatecounter
 	 */
-	public function getLastUpdateCounter(): int|false {
+	public function getLastUpdateCounter(): false|int {
 		$calendarItemProps = mapi_getprops($this->message, [$this->proptags['last_updatecounter']]);
 
 		return $calendarItemProps[$this->proptags['last_updatecounter']] ?? false;
@@ -340,10 +340,8 @@ class Meetingrequest {
 	 * @param mixed    $calendarItem resource of the calendar item for which this response has arrived
 	 * @param mixed    $basedate     if present the create an exception
 	 * @param array    $messageprops contains message properties
-	 *
-	 * @return null|false
 	 */
-	public function processResponse(mixed $store, mixed $calendarItem, mixed $basedate, array $messageprops): null|false {
+	public function processResponse(mixed $store, mixed $calendarItem, mixed $basedate, array $messageprops): ?false {
 		$senderentryid = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
 		$messageclass = $messageprops[PR_MESSAGE_CLASS];
 		$deliverytime = $messageprops[PR_MESSAGE_DELIVERY_TIME];
@@ -490,7 +488,7 @@ class Meetingrequest {
 		*/
 		// If this is a counter proposal, set the counter proposal indicator boolean
 		if (isset($messageprops[$this->proptags['counter_proposal']])) {
-			$props = [$this->proptags['counter_proposal'] => (bool)$messageprops[$this->proptags['counter_proposal']]];
+			$props = [$this->proptags['counter_proposal'] => (bool) $messageprops[$this->proptags['counter_proposal']]];
 			mapi_setprops($calendarItem, $props);
 		}
 
@@ -603,9 +601,6 @@ class Meetingrequest {
 	 * @param bool  $move                 true if the meeting request should be moved to the deleted items after processing
 	 * @param mixed $newProposedStartTime contains starttime if user has proposed other time
 	 * @param mixed $newProposedEndTime   contains endtime if user has proposed other time
-	 * @param mixed $body
-	 * @param mixed $userAction
-	 * @param mixed $store
 	 * @param mixed $basedate             start of day of occurrence for which user has accepted the recurrent meeting
 	 * @param bool  $isImported           true to indicate that MR is imported from .ics or .vcs file else it false.
 	 *
@@ -718,9 +713,6 @@ class Meetingrequest {
 	/**
 	 * @param (float|mixed|true)[] $proposeNewTimeProps
 	 * @param resource             $calFolder
-	 * @param mixed                $body
-	 * @param mixed                $store
-	 * @param mixed                $basedate
 	 *
 	 * @psalm-param array<float|mixed|true> $proposeNewTimeProps
 	 */
@@ -1103,7 +1095,6 @@ class Meetingrequest {
 	 *
 	 * @param bool  $sendresponse true if a response has to be sent to organizer
 	 * @param mixed $basedate     if specified contains starttime of day of an occurrence
-	 * @param mixed $body
 	 *
 	 * @return bool true if item is deleted from Calendar else false
 	 */
@@ -1188,10 +1179,8 @@ class Meetingrequest {
 	 * 'remove from calendar' button in response to a meeting cancellation.
 	 *
 	 * @param mixed $basedate if specified contains starttime of day of an occurrence
-	 *
-	 * @return null|false
 	 */
-	public function doRemoveFromCalendar(mixed $basedate): null|false {
+	public function doRemoveFromCalendar(mixed $basedate): ?false {
 		if ($this->isLocalOrganiser()) {
 			return false;
 		}
@@ -1266,7 +1255,7 @@ class Meetingrequest {
 	 * @FIXME cancellation mail is also sent to attendee which has declined the meeting
 	 * @FIXME don't send canellation mail when cancelling meeting from past
 	 */
-	public function doCancelInvitation(int|false $basedate = false): void {
+	public function doCancelInvitation(false|int $basedate = false): void {
 		if (!$this->isLocalOrganiser()) {
 			return;
 		}
@@ -1345,7 +1334,7 @@ class Meetingrequest {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function setMeetingRequest(int|false $basedate = false): void {
+	public function setMeetingRequest(false|int $basedate = false): void {
 		$props = mapi_getprops($this->message, [$this->proptags['updatecounter']]);
 
 		// Create a new global id for this item
@@ -1395,12 +1384,6 @@ class Meetingrequest {
 	 * true if you wish to completely cancel the meeting request. You can
 	 * specify an optional 'prefix' to prefix the sent message, which is normally
 	 * 'Canceled: '.
-	 *
-	 * @param mixed $cancel
-	 * @param mixed $prefix
-	 * @param mixed $basedate
-	 * @param mixed $modifiedRecips
-	 * @param mixed $deletedRecips
 	 *
 	 * @return (int|mixed)[]|true
 	 *
@@ -1507,7 +1490,7 @@ class Meetingrequest {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function updateMeetingRequest(int|false $basedate = false): void {
+	public function updateMeetingRequest(false|int $basedate = false): void {
 		$messageprops = mapi_getprops($this->message, [$this->proptags['last_updatecounter'], $this->proptags['goid']]);
 
 		if (!isset($messageprops[$this->proptags['goid']])) {
@@ -1532,12 +1515,12 @@ class Meetingrequest {
 		// Determine which item to check based on message class
 		$messageClass = $props[PR_MESSAGE_CLASS] ?? '';
 		$isMeetingMessage = $this->isMeetingRequest($messageClass) ||
-		                    $this->isMeetingRequestResponse($messageClass) ||
-		                    $this->isMeetingCancellation($messageClass);
+							$this->isMeetingRequestResponse($messageClass) ||
+							$this->isMeetingCancellation($messageClass);
 
-		$calendarItem = $isMeetingMessage
-			? $this->getCorrespondentCalendarItem(true)  // Meeting request/response/cancellation mail
-			: $this->message;  // Calendar item
+		$calendarItem = $isMeetingMessage ?
+			$this->getCorrespondentCalendarItem(true) :  // Meeting request/response/cancellation mail
+			$this->message;  // Calendar item
 
 		// Even if we have received request/response for exception/occurrence then also
 		// we can check recurring series for organizer, no need to check with exception/occurrence
@@ -1548,7 +1531,7 @@ class Meetingrequest {
 		$messageProps = mapi_getprops($calendarItem, [$this->proptags['responsestatus']]);
 
 		return isset($messageProps[$this->proptags['responsestatus']]) &&
-		       $messageProps[$this->proptags['responsestatus']] === olResponseOrganized;
+			   $messageProps[$this->proptags['responsestatus']] === olResponseOrganized;
 	}
 
 	/*
@@ -1558,8 +1541,6 @@ class Meetingrequest {
 
 	/**
 	 * Return the tracking status of a recipient based on the IPM class (passed).
-	 *
-	 * @param string $class
 	 *
 	 * @return int tracking status constant
 	 */
@@ -1743,8 +1724,6 @@ class Meetingrequest {
 
 	/**
 	 * Function checks whether user has access over the specified folder or not.
-	 *
-	 * @param mixed $store
 	 *
 	 * @return bool true if user has an access over the folder, false if not
 	 */
@@ -2049,7 +2028,7 @@ class Meetingrequest {
 	}
 
 	// Gets the SMTP address of the passed addressbook entryid
-	public function getSMTPAddress(string $entryid): string|false {
+	public function getSMTPAddress(string $entryid): false|string {
 		if (!$this->session) {
 			return false;
 		}
@@ -2096,9 +2075,9 @@ class Meetingrequest {
 		$storeProps = mapi_getprops($store, [PR_MAILBOX_OWNER_ENTRYID, PR_USER_ENTRYID]);
 
 		// Determine owner entry ID: use mailbox owner if not falling back, otherwise use user entry ID
-		$ownerEntryId = (!$fallbackToLoggedInUser && !empty($storeProps[PR_MAILBOX_OWNER_ENTRYID]))
-			? $storeProps[PR_MAILBOX_OWNER_ENTRYID]
-			: ($storeProps[PR_USER_ENTRYID] ?? false);
+		$ownerEntryId = (!$fallbackToLoggedInUser && !empty($storeProps[PR_MAILBOX_OWNER_ENTRYID])) ?
+			$storeProps[PR_MAILBOX_OWNER_ENTRYID] :
+			($storeProps[PR_USER_ENTRYID] ?? false);
 
 		if (!$ownerEntryId) {
 			return false;
@@ -2204,7 +2183,7 @@ class Meetingrequest {
 	 *
 	 * @return false|int true if basedate is found else false it not found
 	 */
-	public function getBasedateFromGlobalID(string $goid): int|false {
+	public function getBasedateFromGlobalID(string $goid): false|int {
 		$hexguid = bin2hex($goid);
 		$hexbase = substr($hexguid, 32, 8);
 		$day = (int) hexdec(substr($hexbase, 6, 2));
@@ -2223,7 +2202,7 @@ class Meetingrequest {
 	 *
 	 * @return false|string globalID with basedate in it
 	 */
-	public function setBasedateInGlobalID(string $goid, int|false $basedate = false, ?BaseRecurrence $recurrence = null): string|false {
+	public function setBasedateInGlobalID(string $goid, false|int $basedate = false, ?BaseRecurrence $recurrence = null): false|string {
 		$hexguid = bin2hex($goid);
 		$timestamp = $basedate;
 
@@ -3216,7 +3195,7 @@ class Meetingrequest {
 	 *
 	 * @return bool true if meeting request is updated later
 	 */
-	public function isMeetingUpdated(int|false $basedate = false): bool {
+	public function isMeetingUpdated(false|int $basedate = false): bool {
 		$result = false;
 
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->proptags['updatecounter']]);
@@ -3265,7 +3244,6 @@ class Meetingrequest {
 	 * 3) recurrence pattern has been created, modified or removed.
 	 *
 	 * @param mixed $oldProps
-	 * @param mixed $basedate
 	 * @param mixed $isRecurrenceChanged for change in recurrence pattern.
 	 *                                   true means Recurrence pattern has been changed,
 	 *                                   so clear all attendees response
@@ -3439,8 +3417,6 @@ class Meetingrequest {
 	 * @param false|resource $message
 	 * @param false|resource $userStore
 	 * @param mixed          $calFolder calendar folder for conflict checking
-	 *
-	 * @return bool|int
 	 *
 	 * @psalm-return bool|int<1, max>
 	 */
@@ -3639,7 +3615,7 @@ class Meetingrequest {
 	 *
 	 * @return false|string $meetingTimeInfo info about meeting timing along with message body
 	 */
-	public function getMeetingTimeInfo(): string|false {
+	public function getMeetingTimeInfo(): false|string {
 		return $this->meetingTimeInfo;
 	}
 
@@ -3649,7 +3625,7 @@ class Meetingrequest {
 	 *
 	 * @param string $meetingTimeInfo info about meeting timing along with message body
 	 */
-	public function setMeetingTimeInfo(string|false $meetingTimeInfo): void {
+	public function setMeetingTimeInfo(false|string $meetingTimeInfo): void {
 		$this->meetingTimeInfo = $meetingTimeInfo;
 	}
 
@@ -3730,8 +3706,8 @@ class Meetingrequest {
 	/**
 	 * Calculate the busy status for an accepted meeting based on tentative flag and intended status.
 	 *
-	 * @param bool  $tentative          Whether acceptance is tentative
-	 * @param array $props              Message properties containing intended busy status
+	 * @param bool  $tentative Whether acceptance is tentative
+	 * @param array $props     Message properties containing intended busy status
 	 *
 	 * @return int The calculated busy status
 	 */
@@ -3843,8 +3819,8 @@ class Meetingrequest {
 	/**
 	 * Gets all recipients from a message.
 	 *
-	 * @param resource $message      the message to get recipients from
-	 * @param array    $restriction  optional restriction to filter recipients
+	 * @param resource $message     the message to get recipients from
+	 * @param array    $restriction optional restriction to filter recipients
 	 *
 	 * @return array array of recipient rows
 	 */

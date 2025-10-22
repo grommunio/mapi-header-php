@@ -9,6 +9,11 @@
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class ExtendedTokenTest extends TestCase {
 	private function createJWTWithCustomExpiry(int $expiryOffset): string {
 		$header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));

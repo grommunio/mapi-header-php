@@ -9,6 +9,11 @@
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class KeyCloakTest extends TestCase {
 	private function createTestConfig(): array {
 		return [

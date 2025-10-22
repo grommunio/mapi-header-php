@@ -10,7 +10,7 @@
 class Token {
 	public ?array $token_header = null;
 	public ?array $token_payload = null;
-	public string|false|null $token_signature = null;
+	public false|string|null $token_signature = null;
 	public ?string $signed = null;
 
 	/**
@@ -49,7 +49,7 @@ class Token {
 	/**
 	 * Returns the signature of the token.
 	 */
-	public function get_signature(): string|false|null {
+	public function get_signature(): false|string|null {
 		return $this->token_signature;
 	}
 

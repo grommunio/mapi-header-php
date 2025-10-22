@@ -1455,10 +1455,6 @@ abstract class BaseRecurrence {
 	 * gmtime() doesn't exist in standard PHP, so we have to implement it ourselves.
 	 *
 	 * @author Steve Hardy
-	 *
-	 * @param mixed $ts
-	 *
-	 * @return float|int
 	 */
 	public function GetTZOffset(mixed $ts): float|int {
 		$Offset = date("O", $ts);
@@ -1475,8 +1471,6 @@ abstract class BaseRecurrence {
 	 *
 	 * @author Steve Hardy
 	 *
-	 * @param int $time
-	 *
 	 * @return array GMT Time
 	 */
 	public function gmtime(int $time): array {
@@ -1487,17 +1481,10 @@ abstract class BaseRecurrence {
 		return localtime($t_time, 1);
 	}
 
-	/**
-	 * @param float|string $year
-	 */
 	public function isLeapYear(float|string $year): bool {
 		return $year % 4 == 0 && ($year % 100 != 0 || $year % 400 == 0);
 	}
 
-	/**
-	 * @param float|string $year
-	 * @param int|string   $month
-	 */
 	public function getMonthInSeconds(float|string $year, int|string $month): int {
 		if (in_array($month, [1, 3, 5, 7, 8, 10, 12], true)) {
 			$day = 31;
@@ -1517,12 +1504,6 @@ abstract class BaseRecurrence {
 
 	/**
 	 * Function to get a date by Year Nr, Month Nr, Week Nr, Day Nr, and hour.
-	 *
-	 * @param int $year
-	 * @param int $month
-	 * @param int $week
-	 * @param int $day
-	 * @param int $hour
 	 *
 	 * @return int the timestamp of the given date, timezone-independent
 	 */
@@ -1554,9 +1535,6 @@ abstract class BaseRecurrence {
 	/**
 	 * getTimezone gives the timezone offset (in minutes) of the given
 	 * local date/time according to the given TZ info.
-	 *
-	 * @param mixed $tz
-	 * @param mixed $date
 	 */
 	public function getTimezone(mixed $tz, mixed $date): int {
 		// No timezone -> GMT (+0)
@@ -1594,12 +1572,8 @@ abstract class BaseRecurrence {
 	 * parseTimezone parses the timezone as specified in named property 0x8233
 	 * in Outlook calendar messages. Returns the timezone in minutes negative
 	 * offset (GMT +2:00 -> -120).
-	 *
-	 * @param mixed $data
-	 *
-	 * @return null|array|false
 	 */
-	public function parseTimezone(mixed $data): null|array|false {
+	public function parseTimezone(mixed $data): array|false|null {
 		if (strlen((string) $data) < 48) {
 			return null;
 		}
@@ -1607,11 +1581,6 @@ abstract class BaseRecurrence {
 		return unpack("ltimezone/lunk/ltimezonedst/lunk/ldstendmonth/vdstendweek/vdstendhour/lunk/lunk/vunk/ldststartmonth/vdststartweek/vdststarthour/lunk/vunk", (string) $data);
 	}
 
-	/**
-	 * @param mixed $tz
-	 *
-	 * @return false|string
-	 */
 	public function getTimezoneData(mixed $tz): false|string {
 		return pack("lllllvvllvlvvlv", $tz["timezone"], 0, $tz["timezonedst"], 0, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendhour"], 0, 0, 0, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststarthour"], 0, 0);
 	}
@@ -1619,7 +1588,6 @@ abstract class BaseRecurrence {
 	/**
 	 * toGMT returns a timestamp in GMT time for the time and timezone given.
 	 *
-	 * @param mixed $tz
 	 * @param mixed $date
 	 */
 	public function toGMT(mixed $tz, int $date): int {
@@ -1634,7 +1602,6 @@ abstract class BaseRecurrence {
 	/**
 	 * fromGMT returns a timestamp in the local timezone given from the GMT time given.
 	 *
-	 * @param mixed $tz
 	 * @param mixed $date
 	 */
 	public function fromGMT(mixed $tz, int $date): int {
@@ -1650,7 +1617,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int timestamp referring to same day but at 00:00:00
 	 */
-	public function dayStartOf(int $date): int|false {
+	public function dayStartOf(int $date): false|int {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, $time1["tm_mon"] + 1, $time1["tm_mday"], $time1["tm_year"] + 1900);
@@ -1663,7 +1630,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int Timestamp referring to same month but on the first day, and at 00:00:00
 	 */
-	public function monthStartOf(int $date): int|false {
+	public function monthStartOf(int $date): false|int {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, $time1["tm_mon"] + 1, 1, $time1["tm_year"] + 1900);
@@ -1676,7 +1643,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int Timestamp referring to the same year but on Jan 01, at 00:00:00
 	 */
-	public function yearStartOf(int $date): int|false {
+	public function yearStartOf(int $date): false|int {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, 1, 1, $time1["tm_year"] + 1900);
@@ -1686,10 +1653,8 @@ abstract class BaseRecurrence {
 	 * Function which returns the items in a given interval. This included expansion of the recurrence and
 	 * processing of exceptions (modified and deleted).
 	 *
-	 * @param int   $start         start time of the interval (GMT)
-	 * @param int   $end           end time of the interval (GMT)
-	 * @param mixed $limit
-	 * @param mixed $remindersonly
+	 * @param int $start start time of the interval (GMT)
+	 * @param int $end   end time of the interval (GMT)
 	 *
 	 * @return (array|mixed)[]
 	 *
@@ -1967,9 +1932,6 @@ abstract class BaseRecurrence {
 	}
 
 	/**
-	 * @param mixed $a
-	 * @param mixed $b
-	 *
 	 * @psalm-return -1|0|1
 	 */
 	public function sortStarttime(mixed $a, mixed $b): int {
@@ -2015,9 +1977,6 @@ abstract class BaseRecurrence {
 	}
 
 	/**
-	 * @param mixed $a
-	 * @param mixed $b
-	 *
 	 * @psalm-return -1|0|1
 	 */
 	public function sortExceptionStart(mixed $a, mixed $b): int {
@@ -2026,8 +1985,6 @@ abstract class BaseRecurrence {
 
 	/**
 	 * Function to get all properties of a single changed exception.
-	 *
-	 * @param mixed $exception
 	 *
 	 * @return (mixed|true)[] associative array of properties for the exception
 	 *
@@ -2078,13 +2035,5 @@ abstract class BaseRecurrence {
 		return $item;
 	}
 
-	/**
-	 * @param false|int $start
-	 * @param false|int $basedate
-	 * @param mixed     $startocc
-	 * @param mixed     $endocc
-	 * @param mixed     $tz
-	 * @param mixed     $reminderonly
-	 */
-	abstract public function processOccurrenceItem(array &$items, false|int $start, int $end, false|int $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): null|false;
+	abstract public function processOccurrenceItem(array &$items, false|int $start, int $end, false|int $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): ?false;
 }

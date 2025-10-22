@@ -26,7 +26,7 @@ class FreeBusy {
 	/**
 	 * Function will return resource of the local freebusy message of the user's store.
 	 *
-	 * @return resource|false local freebusy message, otherwise false if message not found
+	 * @return false|resource local freebusy message, otherwise false if message not found
 	 */
 	public static function getLocalFreeBusyMessage(mixed $store = false): mixed {
 		if (!$store) {
@@ -94,7 +94,7 @@ class FreeBusy {
 	/**
 	 * Function will return resource of the freebusy folder of the user's store.
 	 *
-	 * @return resource|false freebusy folder
+	 * @return false|resource freebusy folder
 	 */
 	public static function getLocalFreeBusyFolder(mixed $store = false): mixed {
 		if (!$store) {

@@ -235,9 +235,9 @@ class Recurrence extends BaseRecurrence {
 		foreach ($propertyMappings as $propKey => $mapping) {
 			$propTag = $this->proptags[$propKey];
 			if (array_key_exists($propTag, $exception_props)) {
-				$extomodify[$mapping["target"]] = $mapping["transform"]
-					? $this->fromGMT($this->tz, $exception_props[$propTag])
-					: $exception_props[$propTag];
+				$extomodify[$mapping["target"]] = $mapping["transform"] ?
+					$this->fromGMT($this->tz, $exception_props[$propTag]) :
+					$exception_props[$propTag];
 			}
 		}
 
@@ -423,7 +423,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $timestamp
 	 */
-	public function getNextReminderTime(int $timestamp): int|false {
+	public function getNextReminderTime(int $timestamp): false|int {
 		/**
 		 * Get next item from now until forever, but max 1 item with reminder set
 		 * Note 0x7ff00000 instead of 0x7fffffff because of possible overflow failures when converting to GMT....
@@ -1061,10 +1061,8 @@ class Recurrence extends BaseRecurrence {
 	 * @param int   $endocc       end of occurrence since beginning of day in minutes
 	 * @param mixed $tz           the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 	 * @param bool  $reminderonly If TRUE, only add the item if the reminder is set
-	 *
-	 * @return null|false
 	 */
-	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): null|false {
+	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): ?false {
 		$exception = $this->isException($basedate);
 		if ($exception) {
 			return false;
@@ -1230,7 +1228,6 @@ class Recurrence extends BaseRecurrence {
 	 *  - "remove": This contains an array of recipients which must be removed
 	 *  - "modify": This contains an array of recipients which must be modified
 	 *
-	 * @param mixed $exception
 	 * @param array $exception_recips list of recipients
 	 * @param bool  $copy_orig_recips True to copy all recipients which are on the original
 	 *                                message to the attachment by default. False if only the $exception_recips changes should

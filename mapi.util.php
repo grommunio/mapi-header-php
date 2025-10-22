@@ -25,8 +25,6 @@ mapi_load_mapidefs(1);
  *
  * A GUID is normally represented in the following form:
  *  {00062008-0000-0000-C000-000000000046}
- *
- * @param string $guid
  */
 function makeGuid(string $guid): string {
 	return pack("vvvv", hexdec(substr($guid, 5, 4)), hexdec(substr($guid, 1, 4)), hexdec(substr($guid, 10, 4)), hexdec(substr($guid, 15, 4))) . hex2bin(substr($guid, 20, 4)) . hex2bin(substr($guid, 25, 12));
@@ -88,8 +86,6 @@ function get_mapi_error_name(mixed $errcode = null): string {
  * Parses properties from an array of strings. Each "string" may be either an ULONG, which is a direct property ID,
  * or a string with format "PT_TYPE:{GUID}:StringId" or "PT_TYPE:{GUID}:0xXXXX" for named
  * properties.
- *
- * @return array
  */
 function getPropIdsFromStrings(mixed $store, array $mapping): array {
 	$props = [];
@@ -367,10 +363,6 @@ function prop2Str(mixed $property): string {
 
 /**
  * Converts RELOP constant to human readable string.
- *
- * @param int $relOp
- *
- * @return string
  */
 function relOpToString(int $relOp): string {
 	return match ($relOp) {
@@ -387,8 +379,6 @@ function relOpToString(int $relOp): string {
 
 /**
  * Converts all constants of restriction into a human readable strings.
- *
- * @param mixed $restriction
  */
 function simplifyRestriction(mixed $restriction): mixed {
 	if (!is_array($restriction)) {

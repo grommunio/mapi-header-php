@@ -9,6 +9,11 @@
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class BaseExceptionTest extends TestCase {
 	public function testConstructorWithMessage(): void {
 		$exception = new BaseException('Test error message');

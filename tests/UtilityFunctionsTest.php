@@ -9,6 +9,11 @@
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class UtilityFunctionsTest extends TestCase {
 	public function testMakeGuid(): void {
 		$guid = '{00062008-0000-0000-C000-000000000046}';
@@ -62,7 +67,7 @@ class UtilityFunctionsTest extends TestCase {
 
 	public function testProp2Str(): void {
 		// Test with integer (should try to find PR_ constant)
-		$result = prop2Str(0x0037001e);
+		$result = prop2Str(0x0037001E);
 		$this->assertIsString($result);
 
 		// Test with string (should return as-is)

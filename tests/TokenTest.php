@@ -9,6 +9,11 @@
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class TokenTest extends TestCase {
 	private function createValidJWT(): string {
 		$header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));

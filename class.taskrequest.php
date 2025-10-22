@@ -165,7 +165,7 @@ class TaskRequest {
 	 *
 	 * @return bool true if this is a task request else false
 	 */
-	public function isTaskRequest(string|false $messageClass = false): bool {
+	public function isTaskRequest(false|string $messageClass = false): bool {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
@@ -181,7 +181,7 @@ class TaskRequest {
 	 *
 	 * @return bool true if this is a task request else false
 	 */
-	public function isTaskRequestResponse(string|false $messageClass = false): bool {
+	public function isTaskRequestResponse(false|string $messageClass = false): bool {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
@@ -473,8 +473,6 @@ class TaskRequest {
 
 	/**
 	 * Update the sent task request in sent items folder.
-	 *
-	 * @return bool
 	 */
 	public function updateSentTaskRequest(): bool {
 		$props = mapi_getprops($this->message, [
@@ -525,8 +523,6 @@ class TaskRequest {
 	 *
 	 * Takes the task passed in the constructor as the task to be sent; recipient should
 	 * be pre-existing. The task request will be sent to all recipients.
-	 *
-	 * @param string $prefix
 	 *
 	 * @return true
 	 */
@@ -616,8 +612,6 @@ class TaskRequest {
 	 *
 	 * Message passed should be an IPM.TaskRequest message. The task request is then processed to create
 	 * the task in the tasks folder if needed.
-	 *
-	 * @return bool
 	 */
 	public function processTaskRequest(): bool {
 		if (!$this->isTaskRequest()) {
@@ -916,8 +910,7 @@ class TaskRequest {
 	/**
 	 * Sends a response message (from assignee back to organizer).
 	 *
-	 * @param int   $type   Type of response (tdmtTaskAcc, tdmtTaskDec, tdmtTaskUpd)
-	 * @param mixed $prefix
+	 * @param int $type Type of response (tdmtTaskAcc, tdmtTaskDec, tdmtTaskUpd)
 	 *
 	 * @return bool TRUE on success
 	 */
@@ -1184,8 +1177,6 @@ class TaskRequest {
 	 * Deletes incoming task request from Inbox.
 	 *
 	 * @returns array|bool PR_ENTRYID, PR_STORE_ENTRYID and PR_PARENT_ENTRYID of the deleted task request
-	 *
-	 * @return array|false
 	 */
 	public function deleteReceivedTR(): array|false {
 		$store = $this->getTaskFolderStore();

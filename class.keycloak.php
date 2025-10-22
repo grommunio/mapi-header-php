@@ -34,8 +34,6 @@ class KeyCloak {
 	/**
 	 * The constructor reads all required values from the KeyCloak configuration file.
 	 * This includes values for realm_id, client_id, client_secret, server_url etc.
-	 *
-	 * @param mixed $keycloak_config
 	 */
 	public function __construct(mixed $keycloak_config) {
 		if (is_string($keycloak_config)) {
@@ -79,8 +77,6 @@ class KeyCloak {
 	/**
 	 * Static method to instantiate and return a KeyCloak instance from the
 	 * default configuration file.
-	 *
-	 * @return KeyCloak
 	 */
 	public static function getInstance(): ?KeyCloak {
 		if (!defined('GROMOX_CONFIG_PATH')) {
@@ -98,8 +94,6 @@ class KeyCloak {
 
 	/**
 	 * Returns the last known refresh time.
-	 *
-	 * @return null|int
 	 */
 	public function get_last_refresh_time(): ?int {
 		return $this->last_refresh_time;
@@ -107,8 +101,6 @@ class KeyCloak {
 
 	/**
 	 * Sets  the last refresh time.
-	 *
-	 * @param int $time
 	 */
 	public function set_last_refresh_time(int $time): void {
 		$this->last_refresh_time = $time;
@@ -214,20 +206,14 @@ class KeyCloak {
 	/**
 	 * Validates the grant represented by the access and refresh tokens in the grant.
 	 * If the refresh token has expired too, return false.
-	 *
-	 * @return bool
 	 */
 	public function validate_grant(): bool {
-		return ($this->validate_token($this->access_token) && $this->validate_token($this->refresh_token))
-			|| $this->refresh_grant_req();
+		return ($this->validate_token($this->access_token) && $this->validate_token($this->refresh_token)) ||
+			$this->refresh_grant_req();
 	}
 
 	/**
 	 * Validates a token with the server.
-	 *
-	 * @param mixed $token
-	 *
-	 * @return bool
 	 */
 	protected function validate_token(mixed $token): bool {
 		if (!isset($token)) {
@@ -261,8 +247,6 @@ class KeyCloak {
 
 	/**
 	 * Indicates if the access token is expired.
-	 *
-	 * @return bool
 	 */
 	public function is_expired(): bool {
 		return !$this->access_token || $this->access_token->is_expired();
@@ -272,8 +256,6 @@ class KeyCloak {
 	 * Builds a KeyCloak login url used with the client credential code.
 	 *
 	 * @param string $redirect_url Redirect URL to be parameterized in the URL
-	 *
-	 * @return string
 	 */
 	public function login_url(string $redirect_url): string {
 		$uuid = bin2hex(openssl_random_pseudo_bytes(32));
@@ -283,8 +265,6 @@ class KeyCloak {
 
 	/**
 	 * Builds a KeyCloak logout url.
-	 *
-	 * @return string
 	 */
 	public function logout(): string {
 		$params = '?id_token_hint=' . $this->id_token->get_payload() . '&refresh_token=' . $this->refresh_token->get_payload();

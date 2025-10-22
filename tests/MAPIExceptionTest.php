@@ -9,6 +9,11 @@
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class MAPIExceptionTest extends TestCase {
 	public function testConstructorWithMessage(): void {
 		$exception = new MAPIException('MAPI error occurred');
