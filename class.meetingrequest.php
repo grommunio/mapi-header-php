@@ -1029,9 +1029,6 @@ class Meetingrequest {
 
 						mapi_setprops($new, $proposeNewTimeProps + $props);
 
-						$reciptable = mapi_message_getrecipienttable($this->message);
-
-						$recips = [];
 						// If delegate, then do not add the delegate in recipients
 						if ($isDelegate) {
 							$delegate = mapi_getprops($this->message, [PR_RECEIVED_BY_EMAIL_ADDRESS]);
@@ -1043,10 +1040,10 @@ class Meetingrequest {
 									VALUE => [PR_EMAIL_ADDRESS => $delegate[PR_RECEIVED_BY_EMAIL_ADDRESS]],
 								],
 							];
-							$recips = mapi_table_queryallrows($reciptable, $this->recipprops, $res);
+							$recips = $this->getMessageRecipients($this->message, $res);
 						}
 						else {
-							$recips = mapi_table_queryallrows($reciptable, $this->recipprops);
+							$recips = $this->getMessageRecipients($this->message);
 						}
 
 						$this->addOrganizer($props, $recips);
@@ -2322,8 +2319,6 @@ class Meetingrequest {
 	 *                          so don't copy delegate information to recipient table
 	 */
 	public function replaceRecipients(mixed $copyFrom, mixed $copyTo, bool $isDelegate = false): void {
-		$recipientTable = mapi_message_getrecipienttable($copyFrom);
-
 		// If delegate, then do not add the delegate in recipients
 		if ($isDelegate) {
 			$delegate = mapi_getprops($copyFrom, [PR_RECEIVED_BY_EMAIL_ADDRESS]);
@@ -2335,10 +2330,10 @@ class Meetingrequest {
 					VALUE => [PR_EMAIL_ADDRESS => $delegate[PR_RECEIVED_BY_EMAIL_ADDRESS]],
 				],
 			];
-			$recipients = mapi_table_queryallrows($recipientTable, $this->recipprops, $res);
+			$recipients = $this->getMessageRecipients($copyFrom, $res);
 		}
 		else {
-			$recipients = mapi_table_queryallrows($recipientTable, $this->recipprops);
+			$recipients = $this->getMessageRecipients($copyFrom);
 		}
 
 		$copyToRecipientTable = mapi_message_getrecipienttable($copyTo);
