@@ -221,8 +221,7 @@ class Meetingrequest {
 	 */
 	public function isMeetingRequest(string|false $messageClass = false): bool {
 		if ($messageClass === false) {
-			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
-			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
+			$messageClass = mapi_getprops($this->message, [PR_MESSAGE_CLASS])[PR_MESSAGE_CLASS] ?? false;
 		}
 
 		return $messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.request') === 0;
@@ -237,8 +236,7 @@ class Meetingrequest {
 	 */
 	public function isMeetingRequestResponse(string|false $messageClass = false): bool {
 		if ($messageClass === false) {
-			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
-			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
+			$messageClass = mapi_getprops($this->message, [PR_MESSAGE_CLASS])[PR_MESSAGE_CLASS] ?? false;
 		}
 
 		return $messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.resp') === 0;
@@ -253,8 +251,7 @@ class Meetingrequest {
 	 */
 	public function isMeetingCancellation(string|false $messageClass = false): bool {
 		if ($messageClass === false) {
-			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
-			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
+			$messageClass = mapi_getprops($this->message, [PR_MESSAGE_CLASS])[PR_MESSAGE_CLASS] ?? false;
 		}
 
 		return $messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.canceled') === 0;
