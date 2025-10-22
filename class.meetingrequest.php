@@ -2850,12 +2850,7 @@ class Meetingrequest {
 
 			$recipients = $this->getMessageRecipients($message, $restriction);
 
-			if (!$deletedRecips) {
-				$deletedRecips = array_merge([], $recipients);
-			}
-			else {
-				$deletedRecips = array_merge($deletedRecips, $recipients);
-			}
+			$deletedRecips = array_merge($deletedRecips ?: [], $recipients);
 		}
 
 		// Remove the PR_ICON_INDEX as it is not needed in the sent message.
