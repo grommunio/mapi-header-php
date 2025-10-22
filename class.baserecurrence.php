@@ -156,15 +156,15 @@ abstract class BaseRecurrence {
 			return $ret;
 		}
 
-		if (!in_array($data["rtype"], [IDC_RCEV_PAT_ORB_DAILY, IDC_RCEV_PAT_ORB_WEEKLY, IDC_RCEV_PAT_ORB_MONTHLY, IDC_RCEV_PAT_ORB_YEARLY])) {
+		if (!in_array($data["rtype"], [IDC_RCEV_PAT_ORB_DAILY, IDC_RCEV_PAT_ORB_WEEKLY, IDC_RCEV_PAT_ORB_MONTHLY, IDC_RCEV_PAT_ORB_YEARLY], true)) {
 			return $ret;
 		}
 
-		if (!in_array($data["rtype2"], [rptDay, rptWeek, rptMonth, rptMonthNth, rptMonthEnd, rptHjMonth, rptHjMonthNth, rptHjMonthEnd])) {
+		if (!in_array($data["rtype2"], [rptDay, rptWeek, rptMonth, rptMonthNth, rptMonthEnd, rptHjMonth, rptHjMonthNth, rptHjMonthEnd], true)) {
 			return $ret;
 		}
 
-		if (!in_array($data['CalendarType'], [MAPI_CAL_DEFAULT, MAPI_CAL_GREGORIAN])) {
+		if (!in_array($data['CalendarType'], [MAPI_CAL_DEFAULT, MAPI_CAL_GREGORIAN], true)) {
 			return $ret;
 		}
 
@@ -304,7 +304,7 @@ abstract class BaseRecurrence {
 
 		$data = unpack("Vterm/Vnumoccur/Vconst2/Vnumexcept", $rdata);
 		$rdata = substr($rdata, 16);
-		if (!in_array($data["term"], [IDC_RCEV_PAT_ERB_END, IDC_RCEV_PAT_ERB_AFTERNOCCUR, IDC_RCEV_PAT_ERB_NOEND, 0xFFFFFFFF])) {
+		if (!in_array($data["term"], [IDC_RCEV_PAT_ERB_END, IDC_RCEV_PAT_ERB_AFTERNOCCUR, IDC_RCEV_PAT_ERB_NOEND, 0xFFFFFFFF], true)) {
 			return $ret;
 		}
 
@@ -620,11 +620,11 @@ abstract class BaseRecurrence {
 		$rtype = 0x2000 + (int) $this->recur["type"];
 
 		// Don't allow invalid type and subtype values
-		if (!in_array($rtype, [IDC_RCEV_PAT_ORB_DAILY, IDC_RCEV_PAT_ORB_WEEKLY, IDC_RCEV_PAT_ORB_MONTHLY, IDC_RCEV_PAT_ORB_YEARLY])) {
+		if (!in_array($rtype, [IDC_RCEV_PAT_ORB_DAILY, IDC_RCEV_PAT_ORB_WEEKLY, IDC_RCEV_PAT_ORB_MONTHLY, IDC_RCEV_PAT_ORB_YEARLY], true)) {
 			return;
 		}
 
-		if (!in_array((int) $this->recur["subtype"], [rptDay, rptWeek, rptMonth, rptMonthNth, rptMonthEnd, rptHjMonth, rptHjMonthNth, rptHjMonthEnd])) {
+		if (!in_array((int) $this->recur["subtype"], [rptDay, rptWeek, rptMonth, rptMonthNth, rptMonthEnd, rptHjMonth, rptHjMonthNth, rptHjMonthEnd], true)) {
 			return;
 		}
 
@@ -1499,10 +1499,10 @@ abstract class BaseRecurrence {
 	 * @param int|string   $month
 	 */
 	public function getMonthInSeconds(float|string $year, int|string $month): int {
-		if (in_array($month, [1, 3, 5, 7, 8, 10, 12])) {
+		if (in_array($month, [1, 3, 5, 7, 8, 10, 12], true)) {
 			$day = 31;
 		}
-		elseif (in_array($month, [4, 6, 9, 11])) {
+		elseif (in_array($month, [4, 6, 9, 11], true)) {
 			$day = 30;
 		}
 		else {
