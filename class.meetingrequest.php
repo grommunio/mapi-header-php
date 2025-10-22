@@ -497,6 +497,8 @@ class Meetingrequest {
 			mapi_savechanges($attach);
 			mapi_savechanges($recurringItem);
 		}
+
+		return null;
 	}
 
 	/**
@@ -1244,6 +1246,8 @@ class Meetingrequest {
 				mapi_folder_copymessages($sourcefolder, [$messageprops[PR_ENTRYID]], $wastebasket, MESSAGE_MOVE);
 			}
 		}
+
+		return null;
 	}
 
 	/**

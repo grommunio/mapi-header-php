@@ -1101,6 +1101,8 @@ class Recurrence extends BaseRecurrence {
 		}
 
 		$items[] = $newitem;
+
+		return null;
 	}
 
 	/**
