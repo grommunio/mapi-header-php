@@ -42,7 +42,7 @@ function get_mapi_error_name(mixed $errcode = null): string {
 		$errcode = mapi_last_hresult();
 	}
 
-	if (str_starts_with((string) $errcode, '0x') || str_starts_with((string) $errcode, '0X')) {
+	if (strncasecmp((string) $errcode, '0x', 2) === 0) {
 		$errcode = hexdec($errcode);
 	}
 
@@ -61,13 +61,10 @@ function get_mapi_error_name(mixed $errcode = null): string {
 			 * we have to manually typecast value to integer, so float will be converted in integer,
 			 * but still its out of bound for integer limit so it will be auto adjusted to minus value
 			 */
-			$intValue = (int) $value;
-			$prefix = substr($key, 0, 7);
-			if ($prefix === "MAPI_E_" || $prefix === "MAPI_W_") {
-				$errorCache[$intValue] = $key;
-			}
-			elseif (substr($key, 0, 2) === "ec") {
-				$errorCache[$intValue] = $key;
+			if (strncmp($key, "MAPI_E_", 7) === 0 ||
+			    strncmp($key, "MAPI_W_", 7) === 0 ||
+			    strncmp($key, "ec", 2) === 0) {
+				$errorCache[(int) $value] = $key;
 			}
 		}
 	}
