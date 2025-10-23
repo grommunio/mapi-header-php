@@ -16,7 +16,7 @@ class TaskRecurrence extends BaseRecurrence {
 
 	private $action;
 
-	public function __construct($store, $message) {
+	public function __construct(mixed $store, mixed $message) {
 		$this->store = $store;
 		$this->message = $message;
 
@@ -36,7 +36,7 @@ class TaskRecurrence extends BaseRecurrence {
 		$properties["duedate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDueDate;
 		$properties["reset_reminder"] = "PT_BOOLEAN:PSETID_Task:0x8107";
 		$properties["dead_occurrence"] = "PT_BOOLEAN:PSETID_Task:0x8109";
-		$properties["datecompleted"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
+		$properties["date_completed"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
 		$properties["recurring_data"] = "PT_BINARY:PSETID_Task:0x8116";
 		$properties["actualwork"] = "PT_LONG:PSETID_Task:0x8110";
 		$properties["totalwork"] = "PT_LONG:PSETID_Task:0x8111";
@@ -72,24 +72,14 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @return array|bool of properties of regenerated task else false
 	 */
-	public function setRecurrence(&$recur) {
+	public function setRecurrence(mixed &$recur): array|bool {
 		$this->recur = $recur;
 		$this->action = &$recur;
 
-		if (!isset($this->recur["changed_occurrences"])) {
-			$this->recur["changed_occurrences"] = [];
-		}
-
-		if (!isset($this->recur["deleted_occurrences"])) {
-			$this->recur["deleted_occurrences"] = [];
-		}
-
-		if (!isset($this->recur['startocc'])) {
-			$this->recur['startocc'] = 0;
-		}
-		if (!isset($this->recur['endocc'])) {
-			$this->recur['endocc'] = 0;
-		}
+		$this->recur["changed_occurrences"] ??= [];
+		$this->recur["deleted_occurrences"] ??= [];
+		$this->recur['startocc'] ??= 0;
+		$this->recur['endocc'] ??= 0;
 
 		// Save recurrence because we need proper startrecurrdate and endrecurrdate
 		$this->saveRecurrence();
@@ -110,7 +100,7 @@ class TaskRecurrence extends BaseRecurrence {
 	/**
 	 * Sets task object to first occurrence if startdate/duedate of task object is different from first occurrence.
 	 */
-	public function setFirstOccurrence() {
+	public function setFirstOccurrence(): void {
 		// Check if it is already the first occurrence
 		if ($this->action['start'] == $this->recur["start"]) {
 			return;
@@ -134,7 +124,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 * @return array|bool properties of newly created task if moving to next occurrence succeeds
 	 *                    false if that was last occurrence
 	 */
-	public function moveToNextOccurrence() {
+	public function moveToNextOccurrence(): array|bool {
 		$result = false;
 		/*
 		 * Every recurring task should have a 'duedate'. If a recurring task is created with no start/end date
@@ -178,7 +168,7 @@ class TaskRecurrence extends BaseRecurrence {
 
 				// Didn't get next occurrence, probably this is the last one, so recurrence ends here
 				$props[$this->proptags["dead_occurrence"]] = true;
-				$props[$this->proptags["datecompleted"]] = $this->action['datecompleted'];
+				$props[$this->proptags["date_completed"]] = $this->action['date_completed'];
 				$props[$this->proptags["task_f_creator"]] = true;
 
 				// OL props
@@ -197,7 +187,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @return null|array|false|T startdate/enddate of next occurrence
 	 */
-	public function getNextOccurrence() {
+	public function getNextOccurrence(): mixed {
 		if ($this->recur) {
 			// @TODO: fix start of range
 			$start = $this->messageprops[$this->proptags["duedate"]] ?? $this->action['start'];
@@ -220,7 +210,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @param bool $markComplete true if existing occurrence has to be marked complete
 	 */
-	public function regenerateTask($markComplete) {
+	public function regenerateTask(bool $markComplete): array {
 		// Get all properties
 		$taskItemProps = mapi_getprops($this->message);
 
@@ -250,9 +240,9 @@ class TaskRecurrence extends BaseRecurrence {
 		if ($markComplete) {
 			$taskItemProps[$this->proptags["reset_reminder"]] = false;
 			$taskItemProps[$this->proptags["reminder"]] = false;
-			$taskItemProps[$this->proptags["datecompleted"]] = $this->action["datecompleted"];
+			$taskItemProps[$this->proptags["date_completed"]] = $this->action["date_completed"];
 
-			unset($this->action[$this->proptags['datecompleted']]);
+			unset($this->action[$this->proptags['date_completed']]);
 		}
 
 		// Recurrence ends for this item
@@ -321,7 +311,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 * @param int   $tz           the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 	 * @param bool  $reminderonly If TRUE, only add the item if the reminder is set
 	 */
-	public function processOccurrenceItem(&$items, $start, $end, $basedate, $startocc, $endocc, $tz, $reminderonly) {
+	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): ?false {
 		if ($basedate > $start) {
 			$newItem = [];
 			$newItem[$this->proptags['startdate']] = $basedate;
@@ -336,6 +326,8 @@ class TaskRecurrence extends BaseRecurrence {
 
 			$items[] = $newItem;
 		}
+
+		return null;
 	}
 
 	/**
@@ -345,7 +337,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @return array|bool of properties of regenerated task else false
 	 */
-	public function markOccurrenceComplete(&$recur) {
+	public function markOccurrenceComplete(array &$recur): array|bool {
 		// Fix timezone object
 		$this->tz = false;
 		$this->action = &$recur;
@@ -363,7 +355,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $nextOccurrence properties of next occurrence
 	 */
-	public function setReminder($nextOccurrence): void {
+	public function setReminder(mixed $nextOccurrence): void {
 		$props = [];
 		if (!empty($nextOccurrence)) {
 			// Check if reminder is reset. Default is 'false'
@@ -399,12 +391,8 @@ class TaskRecurrence extends BaseRecurrence {
 	/**
 	 * Function which recurring task to next occurrence.
 	 * It simply doesn't regenerate task.
-	 *
-	 * @param array $action
-	 *
-	 * @return array|bool
 	 */
-	public function deleteOccurrence($action) {
+	public function deleteOccurrence(array $action): array|bool {
 		$this->tz = false;
 		$this->action = $action;
 		$result = $this->moveToNextOccurrence();

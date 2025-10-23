@@ -43,7 +43,7 @@ abstract class BaseRecurrence {
 	 * @param resource $store   MAPI Message Store Object
 	 * @param mixed    $message the MAPI (appointment) message
 	 */
-	public function __construct(public $store, $message) {
+	public function __construct(public $store, mixed $message) {
 		if (is_array($message)) {
 			$this->messageprops = $message;
 		}
@@ -65,7 +65,7 @@ abstract class BaseRecurrence {
 		}
 	}
 
-	public function getRecurrence() {
+	public function getRecurrence(): ?array {
 		return $this->recur;
 	}
 
@@ -140,9 +140,9 @@ abstract class BaseRecurrence {
 	 *
 	 * @psalm-return array{changed_occurrences: array<int, array{basedate: false|int, start: int, end: int, bitmask: mixed, subject?: false|string, remind_before?: mixed, reminder_set?: mixed, location?: false|string, busystatus?: mixed, alldayevent?: mixed, label?: mixed, ex_start_datetime?: mixed, ex_end_datetime?: mixed, ex_orig_date?: mixed}>, deleted_occurrences: list<int>, type?: int|mixed, subtype?: mixed, month?: mixed, everyn?: mixed, regen?: mixed, monthday?: mixed, weekdays?: 0|mixed, nday?: mixed, term?: int|mixed, numoccur?: mixed, numexcept?: mixed, first_dow?: mixed, numexceptmod?: mixed, start?: int, end?: int, startocc?: mixed, endocc?: mixed}|null
 	 */
-	public function parseRecurrence($rdata) {
+	public function parseRecurrence(string $rdata): ?array {
 		if (strlen($rdata) < 10) {
-			return;
+			return null;
 		}
 
 		$ret = [];
@@ -156,15 +156,15 @@ abstract class BaseRecurrence {
 			return $ret;
 		}
 
-		if (!in_array($data["rtype"], [IDC_RCEV_PAT_ORB_DAILY, IDC_RCEV_PAT_ORB_WEEKLY, IDC_RCEV_PAT_ORB_MONTHLY, IDC_RCEV_PAT_ORB_YEARLY])) {
+		if (!in_array($data["rtype"], [IDC_RCEV_PAT_ORB_DAILY, IDC_RCEV_PAT_ORB_WEEKLY, IDC_RCEV_PAT_ORB_MONTHLY, IDC_RCEV_PAT_ORB_YEARLY], true)) {
 			return $ret;
 		}
 
-		if (!in_array($data["rtype2"], [rptDay, rptWeek, rptMonth, rptMonthNth, rptMonthEnd, rptHjMonth, rptHjMonthNth, rptHjMonthEnd])) {
+		if (!in_array($data["rtype2"], [rptDay, rptWeek, rptMonth, rptMonthNth, rptMonthEnd, rptHjMonth, rptHjMonthNth, rptHjMonthEnd], true)) {
 			return $ret;
 		}
 
-		if (!in_array($data['CalendarType'], [MAPI_CAL_DEFAULT, MAPI_CAL_GREGORIAN])) {
+		if (!in_array($data['CalendarType'], [MAPI_CAL_DEFAULT, MAPI_CAL_GREGORIAN], true)) {
 			return $ret;
 		}
 
@@ -304,7 +304,7 @@ abstract class BaseRecurrence {
 
 		$data = unpack("Vterm/Vnumoccur/Vconst2/Vnumexcept", $rdata);
 		$rdata = substr($rdata, 16);
-		if (!in_array($data["term"], [IDC_RCEV_PAT_ERB_END, IDC_RCEV_PAT_ERB_AFTERNOCCUR, IDC_RCEV_PAT_ERB_NOEND, 0xFFFFFFFF])) {
+		if (!in_array($data["term"], [IDC_RCEV_PAT_ERB_END, IDC_RCEV_PAT_ERB_AFTERNOCCUR, IDC_RCEV_PAT_ERB_NOEND, 0xFFFFFFFF], true)) {
 			return $ret;
 		}
 
@@ -498,7 +498,7 @@ abstract class BaseRecurrence {
 				// Notes or Attachments modified: no data here (only in attachment)
 			}
 
-			array_push($exc_changed_details, $item);
+			$exc_changed_details[] = $item;
 		}
 
 		/**
@@ -620,11 +620,11 @@ abstract class BaseRecurrence {
 		$rtype = 0x2000 + (int) $this->recur["type"];
 
 		// Don't allow invalid type and subtype values
-		if (!in_array($rtype, [IDC_RCEV_PAT_ORB_DAILY, IDC_RCEV_PAT_ORB_WEEKLY, IDC_RCEV_PAT_ORB_MONTHLY, IDC_RCEV_PAT_ORB_YEARLY])) {
+		if (!in_array($rtype, [IDC_RCEV_PAT_ORB_DAILY, IDC_RCEV_PAT_ORB_WEEKLY, IDC_RCEV_PAT_ORB_MONTHLY, IDC_RCEV_PAT_ORB_YEARLY], true)) {
 			return;
 		}
 
-		if (!in_array((int) $this->recur["subtype"], [rptDay, rptWeek, rptMonth, rptMonthNth, rptMonthEnd, rptHjMonth, rptHjMonthNth, rptHjMonthEnd])) {
+		if (!in_array((int) $this->recur["subtype"], [rptDay, rptWeek, rptMonth, rptMonthNth, rptMonthEnd, rptHjMonth, rptHjMonthNth, rptHjMonthEnd], true)) {
 			return;
 		}
 
@@ -1015,7 +1015,7 @@ abstract class BaseRecurrence {
 		$items = $deleted_items;
 
 		foreach ($changed_items as $changed_item) {
-			array_push($items, $this->dayStartOf($changed_item["basedate"]));
+			$items[] = $this->dayStartOf($changed_item["basedate"]);
 		}
 
 		sort($items);
@@ -1434,7 +1434,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return int the converted date
 	 */
-	public function recurDataToUnixData($rdate) {
+	public function recurDataToUnixData(int $rdate): int {
 		return ($rdate - 194074560) * 60;
 	}
 
@@ -1447,7 +1447,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return float|int the converted date in minutes
 	 */
-	public function unixDataToRecurData($date) {
+	public function unixDataToRecurData(int $date): float|int {
 		return ($date / 60) + 194074560;
 	}
 
@@ -1455,12 +1455,8 @@ abstract class BaseRecurrence {
 	 * gmtime() doesn't exist in standard PHP, so we have to implement it ourselves.
 	 *
 	 * @author Steve Hardy
-	 *
-	 * @param mixed $ts
-	 *
-	 * @return float|int
 	 */
-	public function GetTZOffset($ts) {
+	public function GetTZOffset(mixed $ts): float|int {
 		$Offset = date("O", $ts);
 
 		$Parity = $Offset < 0 ? -1 : 1;
@@ -1475,11 +1471,9 @@ abstract class BaseRecurrence {
 	 *
 	 * @author Steve Hardy
 	 *
-	 * @param int $time
-	 *
 	 * @return array GMT Time
 	 */
-	public function gmtime($time) {
+	public function gmtime(int $time): array {
 		$TZOffset = $this->GetTZOffset($time);
 
 		$t_time = $time - $TZOffset * 60; # Counter adjust for localtime()
@@ -1487,22 +1481,15 @@ abstract class BaseRecurrence {
 		return localtime($t_time, 1);
 	}
 
-	/**
-	 * @param float|string $year
-	 */
-	public function isLeapYear($year): bool {
+	public function isLeapYear(float|string $year): bool {
 		return $year % 4 == 0 && ($year % 100 != 0 || $year % 400 == 0);
 	}
 
-	/**
-	 * @param float|string $year
-	 * @param int|string   $month
-	 */
-	public function getMonthInSeconds($year, $month): int {
-		if (in_array($month, [1, 3, 5, 7, 8, 10, 12])) {
+	public function getMonthInSeconds(float|string $year, int|string $month): int {
+		if (in_array($month, [1, 3, 5, 7, 8, 10, 12], true)) {
 			$day = 31;
 		}
-		elseif (in_array($month, [4, 6, 9, 11])) {
+		elseif (in_array($month, [4, 6, 9, 11], true)) {
 			$day = 30;
 		}
 		else {
@@ -1518,15 +1505,9 @@ abstract class BaseRecurrence {
 	/**
 	 * Function to get a date by Year Nr, Month Nr, Week Nr, Day Nr, and hour.
 	 *
-	 * @param int $year
-	 * @param int $month
-	 * @param int $week
-	 * @param int $day
-	 * @param int $hour
-	 *
 	 * @return int the timestamp of the given date, timezone-independent
 	 */
-	public function getDateByYearMonthWeekDayHour($year, $month, $week, $day, $hour) {
+	public function getDateByYearMonthWeekDayHour(int $year, int $month, int $week, int $day, int $hour): int {
 		// get first day of month
 		$date = gmmktime(0, 0, 0, $month, 0, $year + 1900);
 
@@ -1554,11 +1535,8 @@ abstract class BaseRecurrence {
 	/**
 	 * getTimezone gives the timezone offset (in minutes) of the given
 	 * local date/time according to the given TZ info.
-	 *
-	 * @param mixed $tz
-	 * @param mixed $date
 	 */
-	public function getTimezone($tz, $date) {
+	public function getTimezone(mixed $tz, mixed $date): int {
 		// No timezone -> GMT (+0)
 		if (!isset($tz["timezone"])) {
 			return 0;
@@ -1594,35 +1572,25 @@ abstract class BaseRecurrence {
 	 * parseTimezone parses the timezone as specified in named property 0x8233
 	 * in Outlook calendar messages. Returns the timezone in minutes negative
 	 * offset (GMT +2:00 -> -120).
-	 *
-	 * @param mixed $data
-	 *
-	 * @return null|array|false
 	 */
-	public function parseTimezone($data) {
+	public function parseTimezone(mixed $data): array|false|null {
 		if (strlen((string) $data) < 48) {
-			return;
+			return null;
 		}
 
 		return unpack("ltimezone/lunk/ltimezonedst/lunk/ldstendmonth/vdstendweek/vdstendhour/lunk/lunk/vunk/ldststartmonth/vdststartweek/vdststarthour/lunk/vunk", (string) $data);
 	}
 
-	/**
-	 * @param mixed $tz
-	 *
-	 * @return false|string
-	 */
-	public function getTimezoneData($tz) {
+	public function getTimezoneData(mixed $tz): false|string {
 		return pack("lllllvvllvlvvlv", $tz["timezone"], 0, $tz["timezonedst"], 0, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendhour"], 0, 0, 0, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststarthour"], 0, 0);
 	}
 
 	/**
 	 * toGMT returns a timestamp in GMT time for the time and timezone given.
 	 *
-	 * @param mixed $tz
 	 * @param mixed $date
 	 */
-	public function toGMT($tz, $date) {
+	public function toGMT(mixed $tz, int $date): int {
 		if (!isset($tz['timezone'])) {
 			return $date;
 		}
@@ -1634,10 +1602,9 @@ abstract class BaseRecurrence {
 	/**
 	 * fromGMT returns a timestamp in the local timezone given from the GMT time given.
 	 *
-	 * @param mixed $tz
 	 * @param mixed $date
 	 */
-	public function fromGMT($tz, $date) {
+	public function fromGMT(mixed $tz, int $date): int {
 		$offset = $this->getTimezone($tz, $date);
 
 		return $date - $offset * 60;
@@ -1650,7 +1617,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int timestamp referring to same day but at 00:00:00
 	 */
-	public function dayStartOf($date) {
+	public function dayStartOf(int $date): false|int {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, $time1["tm_mon"] + 1, $time1["tm_mday"], $time1["tm_year"] + 1900);
@@ -1663,7 +1630,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int Timestamp referring to same month but on the first day, and at 00:00:00
 	 */
-	public function monthStartOf($date) {
+	public function monthStartOf(int $date): false|int {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, $time1["tm_mon"] + 1, 1, $time1["tm_year"] + 1900);
@@ -1676,7 +1643,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return false|int Timestamp referring to the same year but on Jan 01, at 00:00:00
 	 */
-	public function yearStartOf($date) {
+	public function yearStartOf(int $date): false|int {
 		$time1 = $this->gmtime($date);
 
 		return gmmktime(0, 0, 0, 1, 1, $time1["tm_year"] + 1900);
@@ -1686,16 +1653,14 @@ abstract class BaseRecurrence {
 	 * Function which returns the items in a given interval. This included expansion of the recurrence and
 	 * processing of exceptions (modified and deleted).
 	 *
-	 * @param int   $start         start time of the interval (GMT)
-	 * @param int   $end           end time of the interval (GMT)
-	 * @param mixed $limit
-	 * @param mixed $remindersonly
+	 * @param int $start start time of the interval (GMT)
+	 * @param int $end   end time of the interval (GMT)
 	 *
 	 * @return (array|mixed)[]
 	 *
 	 * @psalm-return array<int, T|array>
 	 */
-	public function getItems($start, $end, $limit = 0, $remindersonly = false): array {
+	public function getItems(int $start, int $end, mixed $limit = 0, mixed $remindersonly = false): array {
 		$items = [];
 		$firstday = 0;
 
@@ -1705,14 +1670,14 @@ abstract class BaseRecurrence {
 
 		// Optimization: remindersonly and default reminder is off; since only exceptions with reminder set will match, just look which
 		// exceptions are in range and have a reminder set
-		if ($remindersonly && (!isset($this->messageprops[$this->proptags["reminder"]]) || $this->messageprops[$this->proptags["reminder"]] == false)) {
+		if ($remindersonly && (!isset($this->messageprops[$this->proptags["reminder"]]) || $this->messageprops[$this->proptags["reminder"]] === false)) {
 			// Sort exceptions by start time
 			uasort($this->recur["changed_occurrences"], $this->sortExceptionStart(...));
 
 			// Loop through all changed exceptions
 			foreach ($this->recur["changed_occurrences"] as $exception) {
 				// Check reminder set
-				if (!isset($exception["reminder"]) || $exception["reminder"] == false) {
+				if (!isset($exception["reminder"]) || $exception["reminder"] === false) {
 					continue;
 				}
 
@@ -1726,7 +1691,7 @@ abstract class BaseRecurrence {
 				}
 
 				// OK, add to items.
-				array_push($items, $this->getExceptionProperties($exception));
+				$items[] = $this->getExceptionProperties($exception);
 				if ($limit && (count($items) == $limit)) {
 					break;
 				}
@@ -1812,11 +1777,11 @@ abstract class BaseRecurrence {
 					for ($wday = 0; $wday < 7 && ($limit == 0 || count($items) < $limit); ++$wday) {
 						$daynow = $now + $wday * 60 * 60 * 24;
 						if ($daynow < $daystart) {
-							break;
+							continue; // @phpcs:ignore - intentional continue, not break
 						}
 						// checks whether the next coming day in recurring pattern is less than or equal to end day of the recurring item
 						if ($daynow > $dayend) {
-							break;
+							break; // @phpcs:ignore - intentional break, not continue
 						}
 						$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
 						if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
@@ -1878,7 +1843,7 @@ abstract class BaseRecurrence {
 
 							$nowtime = $this->gmtime($daynow);
 							while (($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) == 0) {
-								$daynow -= 86400;
+								$daynow -= SECONDS_PER_DAY;
 								$nowtime = $this->gmtime($daynow);
 							}
 						}
@@ -1967,12 +1932,9 @@ abstract class BaseRecurrence {
 	}
 
 	/**
-	 * @param mixed $a
-	 * @param mixed $b
-	 *
 	 * @psalm-return -1|0|1
 	 */
-	public function sortStarttime($a, $b): int {
+	public function sortStarttime(mixed $a, mixed $b): int {
 		$aTime = $a[$this->proptags["startdate"]];
 		$bTime = $b[$this->proptags["startdate"]];
 
@@ -1993,7 +1955,7 @@ abstract class BaseRecurrence {
 	 *
 	 * @return float|int number of days in the specified amount of months
 	 */
-	public function daysInMonth($date, $months) {
+	public function daysInMonth(int $date, int $months): float|int {
 		$days = 0;
 
 		for ($i = 0; $i < $months; ++$i) {
@@ -2004,7 +1966,7 @@ abstract class BaseRecurrence {
 	}
 
 	// Converts MAPI-style 'minutes' into the month of the year [0..11]
-	public function monthOfYear($minutes) {
+	public function monthOfYear(int $minutes): int {
 		$d = gmmktime(0, 0, 0, 1, 1, 2001); // The year 2001 was a non-leap year, and the minutes provided are always in non-leap-year-minutes
 
 		$d += $minutes * 60;
@@ -2015,25 +1977,20 @@ abstract class BaseRecurrence {
 	}
 
 	/**
-	 * @param mixed $a
-	 * @param mixed $b
-	 *
 	 * @psalm-return -1|0|1
 	 */
-	public function sortExceptionStart($a, $b): int {
+	public function sortExceptionStart(mixed $a, mixed $b): int {
 		return $a["start"] == $b["start"] ? 0 : ($a["start"] > $b["start"] ? 1 : -1);
 	}
 
 	/**
 	 * Function to get all properties of a single changed exception.
 	 *
-	 * @param mixed $exception
-	 *
 	 * @return (mixed|true)[] associative array of properties for the exception
 	 *
 	 * @psalm-return array<mixed|true>
 	 */
-	public function getExceptionProperties($exception): array {
+	public function getExceptionProperties(mixed $exception): array {
 		// Exception has same properties as main object, with some properties overridden:
 		$item = $this->messageprops;
 
@@ -2078,13 +2035,5 @@ abstract class BaseRecurrence {
 		return $item;
 	}
 
-	/**
-	 * @param false|int $start
-	 * @param false|int $basedate
-	 * @param mixed     $startocc
-	 * @param mixed     $endocc
-	 * @param mixed     $tz
-	 * @param mixed     $reminderonly
-	 */
-	abstract public function processOccurrenceItem(array &$items, $start, int $end, $basedate, $startocc, $endocc, $tz, $reminderonly);
+	abstract public function processOccurrenceItem(array &$items, false|int $start, int $end, false|int $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): ?false;
 }

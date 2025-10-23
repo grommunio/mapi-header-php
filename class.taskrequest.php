@@ -131,17 +131,15 @@ class TaskRequest {
 		$properties["taskhistory"] = "PT_LONG:PSETID_Task:0x811a";
 		$properties["taskmode"] = "PT_LONG:PSETID_Common:0x8518";
 		$properties["task_goid"] = "PT_BINARY:PSETID_Common:0x8519";
-		$properties["complete"] = "PT_BOOLEAN:PSETID_Common:" . PidLidTaskComplete;
+		$properties["complete"] = "PT_BOOLEAN:PSETID_Task:" . PidLidTaskComplete;
 		$properties["task_assigned_time"] = "PT_SYSTIME:PSETID_Task:0x8115";
-		$properties["taskfcreator"] = "PT_BOOLEAN:PSETID_Task:0x0x811e";
+		$properties["taskfcreator"] = "PT_BOOLEAN:PSETID_Task:0x811e";
 		$properties["tasklastuser"] = "PT_STRING8:PSETID_Task:0x8122";
 		$properties["tasklastdelegate"] = "PT_STRING8:PSETID_Task:0x8125";
 		$properties["taskaccepted"] = "PT_BOOLEAN:PSETID_Task:0x8108";
 		$properties["task_acceptance_state"] = "PT_LONG:PSETID_Task:0x812a";
 		$properties["ownership"] = "PT_LONG:PSETID_Task:0x8129";
-
-		$properties["complete"] = "PT_BOOLEAN:PSETID_Task:" . PidLidTaskComplete;
-		$properties["datecompleted"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
+		$properties["date_completed"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
 		$properties["recurring"] = "PT_BOOLEAN:PSETID_Task:0x8126";
 		$properties["startdate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskStartDate;
 		$properties["duedate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDueDate;
@@ -167,17 +165,13 @@ class TaskRequest {
 	 *
 	 * @return bool true if this is a task request else false
 	 */
-	public function isTaskRequest($messageClass = false) {
+	public function isTaskRequest(false|string $messageClass = false): bool {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
-		if ($messageClass !== false && $messageClass === "IPM.TaskRequest") {
-			return true;
-		}
-
-		return false;
+		return $messageClass !== false && $messageClass === "IPM.TaskRequest";
 	}
 
 	/**
@@ -187,17 +181,13 @@ class TaskRequest {
 	 *
 	 * @return bool true if this is a task request else false
 	 */
-	public function isTaskRequestResponse($messageClass = false) {
+	public function isTaskRequestResponse(false|string $messageClass = false): bool {
 		if ($messageClass === false) {
 			$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 			$messageClass = $props[PR_MESSAGE_CLASS] ?? false;
 		}
 
-		if ($messageClass !== false && str_starts_with((string) $messageClass, "IPM.TaskRequest.")) {
-			return true;
-		}
-
-		return false;
+		return $messageClass !== false && str_starts_with((string) $messageClass, "IPM.TaskRequest.");
 	}
 
 	/**
@@ -207,7 +197,7 @@ class TaskRequest {
 	 *
 	 * @return bool true if this is an incoming task request/response else false
 	 */
-	public function isReceivedItem($props) {
+	public function isReceivedItem(array $props): bool {
 		return $props[PR_MESSAGE_TO_ME] ?? false;
 	}
 
@@ -222,7 +212,7 @@ class TaskRequest {
 	 *
 	 * @return bool|resource associated task of task request else false
 	 */
-	public function getAssociatedTask($create) {
+	public function getAssociatedTask(bool $create): mixed {
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->props['task_goid']]);
 
 		if ($props[PR_MESSAGE_CLASS] == "IPM.Task") {
@@ -304,14 +294,14 @@ class TaskRequest {
 	 *
 	 * @return bool true if task request is updated later
 	 */
-	public function isTaskRequestUpdated() {
+	public function isTaskRequestUpdated(): bool {
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->props['task_goid'], $this->props['updatecount']]);
 		$result = false;
 		$associatedTask = $this->getAssociatedTask(false);
+		if ($this->isTaskRequest($props[PR_MESSAGE_CLASS]) && $associatedTask) {
+			return true;
+		}
 		if ($this->isTaskRequest($props[PR_MESSAGE_CLASS])) {
-			if ($associatedTask) {
-				return true;
-			}
 			$folder = $this->getDefaultTasksFolder();
 			$goid = $props[$this->props['task_goid']];
 
@@ -339,9 +329,7 @@ class TaskRequest {
 			 * if(message_counter >= task_counter) task is not updated, do normal processing
 			 */
 			if (isset($taskItemProps[$this->props['updatecount']], $props[$this->props['updatecount']])) {
-				if ($props[$this->props['updatecount']] < $taskItemProps[$this->props['updatecount']]) {
-					$result = true;
-				}
+				$result = $props[$this->props['updatecount']] < $taskItemProps[$this->props['updatecount']];
 			}
 		}
 
@@ -485,10 +473,8 @@ class TaskRequest {
 
 	/**
 	 * Update the sent task request in sent items folder.
-	 *
-	 * @return bool
 	 */
-	public function updateSentTaskRequest() {
+	public function updateSentTaskRequest(): bool {
 		$props = mapi_getprops($this->message, [
 			$this->props['taskhistory'],
 			$this->props["taskstate"],
@@ -538,11 +524,9 @@ class TaskRequest {
 	 * Takes the task passed in the constructor as the task to be sent; recipient should
 	 * be pre-existing. The task request will be sent to all recipients.
 	 *
-	 * @param string $prefix
-	 *
 	 * @return true
 	 */
-	public function sendTaskRequest($prefix): bool {
+	public function sendTaskRequest(string $prefix): bool {
 		// Check if the task is in a public folder (which is not mail-enabled)
 		$taskFolderStore = $this->getTaskFolderStore();
 		$storeType = mapi_getprops($taskFolderStore, [PR_MDB_PROVIDER]);
@@ -618,12 +602,7 @@ class TaskRequest {
 	public function updateTaskRequest(): void {
 		$messageprops = mapi_getprops($this->message, [$this->props['updatecount']]);
 
-		if (isset($messageprops)) {
-			++$messageprops[$this->props['updatecount']];
-		}
-		else {
-			$messageprops[$this->props['updatecount']] = 1;
-		}
+		$messageprops[$this->props['updatecount']] = ($messageprops[$this->props['updatecount']] ?? 0) + 1;
 
 		mapi_setprops($this->message, $messageprops);
 	}
@@ -633,10 +612,8 @@ class TaskRequest {
 	 *
 	 * Message passed should be an IPM.TaskRequest message. The task request is then processed to create
 	 * the task in the tasks folder if needed.
-	 *
-	 * @return bool
 	 */
-	public function processTaskRequest() {
+	public function processTaskRequest(): bool {
 		if (!$this->isTaskRequest()) {
 			return false;
 		}
@@ -697,7 +674,7 @@ class TaskRequest {
 	 *
 	 * @return array|false PR_ENTRYID, PR_STORE_ENTRYID and PR_PARENT_ENTRYID of the task
 	 */
-	public function doAccept() {
+	public function doAccept(): array|false {
 		$prefix = _("Task Accepted:") . " ";
 		$messageProps = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->props['taskstate']]);
 
@@ -747,7 +724,7 @@ class TaskRequest {
 	 *
 	 * @return array|false TRUE on success, FALSE on failure
 	 */
-	public function doDecline() {
+	public function doDecline(): array|false {
 		$prefix = _("Task Declined:") . " ";
 		$messageProps = mapi_getprops($this->message, [$this->props['taskstate']]);
 
@@ -786,7 +763,7 @@ class TaskRequest {
 	 *
 	 * @return bool TRUE if the update succeeded, FALSE otherwise
 	 */
-	public function doUpdate() {
+	public function doUpdate(): bool {
 		$messageProps = mapi_getprops($this->message, [$this->props['taskstate'], PR_SUBJECT]);
 
 		if (!isset($messageProps[$this->props['taskstate']]) || $messageProps[$this->props['taskstate']] != tdsOWN) {
@@ -818,7 +795,7 @@ class TaskRequest {
 	 * Normally this will just open the store that the processed message is in. However, if the message is opened
 	 * by a delegate, this function opens the store that the message was delegated from.
 	 */
-	public function getTaskFolderStore() {
+	public function getTaskFolderStore(): mixed {
 		$ownerentryid = false;
 
 		$rcvdprops = mapi_getprops($this->message, [PR_RCVD_REPRESENTING_ENTRYID]);
@@ -856,7 +833,7 @@ class TaskRequest {
 	/**
 	 * Opens the default task folder for the current user, or the specified user if passed.
 	 */
-	public function getDefaultTasksFolder() {
+	public function getDefaultTasksFolder(): mixed {
 		$store = $this->getTaskFolderStore();
 
 		$inbox = mapi_msgstore_getreceivefolder($store);
@@ -877,7 +854,7 @@ class TaskRequest {
 	 *
 	 * @psalm-return array<array<array<array<array<array<never, never>>>>>>|false
 	 */
-	public function getSentReprProps($store) {
+	public function getSentReprProps(mixed $store): array|false {
 		$storeprops = mapi_getprops($store, [PR_MAILBOX_OWNER_ENTRYID]);
 		if (!isset($storeprops[PR_MAILBOX_OWNER_ENTRYID])) {
 			return false;
@@ -901,7 +878,7 @@ class TaskRequest {
 	 * Creates an outgoing message based on the passed message - will set delegate information
 	 * and sent mail folder.
 	 */
-	public function createOutgoingMessage() {
+	public function createOutgoingMessage(): mixed {
 		// Open our default store for this user (that's the only store we can submit in)
 		$store = $this->getDefaultStore();
 		$storeprops = mapi_getprops($store, [PR_IPM_OUTBOX_ENTRYID, PR_IPM_SENTMAIL_ENTRYID]);
@@ -933,12 +910,11 @@ class TaskRequest {
 	/**
 	 * Sends a response message (from assignee back to organizer).
 	 *
-	 * @param int   $type   Type of response (tdmtTaskAcc, tdmtTaskDec, tdmtTaskUpd)
-	 * @param mixed $prefix
+	 * @param int $type Type of response (tdmtTaskAcc, tdmtTaskDec, tdmtTaskUpd)
 	 *
 	 * @return bool TRUE on success
 	 */
-	public function sendResponse($type, $prefix) {
+	public function sendResponse(int $type, mixed $prefix): bool {
 		// Create a message in our outbox
 		$outgoing = $this->createOutgoingMessage();
 		$messageprops = mapi_getprops($this->message, [PR_CONVERSATION_TOPIC, PR_MESSAGE_CLASS, $this->props['complete']]);
@@ -1008,7 +984,7 @@ class TaskRequest {
 		return true;
 	}
 
-	public function getDefaultStore() {
+	public function getDefaultStore(): mixed {
 		$table = mapi_getmsgstorestable($this->session);
 		$rows = mapi_table_queryallrows($table, [PR_DEFAULT_STORE, PR_ENTRYID]);
 
@@ -1041,7 +1017,7 @@ class TaskRequest {
 	 *
 	 * @return bool|resource embedded task if found else false
 	 */
-	public function getEmbeddedTask() {
+	public function getEmbeddedTask(): mixed {
 		$task = false;
 		$goid = mapi_getprops($this->message, [$this->props["task_goid"]]);
 		$attachmentTable = mapi_message_getattachmenttable($this->message);
@@ -1138,7 +1114,7 @@ class TaskRequest {
 	 *
 	 * @param mixed $task assignee's copy of task
 	 */
-	public function setAssignorInRecipients($task): void {
+	public function setAssignorInRecipients(mixed $task): void {
 		$recipTable = mapi_message_getrecipienttable($task);
 
 		// Delete all MAPI_TO recipients
@@ -1201,10 +1177,8 @@ class TaskRequest {
 	 * Deletes incoming task request from Inbox.
 	 *
 	 * @returns array|bool PR_ENTRYID, PR_STORE_ENTRYID and PR_PARENT_ENTRYID of the deleted task request
-	 *
-	 * @return array|false
 	 */
-	public function deleteReceivedTR() {
+	public function deleteReceivedTR(): array|false {
 		$store = $this->getTaskFolderStore();
 		$storeType = mapi_getprops($store, [PR_MDB_PROVIDER]);
 		if ($storeType[PR_MDB_PROVIDER] === ZARAFA_STORE_PUBLIC_GUID) {
@@ -1252,7 +1226,7 @@ class TaskRequest {
 	 * @param mixed $outgoing     outgoing mapi message
 	 * @param int   $responseType response type (tdmtTaskAcc, tdmtTaskDec, tdmtTaskUpd)
 	 */
-	public function setRecipientsForResponse($outgoing, $responseType): bool {
+	public function setRecipientsForResponse(mixed $outgoing, int $responseType): bool {
 		// Clear recipients from outgoing msg
 		$this->deleteAllRecipients($outgoing);
 
@@ -1309,7 +1283,7 @@ class TaskRequest {
 	 *
 	 * @param mixed $message MAPI message from which recipients are to be removed
 	 */
-	public function deleteAllRecipients($message): void {
+	public function deleteAllRecipients(mixed $message): void {
 		$recipTable = mapi_message_getrecipienttable($message);
 		$recipRows = mapi_table_queryallrows($recipTable, [PR_ROWID]);
 
@@ -1324,7 +1298,7 @@ class TaskRequest {
 	 *
 	 * @return bool TRUE if the update succeeded, FALSE otherwise
 	 */
-	public function sendCompleteUpdate() {
+	public function sendCompleteUpdate(): bool {
 		$messageprops = mapi_getprops($this->message, [$this->props['taskstate']]);
 
 		if (!isset($messageprops[$this->props['taskstate']]) || $messageprops[$this->props['taskstate']] != tdsOWN) {
@@ -1333,7 +1307,7 @@ class TaskRequest {
 
 		mapi_setprops($this->message, [
 			$this->props['complete'] => true,
-			$this->props['datecompleted'] => time(),
+			$this->props['date_completed'] => time(),
 			$this->props['status'] => 2,
 			$this->props['percent_complete'] => 1,
 		]);
@@ -1347,7 +1321,7 @@ class TaskRequest {
 	 *
 	 * @return string info about task request comments along with message body
 	 */
-	public function getTaskCommentsInfo() {
+	public function getTaskCommentsInfo(): string {
 		return $this->taskCommentsInfo;
 	}
 
@@ -1357,16 +1331,16 @@ class TaskRequest {
 	 *
 	 * @param string $taskCommentsInfo info about task request comments along with message body
 	 */
-	public function setTaskCommentsInfo($taskCommentsInfo): void {
+	public function setTaskCommentsInfo(string $taskCommentsInfo): void {
 		$this->taskCommentsInfo = $taskCommentsInfo;
 	}
 
-	public function getSubProperties() {
+	public function getSubProperties(): array {
 		$subProperties = [];
 		$subProperties["subject"] = PR_SUBJECT;
 		$subProperties["convtopic"] = PR_CONVERSATION_TOPIC;
 		$subProperties["complete"] = "PT_BOOLEAN:PSETID_Task:" . PidLidTaskComplete;
-		$subProperties["datecompleted"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
+		$subProperties["date_completed"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
 		$subProperties["recurring"] = "PT_BOOLEAN:PSETID_Task:0x8126";
 		$subProperties["startdate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskStartDate;
 		$subProperties["duedate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDueDate;

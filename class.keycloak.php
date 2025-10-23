@@ -34,19 +34,17 @@ class KeyCloak {
 	/**
 	 * The constructor reads all required values from the KeyCloak configuration file.
 	 * This includes values for realm_id, client_id, client_secret, server_url etc.
-	 *
-	 * @param mixed $keycloak_config
 	 */
-	public function __construct($keycloak_config) {
-		if (gettype($keycloak_config) === 'string') {
-			$keycloak_config = json_decode($keycloak_config);
+	public function __construct(mixed $keycloak_config) {
+		if (is_string($keycloak_config)) {
+			$keycloak_config = json_decode($keycloak_config, true);
 		}
 
 		// redirect_url
 		$url = "https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 		$url_exp = explode('?', $url);
 		$url = $url_exp[0];
-		if ($url[-1] == '/') {
+		if (str_ends_with($url, '/')) {
 			$url = substr($url, 0, -1);
 		}
 		$this->redirect_url = $url;
@@ -79,14 +77,12 @@ class KeyCloak {
 	/**
 	 * Static method to instantiate and return a KeyCloak instance from the
 	 * default configuration file.
-	 *
-	 * @return KeyCloak
 	 */
-	public static function getInstance() {
+	public static function getInstance(): ?KeyCloak {
 		if (!defined('GROMOX_CONFIG_PATH')) {
 			define('GROMOX_CONFIG_PATH', '/etc/gromox/');
 		}
-		if (is_null(KeyCloak::$_instance) && file_exists(GROMOX_CONFIG_PATH . 'keycloak.json')) {
+		if (KeyCloak::$_instance === null && file_exists(GROMOX_CONFIG_PATH . 'keycloak.json')) {
 			// Read the keycloak config adapter into an instance of the keyclaok class
 			$keycloak_file = file_get_contents(GROMOX_CONFIG_PATH . 'keycloak.json');
 			$keycloak_json = json_decode($keycloak_file, true);
@@ -98,19 +94,15 @@ class KeyCloak {
 
 	/**
 	 * Returns the last known refresh time.
-	 *
-	 * @return null|int
 	 */
-	public function get_last_refresh_time() {
+	public function get_last_refresh_time(): ?int {
 		return $this->last_refresh_time;
 	}
 
 	/**
 	 * Sets  the last refresh time.
-	 *
-	 * @param int $time
 	 */
-	public function set_last_refresh_time($time) {
+	public function set_last_refresh_time(int $time): void {
 		$this->last_refresh_time = $time;
 	}
 
@@ -133,7 +125,7 @@ class KeyCloak {
 	 *
 	 * @return bool indicating if the request was successful nor not
 	 */
-	public function password_grant_req($username, $password) {
+	public function password_grant_req(string $username, string $password): bool {
 		$params = ['grant_type' => 'password', 'username' => $username, 'password' => $password];
 
 		return $this->request($params);
@@ -149,7 +141,7 @@ class KeyCloak {
 	 *
 	 * @return bool indicating if the request was successful nor not
 	 */
-	public function client_credential_grant_req($code) {
+	public function client_credential_grant_req(string $code): bool {
 		$params = ['grant_type' => 'authorization_code', 'code' => $code, 'client_id' => $this->client_id, 'redirect_uri' => $this->redirect_url];
 
 		return $this->request($params);
@@ -162,7 +154,7 @@ class KeyCloak {
 	 *
 	 * @return bool indicating if the request was successful nor not
 	 */
-	public function refresh_grant_req() {
+	public function refresh_grant_req(): bool {
 		// Ensure grant exists, grant is not expired, and we have a refresh token
 		if (!$this->grant || !$this->refresh_token) {
 			$this->grant = null;
@@ -181,13 +173,13 @@ class KeyCloak {
 	 *
 	 * @return bool indicating if the request was successful or not
 	 */
-	protected function request($params) {
+	protected function request(array $params): bool {
 		$headers = ['Content-Type: application/x-www-form-urlencoded'];
 		if ($this->is_public) {
 			$params['client_id'] = $this->client_id;
 		}
 		else {
-			array_push($headers, 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret));
+			$headers[] = 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret);
 		}
 		$params['scope'] = 'openid';
 		$response = $this->http_curl_request('POST', '/protocol/openid-connect/token', $headers, http_build_query($params));
@@ -198,7 +190,7 @@ class KeyCloak {
 			return false;
 		}
 		$this->grant = $response['body'];
-		if (gettype($this->grant) === 'string') {
+		if (is_string($this->grant)) {
 			$this->grant = json_decode($this->grant, true);
 		}
 		else {
@@ -214,75 +206,58 @@ class KeyCloak {
 	/**
 	 * Validates the grant represented by the access and refresh tokens in the grant.
 	 * If the refresh token has expired too, return false.
-	 *
-	 * @return bool
 	 */
-	public function validate_grant() {
-		if ($this->validate_token($this->access_token) && $this->validate_token($this->refresh_token)) {
-			return true;
-		}
-
-		return $this->refresh_grant_req();
+	public function validate_grant(): bool {
+		return ($this->validate_token($this->access_token) && $this->validate_token($this->refresh_token)) ||
+			$this->refresh_grant_req();
 	}
 
 	/**
 	 * Validates a token with the server.
-	 *
-	 * @param mixed $token
-	 *
-	 * @return bool
 	 */
-	protected function validate_token($token) {
-		if (isset($token)) {
-			$path = "/protocol/openid-connect/token/introspect";
-			$headers = ['Content-Type: application/x-www-form-urlencoded'];
-			$params = ['token' => $token->get_payload()];
-			if ($this->is_public) {
-				$params['client_id'] = $this->client_id;
-			}
-			else {
-				array_push($headers, 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret));
-			}
-			$response = $this->http_curl_request('POST', $path, $headers, http_build_query($params));
-
-			if ($response['code'] < 200 || $response['code'] > 299) {
-				return false;
-			}
-
-			try {
-				$data = json_decode((string) $response['body'], true);
-			}
-			catch (Exception) {
-				return false;
-			}
-
-			return !array_key_exists('error', $data);
+	protected function validate_token(mixed $token): bool {
+		if (!isset($token)) {
+			return false;
 		}
 
-		return false;
+		$path = "/protocol/openid-connect/token/introspect";
+		$headers = ['Content-Type: application/x-www-form-urlencoded'];
+		$params = ['token' => $token->get_payload()];
+		if ($this->is_public) {
+			$params['client_id'] = $this->client_id;
+		}
+		else {
+			$headers[] = 'Authorization: Basic ' . base64_encode($this->client_id . ':' . $this->secret);
+		}
+		$response = $this->http_curl_request('POST', $path, $headers, http_build_query($params));
+
+		if ($response['code'] < 200 || $response['code'] > 299) {
+			return false;
+		}
+
+		try {
+			$data = json_decode((string) $response['body'], true);
+		}
+		catch (Exception) {
+			return false;
+		}
+
+		return !array_key_exists('error', $data);
 	}
 
 	/**
 	 * Indicates if the access token is expired.
-	 *
-	 * @return bool
 	 */
-	public function is_expired() {
-		if (!$this->access_token) {
-			return true;
-		}
-
-		return $this->access_token->is_expired();
+	public function is_expired(): bool {
+		return !$this->access_token || $this->access_token->is_expired();
 	}
 
 	/**
 	 * Builds a KeyCloak login url used with the client credential code.
 	 *
 	 * @param string $redirect_url Redirect URL to be parameterized in the URL
-	 *
-	 * @return string
 	 */
-	public function login_url($redirect_url) {
+	public function login_url(string $redirect_url): string {
 		$uuid = bin2hex(openssl_random_pseudo_bytes(32));
 
 		return $this->realm_url . '/protocol/openid-connect/auth?scope=openid&client_id=' . urlencode((string) $this->client_id) . '&state=' . urlencode($uuid) . '&redirect_uri=' . urlencode($redirect_url) . '&response_type=code';
@@ -290,10 +265,8 @@ class KeyCloak {
 
 	/**
 	 * Builds a KeyCloak logout url.
-	 *
-	 * @return string
 	 */
-	public function logout() {
+	public function logout(): string {
 		$params = '?id_token_hint=' . $this->id_token->get_payload() . '&refresh_token=' . $this->refresh_token->get_payload();
 
 		return $this->realm_url . '/protocol/openid-connect/logout' . $params;
@@ -309,13 +282,13 @@ class KeyCloak {
 	 *
 	 * @return array associative array with 'code' for response code and 'body' for request body
 	 */
-	protected function http_curl_request($method, $domain, $headers = [], $data = '') {
+	protected function http_curl_request(string $method, string $domain, array $headers = [], string $data = ''): array {
 		$request = curl_init();
 		curl_setopt($request, CURLOPT_URL, $this->realm_url . $domain);
-		if (strcmp(strtoupper((string) $method), 'POST') == 0) {
+		if (strcasecmp($method, 'POST') === 0) {
 			curl_setopt($request, CURLOPT_POST, true);
 			curl_setopt($request, CURLOPT_POSTFIELDS, $data);
-			array_push($headers, 'Content-Length: ' . strlen((string) $data));
+			$headers[] = 'Content-Length: ' . strlen((string) $data);
 		}
 
 		curl_setopt($request, CURLOPT_HTTPHEADER, $headers);

@@ -49,7 +49,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed    $message  the MAPI (appointment) message
 	 * @param array    $proptags an associative array of protags and their values
 	 */
-	public function __construct($store, $message, $proptags = []) {
+	public function __construct(mixed $store, mixed $message, array $proptags = []) {
 		if (!empty($proptags)) {
 			$this->proptags = $proptags;
 		}
@@ -171,11 +171,11 @@ class Recurrence extends BaseRecurrence {
 			$changed_item["end"] = $this->fromGMT($this->tz, $props[$this->proptags["duedate"]]);
 
 			// Add the changed occurrence to the list
-			array_push($this->recur["changed_occurrences"], $changed_item);
+			$this->recur["changed_occurrences"][] = $changed_item;
 		}
 		else {
 			// Delete the occurrence by placing it in the deleted occurrences list
-			array_push($this->recur["deleted_occurrences"], $baseday);
+			$this->recur["deleted_occurrences"][] = $baseday;
 		}
 
 		// Turn on hideattachments, because the attachments in this item are the exceptions
@@ -219,40 +219,26 @@ class Recurrence extends BaseRecurrence {
 		// client will send basedate with time part as zero, so discard that value
 		unset($exception_props[$this->proptags["basedate"]]);
 
-		if (array_key_exists($this->proptags["startdate"], $exception_props)) {
-			$extomodify["start"] = $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]);
-		}
+		// Map of property keys to their target keys in $extomodify, with optional transformation
+		$propertyMappings = [
+			"startdate" => ["target" => "start", "transform" => true],
+			"duedate" => ["target" => "end", "transform" => true],
+			"subject" => ["target" => "subject", "transform" => false],
+			"location" => ["target" => "location", "transform" => false],
+			"label" => ["target" => "label", "transform" => false],
+			"reminder" => ["target" => "reminder_set", "transform" => false],
+			"reminder_minutes" => ["target" => "remind_before", "transform" => false],
+			"alldayevent" => ["target" => "alldayevent", "transform" => false],
+			"busystatus" => ["target" => "busystatus", "transform" => false],
+		];
 
-		if (array_key_exists($this->proptags["duedate"], $exception_props)) {
-			$extomodify["end"] = $this->fromGMT($this->tz, $exception_props[$this->proptags["duedate"]]);
-		}
-
-		if (array_key_exists($this->proptags["subject"], $exception_props)) {
-			$extomodify["subject"] = $exception_props[$this->proptags["subject"]];
-		}
-
-		if (array_key_exists($this->proptags["location"], $exception_props)) {
-			$extomodify["location"] = $exception_props[$this->proptags["location"]];
-		}
-
-		if (array_key_exists($this->proptags["label"], $exception_props)) {
-			$extomodify["label"] = $exception_props[$this->proptags["label"]];
-		}
-
-		if (array_key_exists($this->proptags["reminder"], $exception_props)) {
-			$extomodify["reminder_set"] = $exception_props[$this->proptags["reminder"]];
-		}
-
-		if (array_key_exists($this->proptags["reminder_minutes"], $exception_props)) {
-			$extomodify["remind_before"] = $exception_props[$this->proptags["reminder_minutes"]];
-		}
-
-		if (array_key_exists($this->proptags["alldayevent"], $exception_props)) {
-			$extomodify["alldayevent"] = $exception_props[$this->proptags["alldayevent"]];
-		}
-
-		if (array_key_exists($this->proptags["busystatus"], $exception_props)) {
-			$extomodify["busystatus"] = $exception_props[$this->proptags["busystatus"]];
+		foreach ($propertyMappings as $propKey => $mapping) {
+			$propTag = $this->proptags[$propKey];
+			if (array_key_exists($propTag, $exception_props)) {
+				$extomodify[$mapping["target"]] = $mapping["transform"] ?
+					$this->fromGMT($this->tz, $exception_props[$propTag]) :
+					$exception_props[$propTag];
+			}
 		}
 
 		$exception_props[PR_MESSAGE_CLASS] = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
@@ -387,7 +373,7 @@ class Recurrence extends BaseRecurrence {
 		return true;
 	}
 
-	public function setRecurrence($tz, $recur): void {
+	public function setRecurrence(mixed $tz, mixed $recur): void {
 		// only reset timezone if specified
 		if ($tz) {
 			$this->tz = $tz;
@@ -415,13 +401,13 @@ class Recurrence extends BaseRecurrence {
 
 	// Returns the start or end time of the occurrence on the given base date.
 	// This assumes that the basedate you supply is in LOCAL time
-	public function getOccurrenceStart($basedate) {
+	public function getOccurrenceStart(int $basedate): int {
 		$daystart = $this->dayStartOf($basedate);
 
 		return $this->toGMT($this->tz, $daystart + $this->recur["startocc"] * 60);
 	}
 
-	public function getOccurrenceEnd($basedate) {
+	public function getOccurrenceEnd(int $basedate): int {
 		$daystart = $this->dayStartOf($basedate);
 
 		return $this->toGMT($this->tz, $daystart + $this->recur["endocc"] * 60);
@@ -437,7 +423,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $timestamp
 	 */
-	public function getNextReminderTime($timestamp) {
+	public function getNextReminderTime(int $timestamp): false|int {
 		/**
 		 * Get next item from now until forever, but max 1 item with reminder set
 		 * Note 0x7ff00000 instead of 0x7fffffff because of possible overflow failures when converting to GMT....
@@ -484,7 +470,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @psalm-param list{0: mixed, 1: mixed, 2?: mixed} $propsrequested
 	 */
-	public static function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested) {
+	public static function getCalendarItems(mixed $store, mixed $calendar, int $viewstart, int $viewend, array $propsrequested): array {
 		return getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested);
 	}
 
@@ -500,18 +486,18 @@ class Recurrence extends BaseRecurrence {
 	public function getI18RecTypeDaily(mixed $type, mixed $interval, bool $occSingleDayRank): array {
 		switch ($interval) {
 			case 1: // workdays
-				$type = dgettext('zarafa', 'workday');
+				$type = _('workday');
 				$occSingleDayRank = true;
 				break;
 
 			case 1440: // daily
-				$type = dgettext('zarafa', 'day');
+				$type = _('day');
 				$occSingleDayRank = true;
 				break;
 
 			default: // every $interval days
 				$interval /= 1440;
-				$type = dgettext('zarafa', 'days');
+				$type = _('days');
 				$occSingleDayRank = false;
 				break;
 		}
@@ -529,24 +515,24 @@ class Recurrence extends BaseRecurrence {
 	 */
 	public function getI18RecTypeWeekly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
 		if ($interval == 1) {
-			$type = dgettext('zarafa', 'week');
+			$type = _('week');
 			$occSingleDayRank = true;
 		}
 		else {
-			$type = dgettext('zarafa', 'weeks');
+			$type = _('weeks');
 			$occSingleDayRank = false;
 		}
 		$daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-		$type .= sprintf(" %s ", dgettext('zarafa', 'on'));
+		$type .= sprintf(" %s ", _('on'));
 
 		for ($j = 0, $weekdays = (int) $this->recur["weekdays"]; $j < 7; ++$j) {
 			if ($weekdays & (1 << $j)) {
-				$type .= sprintf("%s, ", dgettext('zarafa', $daysOfWeek[$j]));
+				$type .= sprintf("%s, ", _($daysOfWeek[$j]));
 			}
 		}
 		$type = trim($type, ", ");
 		if (($pos = strrpos($type, ",")) !== false) {
-			$type = substr_replace($type, " " . dgettext('zarafa', 'and'), $pos, 1);
+			$type = substr_replace($type, " " . _('and'), $pos, 1);
 		}
 
 		return [
@@ -562,11 +548,11 @@ class Recurrence extends BaseRecurrence {
 	 */
 	public function getI18RecTypeMonthly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
 		if ($interval == 1) {
-			$type = dgettext('zarafa', 'month');
+			$type = _('month');
 			$occSingleDayRank = true;
 		}
 		else {
-			$type = dgettext('zarafa', 'months');
+			$type = _('months');
 			$occSingleDayRank = false;
 		}
 
@@ -584,12 +570,12 @@ class Recurrence extends BaseRecurrence {
 	public function getI18RecTypeYearly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
 		if ($interval <= 12) {
 			$interval = 1;
-			$type = dgettext('zarafa', 'year');
+			$type = _('year');
 			$occSingleDayRank = true;
 		}
 		else {
 			$interval = $interval / 12;
-			$type = dgettext('zarafa', 'years');
+			$type = _('years');
 			$occSingleDayRank = false;
 		}
 
@@ -643,7 +629,7 @@ class Recurrence extends BaseRecurrence {
 	 * Returns langified occurrence time.
 	 */
 	public function getI18nTime(string $format, mixed $occTime): string {
-		return gmdate(dgettext('zarafa', $format), $occTime);
+		return gmdate(_($format), $occTime);
 	}
 
 	/**
@@ -663,7 +649,7 @@ class Recurrence extends BaseRecurrence {
 			(
 				$occSingleDayRank ?
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s effective %s until %s from %s to %s.'),
+						_('Occurs every %s effective %s until %s from %s to %s.'),
 						$type,
 						$start,
 						$end,
@@ -671,7 +657,7 @@ class Recurrence extends BaseRecurrence {
 						$endocc
 					) :
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s %s effective %s until %s from %s to %s.'),
+						_('Occurs every %s %s effective %s until %s from %s to %s.'),
 						$interval,
 						$type,
 						$start,
@@ -683,13 +669,13 @@ class Recurrence extends BaseRecurrence {
 			(
 				$occSingleDayRank ?
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s effective %s until %s.'),
+						_('Occurs every %s effective %s until %s.'),
 						$type,
 						$start,
 						$end
 					) :
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s %s effective %s until %s.'),
+						_('Occurs every %s %s effective %s until %s.'),
 						$interval,
 						$type,
 						$start,
@@ -787,14 +773,14 @@ class Recurrence extends BaseRecurrence {
 			(
 				$occSingleDayRank ?
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s effective %s from %s to %s.'),
+						_('Occurs every %s effective %s from %s to %s.'),
 						$type,
 						$start,
 						$startocc,
 						$endocc
 					) :
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s %s effective %s from %s to %s.'),
+						_('Occurs every %s %s effective %s from %s to %s.'),
 						$interval,
 						$type,
 						$start,
@@ -805,12 +791,12 @@ class Recurrence extends BaseRecurrence {
 			(
 				$occSingleDayRank ?
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s effective %s.'),
+						_('Occurs every %s effective %s.'),
 						$type,
 						$start
 					) :
 					sprintf(
-						dgettext('zarafa', 'Occurs every %s %s effective %s.'),
+						_('Occurs every %s %s effective %s.'),
 						$interval,
 						$type,
 						$start
@@ -977,7 +963,7 @@ class Recurrence extends BaseRecurrence {
 		// to change an existing exception.
 		// remove mv properties when needed
 		foreach ($props as $propTag => $propVal) {
-			if ((mapi_prop_type($propTag) & MV_FLAG) == MV_FLAG && is_null($propVal)) {
+			if ((mapi_prop_type($propTag) & MV_FLAG) == MV_FLAG && $propVal === null) {
 				unset($props[$propTag]);
 			}
 		}
@@ -1000,14 +986,7 @@ class Recurrence extends BaseRecurrence {
 	public function deleteExceptionAttachment($base_date): void {
 		$attachments = mapi_message_getattachmenttable($this->message);
 		// Retrieve only exceptions which are stored as embedded messages
-		$attach_res = [
-			RES_PROPERTY,
-			[
-				RELOP => RELOP_EQ,
-				ULPROPTAG => PR_ATTACH_METHOD,
-				VALUE => [PR_ATTACH_METHOD => ATTACH_EMBEDDED_MSG],
-			],
-		];
+		$attach_res = $this->getEmbeddedMessageRestriction();
 		$attachRows = mapi_table_queryallrows($attachments, [PR_ATTACH_NUM], $attach_res);
 
 		foreach ($attachRows as $attachRow) {
@@ -1041,16 +1020,9 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $base_date
 	 */
-	public function getExceptionAttachment($base_date) {
+	public function getExceptionAttachment(int $base_date): mixed {
 		// Retrieve only exceptions which are stored as embedded messages
-		$attach_res = [
-			RES_PROPERTY,
-			[
-				RELOP => RELOP_EQ,
-				ULPROPTAG => PR_ATTACH_METHOD,
-				VALUE => [PR_ATTACH_METHOD => ATTACH_EMBEDDED_MSG],
-			],
-		];
+		$attach_res = $this->getEmbeddedMessageRestriction();
 		$attachments = mapi_message_getattachmenttable($this->message);
 		$attachRows = mapi_table_queryallrows($attachments, [PR_ATTACH_NUM], $attach_res);
 
@@ -1089,10 +1061,8 @@ class Recurrence extends BaseRecurrence {
 	 * @param int   $endocc       end of occurrence since beginning of day in minutes
 	 * @param mixed $tz           the timezone info for this occurrence ( applied to $basedate / $startocc / $endocc )
 	 * @param bool  $reminderonly If TRUE, only add the item if the reminder is set
-	 *
-	 * @return null|false
 	 */
-	public function processOccurrenceItem(&$items, $start, $end, $basedate, $startocc, $endocc, $tz, $reminderonly) {
+	public function processOccurrenceItem(array &$items, mixed $start, int $end, mixed $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): ?false {
 		$exception = $this->isException($basedate);
 		if ($exception) {
 			return false;
@@ -1113,7 +1083,7 @@ class Recurrence extends BaseRecurrence {
 		 * the occurrence and send it in response.
 		 */
 		if (($occstart >= $end || $occend <= $start) && !($occstart == $occend && $occstart == $start)) {
-			return;
+			return null;
 		}
 
 		// Properties for this occurrence are the same as the main object,
@@ -1126,11 +1096,13 @@ class Recurrence extends BaseRecurrence {
 		$newitem["basedate"] = $basedate;
 
 		// If reminderonly is set, only add reminders
-		if ($reminderonly && (!isset($newitem[$this->proptags["reminder"]]) || $newitem[$this->proptags["reminder"]] == false)) {
-			return;
+		if ($reminderonly && (!isset($newitem[$this->proptags["reminder"]]) || $newitem[$this->proptags["reminder"]] === false)) {
+			return null;
 		}
 
 		$items[] = $newitem;
+
+		return null;
 	}
 
 	/**
@@ -1153,7 +1125,7 @@ class Recurrence extends BaseRecurrence {
 				continue;
 			}
 
-			array_push($items, $this->getExceptionProperties($exception));
+			$items[] = $this->getExceptionProperties($exception);
 			if (count($items) == $limit) {
 				break;
 			}
@@ -1167,7 +1139,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @return bool true - if an exception occurs on the given date, false - no exception occurs on the given date
 	 */
-	public function isException($basedate) {
+	public function isException(int $basedate): bool {
 		if ($this->isDeleteException($basedate)) {
 			return true;
 		}
@@ -1184,7 +1156,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function isDeleteException($basedate): bool {
+	public function isDeleteException(int $basedate): bool {
 		// Check if the occurrence is deleted on the specified date
 		foreach ($this->recur["deleted_occurrences"] as $deleted) {
 			if ($this->isSameDay($deleted, $basedate)) {
@@ -1200,7 +1172,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @param mixed $basedate
 	 */
-	public function getChangeException($basedate) {
+	public function getChangeException(int $basedate): array|false {
 		// Check if the occurrence is modified on the specified date
 		foreach ($this->recur["changed_occurrences"] as $changed) {
 			if ($this->isSameDay($changed["basedate"], $basedate)) {
@@ -1219,7 +1191,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @return bool Returns TRUE when both dates are on the same day
 	 */
-	public function isSameDay($date1, $date2) {
+	public function isSameDay(int $date1, int $date2): bool {
 		$time1 = $this->gmtime($date1);
 		$time2 = $this->gmtime($date2);
 
@@ -1241,7 +1213,7 @@ class Recurrence extends BaseRecurrence {
 	 *                                   message to the attachment by default. False if only the $exception_recips changes should
 	 *                                   be applied.
 	 */
-	public function setExceptionRecipients($message, $exception_recips, $copy_orig_recips = true): void {
+	public function setExceptionRecipients(mixed $message, array $exception_recips, bool $copy_orig_recips = true): void {
 		if (isset($exception_recips['add']) || isset($exception_recips['remove']) || isset($exception_recips['modify'])) {
 			$this->setDeltaExceptionRecipients($message, $exception_recips, $copy_orig_recips);
 		}
@@ -1258,13 +1230,12 @@ class Recurrence extends BaseRecurrence {
 	 *  - "remove": This contains an array of recipients which must be removed
 	 *  - "modify": This contains an array of recipients which must be modified
 	 *
-	 * @param mixed $exception
 	 * @param array $exception_recips list of recipients
 	 * @param bool  $copy_orig_recips True to copy all recipients which are on the original
 	 *                                message to the attachment by default. False if only the $exception_recips changes should
 	 *                                be applied.
 	 */
-	public function setDeltaExceptionRecipients($exception, $exception_recips, $copy_orig_recips): void {
+	public function setDeltaExceptionRecipients(mixed $exception, array $exception_recips, bool $copy_orig_recips): void {
 		// Check if the recipients from the original message should be copied,
 		// if so, open the recipient table of the parent message and apply all
 		// rows on the target recipient.
@@ -1316,7 +1287,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param resource $message          exception attachment of recurring item
 	 * @param array    $exception_recips list of recipients
 	 */
-	public function setAllExceptionRecipients($message, $exception_recips): void {
+	public function setAllExceptionRecipients(mixed $message, array $exception_recips): void {
 		$deletedRecipients = [];
 		$useMessageRecipients = false;
 
@@ -1398,7 +1369,7 @@ class Recurrence extends BaseRecurrence {
 	 *
 	 * @psalm-return false|list<mixed>
 	 */
-	public function getAllExceptions() {
+	public function getAllExceptions(): array|false {
 		if (!empty($this->recur["changed_occurrences"])) {
 			$result = [];
 			foreach ($this->recur["changed_occurrences"] as $exception) {
@@ -1419,7 +1390,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param array $recipients   recipients list of message
 	 * @param bool  $isException  true if we are processing recipient of exception
 	 */
-	public function addOrganizer($messageProps, &$recipients, $isException = false): void {
+	public function addOrganizer(array $messageProps, array &$recipients, bool $isException = false): void {
 		$hasOrganizer = false;
 		// Check if meeting already has an organizer.
 		foreach ($recipients as $key => $recipient) {
@@ -1448,6 +1419,22 @@ class Recurrence extends BaseRecurrence {
 			// Add organizer to recipients list.
 			array_unshift($recipients, $organizer);
 		}
+	}
+
+	/**
+	 * Returns restriction array for filtering embedded message attachments.
+	 *
+	 * @return array restriction array for ATTACH_EMBEDDED_MSG
+	 */
+	private function getEmbeddedMessageRestriction(): array {
+		return [
+			RES_PROPERTY,
+			[
+				RELOP => RELOP_EQ,
+				ULPROPTAG => PR_ATTACH_METHOD,
+				VALUE => [PR_ATTACH_METHOD => ATTACH_EMBEDDED_MSG],
+			],
+		];
 	}
 }
 

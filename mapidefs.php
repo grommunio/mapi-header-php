@@ -346,6 +346,16 @@ define('DT_LOCAL', 0x00030000);
 define('DT_WAN', 0x00040000);
 define('DT_NOT_SPECIFIC', 0x00050000);
 
+/* Distribution list member types */
+define('DL_USER', 0xC3);              // 195 - Individual user
+define('DL_USER2', 0xD3);             // 211 - Individual user variant
+define('DL_USER3', 0xE3);             // 227 - Individual user variant
+define('DL_EXTERNAL_MEMBER', 0x00);   // 0 - One-off (external) contact
+define('DL_DIST', 0xB4);              // 180 - Distribution list
+define('DL_USER_AB', 0xB5);           // 181 - Address book user
+define('DL_DIST_AB', 0xB6);           // 182 - Address book distribution list
+define('WAB_GUID', pack("H*", "C091ADD3519DCF11A4A900AA0047FAA4"));
+
 /* For folder hierarchy tables */
 define('DT_FOLDER', 0x01000000);
 define('DT_FOLDER_LINK', 0x02000000);
@@ -464,7 +474,7 @@ define('pbGlobalProfileSectionGuid', makeGuid("{C8B0DB13-05AA-1A10-9BB0-00AA002F
 /* Zarafa Contacts provider GUID */
 define('ZARAFA_CONTACTS_GUID', makeGuid("{30047F72-92E3-DA4F-B86A-E52A7FE46571}"));
 
-/* GUIDs fpr store UID's Providers */
+/* GUIDs for store UID's Providers */
 define('MUID_STORE_WRAP_GUID', makeGuid("{10BBA138-E505-1A10-A1BB-08002B2A56C2}"));
 define('MUID_STORE_PRIVATE_GUID', makeGuid("{20FA551B-66AA-CD11-9BC8-00AA002FC45A}"));
 define('MUID_STORE_PUBLIC_GUID', makeGuid("{1002831C-66AA-CD11-9BC8-00AA002FC45A}"));

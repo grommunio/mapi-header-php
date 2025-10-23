@@ -4,6 +4,12 @@
  * SPDX-FileCopyrightText: Copyright 2025 grommunio GmbH
  */
 
+// Guard to prevent multiple inclusions and conflicts with real MAPI extension
+if (defined('MAPI_STUB_LOADED') || extension_loaded('mapi')) {
+	return;
+}
+define('MAPI_STUB_LOADED', true);
+
 class resource {}
 
 /**

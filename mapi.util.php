@@ -7,6 +7,7 @@
  */
 
 define('NOERROR', 0);
+define('SECONDS_PER_DAY', 86400);
 
 // Load all mapi defs
 mapi_load_mapidefs(1);
@@ -24,30 +25,34 @@ mapi_load_mapidefs(1);
  *
  * A GUID is normally represented in the following form:
  *  {00062008-0000-0000-C000-000000000046}
- *
- * @param string $guid
  */
-function makeGuid($guid): string {
+function makeGuid(string $guid): string {
 	return pack("vvvv", hexdec(substr($guid, 5, 4)), hexdec(substr($guid, 1, 4)), hexdec(substr($guid, 10, 4)), hexdec(substr($guid, 15, 4))) . hex2bin(substr($guid, 20, 4)) . hex2bin(substr($guid, 25, 12));
 }
 
 /**
  * Function to get a human readable string from a MAPI error code.
  *
- * @param mixed $errcode the MAPI error code, if not given, we use mapi_last_hresult
- *
  * @return string The defined name for the MAPI error code
  */
-function get_mapi_error_name($errcode = null) {
+function get_mapi_error_name(mixed $errcode = null): string {
+	static $errorCache = null;
+
 	if ($errcode === null) {
 		$errcode = mapi_last_hresult();
 	}
 
-	if (strcasecmp(substr($errcode, 0, 2), '0x') === 0) {
+	if (strncasecmp((string) $errcode, '0x', 2) === 0) {
 		$errcode = hexdec($errcode);
 	}
 
-	if ($errcode !== 0) {
+	if ($errcode === 0) {
+		return "NOERROR";
+	}
+
+	// Build cache on first call for performance
+	if ($errorCache === null) {
+		$errorCache = [];
 		// Retrieve constants categories, MAPI error names are defined in gromox.
 		foreach (get_defined_constants(true)['Core'] as $key => $value) {
 			/*
@@ -56,21 +61,16 @@ function get_mapi_error_name($errcode = null) {
 			 * we have to manually typecast value to integer, so float will be converted in integer,
 			 * but still its out of bound for integer limit so it will be auto adjusted to minus value
 			 */
-			if ($errcode == (int) $value) {
-				// Check that we have an actual MAPI error or warning definition
-				$prefix = substr($key, 0, 7);
-				if ($prefix == "MAPI_E_" || $prefix == "MAPI_W_") {
-					return $key;
-				}
-				$prefix = substr($key, 0, 2);
-				if ($prefix == "ec") {
-					return $key;
-				}
+			if (strncmp($key, "MAPI_E_", 7) === 0 ||
+				strncmp($key, "MAPI_W_", 7) === 0 ||
+				strncmp($key, "ec", 2) === 0) {
+				$errorCache[(int) $value] = $key;
 			}
 		}
 	}
-	else {
-		return "NOERROR";
+
+	if (isset($errorCache[$errcode])) {
+		return $errorCache[$errcode];
 	}
 
 	// error code not found, return hex value (this is a fix for 64-bit systems, we can't use the dechex() function for this)
@@ -83,13 +83,8 @@ function get_mapi_error_name($errcode = null) {
  * Parses properties from an array of strings. Each "string" may be either an ULONG, which is a direct property ID,
  * or a string with format "PT_TYPE:{GUID}:StringId" or "PT_TYPE:{GUID}:0xXXXX" for named
  * properties.
- *
- * @param mixed $store
- * @param mixed $mapping
- *
- * @return array
  */
-function getPropIdsFromStrings($store, $mapping) {
+function getPropIdsFromStrings(mixed $store, array $mapping): array {
 	$props = [];
 
 	$ids = ["name" => [], "id" => [], "guid" => [], "type" => []]; // this array stores all the information needed to retrieve a named property
@@ -121,7 +116,7 @@ function getPropIdsFromStrings($store, $mapping) {
 			// have we used this guid before?
 			if (!defined($split[1])) {
 				if (!array_key_exists($split[1], $guids)) {
-					$guids[$split[1]] = makeguid($split[1]);
+					$guids[$split[1]] = makeGuid($split[1]);
 				}
 				$guid = $guids[$split[1]];
 			}
@@ -162,17 +157,12 @@ function getPropIdsFromStrings($store, $mapping) {
  * and returns error for that particular property, probable errors
  * that can be returned as value can be MAPI_E_NOT_FOUND, MAPI_E_NOT_ENOUGH_MEMORY.
  *
- * @param int   $property  Property to check for error
- * @param array $propArray An array of properties
- *
- * @return bool|mixed Gives back false when there is no error, if there is, gives the error
+ * @return false|mixed Gives back false when there is no error, if there is, gives the error
  */
-function propIsError($property, $propArray) {
-	if (array_key_exists(mapi_prop_tag(PT_ERROR, mapi_prop_id($property)), $propArray)) {
-		return $propArray[mapi_prop_tag(PT_ERROR, mapi_prop_id($property))];
-	}
+function propIsError(int $property, array $propArray): mixed {
+	$errorTag = mapi_prop_tag(PT_ERROR, mapi_prop_id($property));
 
-	return false;
+	return $propArray[$errorTag] ?? false;
 }
 
 /**
@@ -191,7 +181,7 @@ function propIsError($property, $propArray) {
  *
  * @psalm-return list<mixed>
  */
-function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequested): array {
+function getCalendarItems(mixed $store, mixed $calendar, int $viewstart, int $viewend, array $propsrequested): array {
 	$result = [];
 	$properties = getPropIdsFromStrings($store, [
 		"duedate" => "PT_SYSTIME:PSETID_Appointment:" . PidLidAppointmentEndWhole,
@@ -265,12 +255,12 @@ function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequest
 			foreach ($occurrences as $occurrence) {
 				// The occurrence takes all properties from the main row, but overrides some properties (like start and end obviously)
 				$item = $occurrence + $row;
-				array_push($items, $item);
+				$items[] = $item;
 			}
 		}
 		else {
 			// Normal item, it matched the search criteria and therefore overlaps the interval <$viewstart, $viewend>
-			array_push($items, $row);
+			$items[] = $row;
 		}
 
 		$result = array_merge($result, $items);
@@ -285,32 +275,23 @@ function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequest
  * Compares two entryIds. It is possible to have two different entryIds that should match as they
  * represent the same object (in multiserver environments).
  *
- * @param mixed $entryId1 EntryID
- * @param mixed $entryId2 EntryID
- *
  * @return bool Result of the comparison
  */
-function compareEntryIds($entryId1, $entryId2) {
+function compareEntryIds(mixed $entryId1, mixed $entryId2): bool {
 	if (!is_string($entryId1) || !is_string($entryId2)) {
 		return false;
 	}
 
-	if ($entryId1 === $entryId2) {
-		// if normal comparison succeeds then we can directly say that entryids are same
-		return true;
-	}
-
-	return false;
+	// if normal comparison succeeds then we can directly say that entryids are same
+	return $entryId1 === $entryId2;
 }
 
 /**
  * Creates a goid from an ical uuid.
  *
- * @param string $uid
- *
  * @return string binary string representation of goid
  */
-function getGoidFromUid($uid) {
+function getGoidFromUid(string $uid): string {
 	return hex2bin("040000008200E00074C5B7101A82E0080000000000000000000000000000000000000000" .
 				bin2hex(pack("V", 12 + strlen($uid)) . "vCal-Uid" . pack("V", 1) . $uid));
 }
@@ -318,11 +299,9 @@ function getGoidFromUid($uid) {
 /**
  * Returns zero terminated goid. It is required for backwards compatibility.
  *
- * @param mixed $uid
- *
  * @return string an OL compatible GlobalObjectID
  */
-function getGoidFromUidZero($uid) {
+function getGoidFromUidZero(string $uid): string {
 	if (strlen((string) $uid) <= 64) {
 		return hex2bin("040000008200E00074C5B7101A82E0080000000000000000000000000000000000000000" .
 			bin2hex(pack("V", 13 + strlen((string) $uid)) . "vCal-Uid" . pack("V", 1) . $uid) . "00");
@@ -334,11 +313,9 @@ function getGoidFromUidZero($uid) {
 /**
  * Creates an ical uuid from a goid.
  *
- * @param string $goid
- *
  * @return null|string ical uuid
  */
-function getUidFromGoid($goid) {
+function getUidFromGoid(string $goid): ?string {
 	// check if "vCal-Uid" is somewhere in outlookid case-insensitive
 	$uid = stristr($goid, "vCal-Uid");
 	if ($uid !== false) {
@@ -359,31 +336,48 @@ function getUidFromGoid($goid) {
  *
  * @example prop2Str(0x0037001e) => 'PR_SUBJECT'
  *
- * @param mixed $property
- *
  * @return string the symbolic name of the property tag
  */
-function prop2Str($property) {
-	if (is_integer($property)) {
-		// Retrieve constants categories, zcore provides them in 'Core'
-		foreach (get_defined_constants(true)['Core'] as $key => $value) {
-			if ($property == $value && str_starts_with($key, 'PR_')) {
-				return $key;
+function prop2Str(mixed $property): string {
+	static $propertyCache = null;
+
+	if (is_int($property)) {
+		// Build cache on first call for performance
+		if ($propertyCache === null) {
+			$propertyCache = [];
+			foreach (get_defined_constants(true)['Core'] as $key => $value) {
+				if (str_starts_with($key, 'PR_')) {
+					$propertyCache[$value] = $key;
+				}
 			}
 		}
 
-		return sprintf("0x%08X", $property);
+		return $propertyCache[$property] ?? sprintf("0x%08X", $property);
 	}
 
 	return $property;
 }
 
 /**
- * Converts all constants of restriction into a human readable strings.
- *
- * @param mixed $restriction
+ * Converts RELOP constant to human readable string.
  */
-function simplifyRestriction($restriction) {
+function relOpToString(int $relOp): string {
+	return match ($relOp) {
+		RELOP_LT => "RELOP_LT",
+		RELOP_LE => "RELOP_LE",
+		RELOP_GT => "RELOP_GT",
+		RELOP_GE => "RELOP_GE",
+		RELOP_EQ => "RELOP_EQ",
+		RELOP_NE => "RELOP_NE",
+		RELOP_RE => "RELOP_RE",
+		default => "",
+	};
+}
+
+/**
+ * Converts all constants of restriction into a human readable strings.
+ */
+function simplifyRestriction(mixed $restriction): mixed {
 	if (!is_array($restriction)) {
 		return $restriction;
 	}
@@ -448,31 +442,7 @@ function simplifyRestriction($restriction) {
 
 			unset($restriction[1]);
 
-			// relop flags
-			$relOpFlags = "";
-			if ($relOp == RELOP_LT) {
-				$relOpFlags = "RELOP_LT";
-			}
-			elseif ($relOp == RELOP_LE) {
-				$relOpFlags = "RELOP_LE";
-			}
-			elseif ($relOp == RELOP_GT) {
-				$relOpFlags = "RELOP_GT";
-			}
-			elseif ($relOp == RELOP_GE) {
-				$relOpFlags = "RELOP_GE";
-			}
-			elseif ($relOp == RELOP_EQ) {
-				$relOpFlags = "RELOP_EQ";
-			}
-			elseif ($relOp == RELOP_NE) {
-				$relOpFlags = "RELOP_NE";
-			}
-			elseif ($relOp == RELOP_RE) {
-				$relOpFlags = "RELOP_RE";
-			}
-
-			$restriction[1]["RELOP"] = $relOpFlags;
+			$restriction[1]["RELOP"] = relOpToString($relOp);
 			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
 			$restriction[1]["VALUE"] = is_array($propValue) ? $propValue[$propTag] : $propValue;
 			break;
@@ -523,7 +493,7 @@ function simplifyRestriction($restriction) {
 
 			unset($restriction[1]);
 
-			$restriction[1]["ULPROPTAG1"] = is_string($propTag1) ? $proptag1 : prop2Str($proptag1);
+			$restriction[1]["ULPROPTAG1"] = is_string($propTag1) ? $propTag1 : prop2Str($propTag1);
 			$restriction[1]["ULPROPTAG2"] = is_string($propTag2) ? $propTag2 : prop2Str($propTag2);
 			break;
 
@@ -557,32 +527,8 @@ function simplifyRestriction($restriction) {
 
 			unset($restriction[1]);
 
-			// relop flags
-			$relOpFlags = "";
-			if ($relOp == RELOP_LT) {
-				$relOpFlags = "RELOP_LT";
-			}
-			elseif ($relOp == RELOP_LE) {
-				$relOpFlags = "RELOP_LE";
-			}
-			elseif ($relOp == RELOP_GT) {
-				$relOpFlags = "RELOP_GT";
-			}
-			elseif ($relOp == RELOP_GE) {
-				$relOpFlags = "RELOP_GE";
-			}
-			elseif ($relOp == RELOP_EQ) {
-				$relOpFlags = "RELOP_EQ";
-			}
-			elseif ($relOp == RELOP_NE) {
-				$relOpFlags = "RELOP_NE";
-			}
-			elseif ($relOp == RELOP_RE) {
-				$relOpFlags = "RELOP_RE";
-			}
-
 			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
-			$restriction[1]["RELOP"] = $relOpFlags;
+			$restriction[1]["RELOP"] = relOpToString($relOp);
 			$restriction[1]["CB"] = $propValue;
 			break;
 

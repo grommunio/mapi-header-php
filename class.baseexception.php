@@ -55,18 +55,18 @@ class BaseException extends Exception {
 	public $notificationType = "";
 
 	/**
-	 * Constructs the exception.
-	 *
-	 * @param string    $errorMessage
-	 * @param int       $code
-	 * @param Throwable $previous
-	 * @param string    $displayMessage
-	 */
-	public function __construct($errorMessage, $code = 0, $previous = null, /**
 	 * The exception message to show at client side.
+	 *
+	 * @var null|string
 	 */
-		public $displayMessage = null) {
+	public $displayMessage;
+
+	/**
+	 * Constructs the exception.
+	 */
+	public function __construct(string $errorMessage, int $code = 0, ?Throwable $previous = null, ?string $displayMessage = null) {
 		parent::__construct($errorMessage, (int) $code, $previous);
+		$this->displayMessage = $displayMessage;
 	}
 
 	/**
@@ -80,11 +80,7 @@ class BaseException extends Exception {
 	 * Returns message that should be sent to client to display.
 	 */
 	public function getDisplayMessage(): string {
-		if (!is_null($this->displayMessage)) {
-			return $this->displayMessage;
-		}
-
-		return $this->getMessage();
+		return $this->displayMessage ?? $this->getMessage();
 	}
 
 	/**
@@ -120,14 +116,17 @@ class BaseException extends Exception {
 	}
 
 	/**
+	 * Returns whether this exception has been handled.
+	 */
+	public function isHandled(): bool {
+		return $this->isHandled;
+	}
+
+	/**
 	 * Returns base path of the file where exception occurred.
 	 */
 	public function getBaseFile(): string {
-		if (is_null($this->baseFile)) {
-			$this->baseFile = basename(parent::getFile());
-		}
-
-		return $this->baseFile;
+		return $this->baseFile ??= basename(parent::getFile());
 	}
 
 	/**
@@ -152,13 +151,28 @@ class BaseException extends Exception {
 	}
 
 	/**
+	 * Sets the flag to allow showing detailed exception messages.
+	 */
+	public function setShowDetailsMessage(): void {
+		$this->allowToShowDetailsMessage = true;
+	}
+
+	/**
 	 * Returns details of the error message if allowToShowDetailsMessage is set.
+	 * Includes MAPI error code, exception message, JSON request, and backtrace.
 	 *
 	 * @return string returns details error message
 	 */
 	public function getDetailsMessage(): string {
-		return $this->allowToShowDetailsMessage ? $this->__toString() : '';
-	}
+		if (!$this->allowToShowDetailsMessage) {
+			return '';
+		}
 
-	// @TODO getTrace and getTraceAsString
+		return 'MAPIException Code [' . get_mapi_error_name($this->getCode()) . ']' .
+			PHP_EOL . PHP_EOL . 'Message: ' . $this->getMessage() .
+			PHP_EOL . PHP_EOL . 'Error: ' . mapi_strerror($this->getCode()) .
+			PHP_EOL . PHP_EOL . 'BaseException in ' . $this->getFile() . ':' . $this->getLine() .
+			PHP_EOL . PHP_EOL . 'Stack trace:' .
+			PHP_EOL . PHP_EOL . $this->getTraceAsString();
+	}
 }
