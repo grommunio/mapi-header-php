@@ -3831,7 +3831,9 @@ class Meetingrequest {
 	private function getMessageRecipients(mixed $message, ?array $restriction = null): array {
 		$recipientTable = mapi_message_getrecipienttable($message);
 
-		return mapi_table_queryallrows($recipientTable, $this->recipprops, $restriction);
+		return empty($restriction) ?
+			mapi_table_queryallrows($recipientTable, $this->recipprops) :
+			mapi_table_queryallrows($recipientTable, $this->recipprops, $restriction);
 	}
 
 	/**
