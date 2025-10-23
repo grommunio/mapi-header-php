@@ -1268,7 +1268,7 @@ class Meetingrequest {
 		if ($this->checkCalendarWriteAccess($this->store) !== true) {
 			// Throw an exception that we don't have write permissions on calendar folder,
 			// error message will be filled by module
-			throw new MAPIException(null, MAPI_E_NO_ACCESS);
+			throw new MAPIException(_("Insufficient permissions"), MAPI_E_NO_ACCESS);
 		}
 
 		$messageProps = mapi_getprops($this->message, [PR_ENTRYID, $this->proptags['recurring']]);
@@ -3845,7 +3845,7 @@ class Meetingrequest {
 	 */
 	private function ensureCalendarWriteAccess(mixed $store): void {
 		if ($this->checkCalendarWriteAccess($store) !== true) {
-			throw new MAPIException(null, MAPI_E_NO_ACCESS);
+			throw new MAPIException(_("Insufficient permissions"), MAPI_E_NO_ACCESS);
 		}
 	}
 }
