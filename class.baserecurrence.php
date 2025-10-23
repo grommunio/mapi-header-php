@@ -1777,11 +1777,11 @@ abstract class BaseRecurrence {
 					for ($wday = 0; $wday < 7 && ($limit == 0 || count($items) < $limit); ++$wday) {
 						$daynow = $now + $wday * 60 * 60 * 24;
 						if ($daynow < $daystart) {
-							continue; // DO NOT change it to break!
+							continue; // @phpcs:ignore - intentional continue, not break
 						}
 						// checks whether the next coming day in recurring pattern is less than or equal to end day of the recurring item
 						if ($daynow > $dayend) {
-							break;
+							break; // @phpcs:ignore - intentional break, not continue
 						}
 						$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
 						if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
