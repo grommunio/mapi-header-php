@@ -1777,7 +1777,7 @@ abstract class BaseRecurrence {
 					for ($wday = 0; $wday < 7 && ($limit == 0 || count($items) < $limit); ++$wday) {
 						$daynow = $now + $wday * 60 * 60 * 24;
 						if ($daynow < $daystart) {
-							break;
+							continue; // DO NOT change it to break!
 						}
 						// checks whether the next coming day in recurring pattern is less than or equal to end day of the recurring item
 						if ($daynow > $dayend) {
