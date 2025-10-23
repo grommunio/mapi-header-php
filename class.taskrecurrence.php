@@ -36,7 +36,7 @@ class TaskRecurrence extends BaseRecurrence {
 		$properties["duedate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDueDate;
 		$properties["reset_reminder"] = "PT_BOOLEAN:PSETID_Task:0x8107";
 		$properties["dead_occurrence"] = "PT_BOOLEAN:PSETID_Task:0x8109";
-		$properties["datecompleted"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
+		$properties["date_completed"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
 		$properties["recurring_data"] = "PT_BINARY:PSETID_Task:0x8116";
 		$properties["actualwork"] = "PT_LONG:PSETID_Task:0x8110";
 		$properties["totalwork"] = "PT_LONG:PSETID_Task:0x8111";
@@ -168,7 +168,7 @@ class TaskRecurrence extends BaseRecurrence {
 
 				// Didn't get next occurrence, probably this is the last one, so recurrence ends here
 				$props[$this->proptags["dead_occurrence"]] = true;
-				$props[$this->proptags["datecompleted"]] = $this->action['datecompleted'];
+				$props[$this->proptags["date_completed"]] = $this->action['date_completed'];
 				$props[$this->proptags["task_f_creator"]] = true;
 
 				// OL props
@@ -240,9 +240,10 @@ class TaskRecurrence extends BaseRecurrence {
 		if ($markComplete) {
 			$taskItemProps[$this->proptags["reset_reminder"]] = false;
 			$taskItemProps[$this->proptags["reminder"]] = false;
-			$taskItemProps[$this->proptags["datecompleted"]] = $this->action["datecompleted"];
+			$taskItemProps[$this->proptags["date_completed"]] = $this->action["date_completed"];
 
-			unset($this->action[$this->proptags['datecompleted']]);
+
+			unset($this->action[$this->proptags['date_completed']]);
 		}
 
 		// Recurrence ends for this item

@@ -139,7 +139,7 @@ class TaskRequest {
 		$properties["taskaccepted"] = "PT_BOOLEAN:PSETID_Task:0x8108";
 		$properties["task_acceptance_state"] = "PT_LONG:PSETID_Task:0x812a";
 		$properties["ownership"] = "PT_LONG:PSETID_Task:0x8129";
-		$properties["datecompleted"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
+		$properties["date_completed"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
 		$properties["recurring"] = "PT_BOOLEAN:PSETID_Task:0x8126";
 		$properties["startdate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskStartDate;
 		$properties["duedate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDueDate;
@@ -1307,7 +1307,7 @@ class TaskRequest {
 
 		mapi_setprops($this->message, [
 			$this->props['complete'] => true,
-			$this->props['datecompleted'] => time(),
+			$this->props['date_completed'] => time(),
 			$this->props['status'] => 2,
 			$this->props['percent_complete'] => 1,
 		]);
@@ -1340,7 +1340,7 @@ class TaskRequest {
 		$subProperties["subject"] = PR_SUBJECT;
 		$subProperties["convtopic"] = PR_CONVERSATION_TOPIC;
 		$subProperties["complete"] = "PT_BOOLEAN:PSETID_Task:" . PidLidTaskComplete;
-		$subProperties["datecompleted"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
+		$subProperties["date_completed"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDateCompleted;
 		$subProperties["recurring"] = "PT_BOOLEAN:PSETID_Task:0x8126";
 		$subProperties["startdate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskStartDate;
 		$subProperties["duedate"] = "PT_SYSTIME:PSETID_Task:" . PidLidTaskDueDate;
