@@ -1523,7 +1523,7 @@ class Meetingrequest {
 							$this->isMeetingCancellation($messageClass);
 
 		$calendarItem = $isMeetingMessage ?
-			$this->getCorrespondentCalendarItem(true) :  // Meeting request/response/cancellation mail
+			$this->getCorrespondentCalendarItem(true) : // Meeting request/response/cancellation mail
 			$this->message;  // Calendar item
 
 		// Even if we have received request/response for exception/occurrence then also

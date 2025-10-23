@@ -62,8 +62,8 @@ function get_mapi_error_name(mixed $errcode = null): string {
 			 * but still its out of bound for integer limit so it will be auto adjusted to minus value
 			 */
 			if (strncmp($key, "MAPI_E_", 7) === 0 ||
-			    strncmp($key, "MAPI_W_", 7) === 0 ||
-			    strncmp($key, "ec", 2) === 0) {
+				strncmp($key, "MAPI_W_", 7) === 0 ||
+				strncmp($key, "ec", 2) === 0) {
 				$errorCache[(int) $value] = $key;
 			}
 		}
