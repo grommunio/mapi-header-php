@@ -202,6 +202,8 @@ class TaskRecurrence extends BaseRecurrence {
 
 			return !empty($items) ? $items[0] : false;
 		}
+
+		return null;
 	}
 
 	/**
