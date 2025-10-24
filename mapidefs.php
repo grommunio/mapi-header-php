@@ -501,6 +501,7 @@ define('ecRightsContact', 0x00000200);
 define('ecRightsFolderVisible', 0x00000400);
 define('ecRightsFreeBusySimple', 0x00000800);
 define('ecRightsFreeBusyDetailed', 0x00001000);
+define('ecRightsGromoxStoreOwner', 0x00002000);
 
 define('ecRightsAll', ecRightsReadAny | ecRightsCreate | ecRightsEditOwned | ecRightsDeleteOwned | ecRightsEditAny | ecRightsDeleteAny | ecRightsCreateSubfolder | ecRightsFolderAccess | ecRightsFolderVisible);
 define('ecRightsSecretary', ecRightsReadAny | ecRightsCreate | ecRightsEditOwned | ecRightsDeleteOwned | ecRightsEditAny | ecRightsDeleteAny | ecRightsFolderVisible);
@@ -514,7 +515,6 @@ define('ecRightsEditor', ecRightsReadAny | ecRightsFolderVisible | ecRightsCreat
 define('ecRightsPublishingEditor', ecRightsReadAny | ecRightsFolderVisible | ecRightsCreate | ecRightsDeleteOwned | ecRightsEditOwned | ecRightsEditAny | ecRightsDeleteAny | ecRightsCreateSubfolder);
 define('ecRightsDefault', ecRightsNone | ecRightsFolderVisible);
 define('ecRightsDefaultPublic', ecRightsReadAny | ecRightsFolderVisible);
-define('ecRightsAdmin', 0x00001000);
 define('ecRightsAllMask', 0x000015FB);
 
 // Right change indication
