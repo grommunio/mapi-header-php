@@ -1,3 +1,15 @@
+2.0 (2025-10-24)
+================
+* Correct logic bug in TaskRequest::isTaskRequestUpdated() that could
+  cause soft-deleted task requests to be incorrectly processed when an
+  associated task exists in the active folder
+* Enhanced recurrence pattern validation with better error handling for 
+  invalid nday values
+* More robust address book entry comparison in compareABEntryIDs()
+* Code quality improvements and stricter type safety throughout
+* Performance optimizations through optimized function usage (str*)
+
+
 1.7 (2025-09-26)
 ================
 * Drop support for PHP <= 8.1
