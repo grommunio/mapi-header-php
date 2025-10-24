@@ -1587,8 +1587,6 @@ abstract class BaseRecurrence {
 
 	/**
 	 * toGMT returns a timestamp in GMT time for the time and timezone given.
-	 *
-	 * @param mixed $date
 	 */
 	public function toGMT(mixed $tz, int $date): int {
 		if (!isset($tz['timezone'])) {
@@ -1601,8 +1599,6 @@ abstract class BaseRecurrence {
 
 	/**
 	 * fromGMT returns a timestamp in the local timezone given from the GMT time given.
-	 *
-	 * @param mixed $date
 	 */
 	public function fromGMT(mixed $tz, int $date): int {
 		$offset = $this->getTimezone($tz, $date);
@@ -1612,8 +1608,6 @@ abstract class BaseRecurrence {
 
 	/**
 	 * Function to get timestamp of the beginning of the day of the timestamp given.
-	 *
-	 * @param mixed $date
 	 *
 	 * @return false|int timestamp referring to same day but at 00:00:00
 	 */
@@ -1626,8 +1620,6 @@ abstract class BaseRecurrence {
 	/**
 	 * Function to get timestamp of the beginning of the month of the timestamp given.
 	 *
-	 * @param mixed $date
-	 *
 	 * @return false|int Timestamp referring to same month but on the first day, and at 00:00:00
 	 */
 	public function monthStartOf(int $date): false|int {
@@ -1638,8 +1630,6 @@ abstract class BaseRecurrence {
 
 	/**
 	 * Function to get timestamp of the beginning of the year of the timestamp given.
-	 *
-	 * @param mixed $date
 	 *
 	 * @return false|int Timestamp referring to the same year but on Jan 01, at 00:00:00
 	 */
@@ -1656,9 +1646,7 @@ abstract class BaseRecurrence {
 	 * @param int $start start time of the interval (GMT)
 	 * @param int $end   end time of the interval (GMT)
 	 *
-	 * @return (array|mixed)[]
-	 *
-	 * @psalm-return array<int, T|array>
+	 * @return array<int, array|mixed>
 	 */
 	public function getItems(int $start, int $end, mixed $limit = 0, mixed $remindersonly = false): array {
 		$items = [];
@@ -1987,8 +1975,8 @@ abstract class BaseRecurrence {
 	 * Function to get all exception items in the given range.
 	 *
 	 * @param array $items reference to the array to be added to
-	 * @param date  $start start of timeframe in GMT TIME
-	 * @param date  $end   end of timeframe in GMT TIME
+	 * @param int   $start start of timeframe in GMT TIME
+	 * @param int   $end   end of timeframe in GMT TIME
 	 */
 	public function processExceptionItems(&$items, $start, $end): void {
 		$limit = 0;

@@ -161,7 +161,7 @@ class TaskRequest {
 	 * Returns TRUE if the message pointed to is an incoming task request and should
 	 * therefore be replied to with doAccept or doDecline().
 	 *
-	 * @param mixed $messageClass message class to use for checking
+	 * @param string|false $messageClass message class to use for checking
 	 *
 	 * @return bool true if this is a task request else false
 	 */
@@ -177,7 +177,7 @@ class TaskRequest {
 	/**
 	 * Returns TRUE if the message pointed to is a returning task request response.
 	 *
-	 * @param mixed $messageClass message class to use for checking
+	 * @param string|false $messageClass message class to use for checking
 	 *
 	 * @return bool true if this is a task request else false
 	 */

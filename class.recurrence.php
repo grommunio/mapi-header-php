@@ -334,9 +334,9 @@ class Recurrence extends BaseRecurrence {
 	 * - reminder time of this item is not before the starttime of the previous recurring item
 	 * - reminder time of the next item is not before the starttime of this item
 	 *
-	 * @param date   $basedate        the base date of the exception (LOCAL time of non-exception occurrence)
-	 * @param string $reminderminutes reminder minutes which is set of the item
-	 * @param date   $startdate       the startdate of the selected item
+	 * @param int $basedate        the base date of the exception (LOCAL time of non-exception occurrence)
+	 * @param int $reminderminutes reminder minutes which is set of the item
+	 * @param int $startdate       the startdate of the selected item
 	 *
 	 * @returns boolean if the reminder minutes value valid (FALSE if either of the rules above are FALSE)
 	 */
@@ -420,8 +420,6 @@ class Recurrence extends BaseRecurrence {
 	 * Note: Before saving this new reminder time (when snoozing), you must check for
 	 *       yourself if this reminder time is earlier than your snooze time, else
 	 *       use your snooze time and not this reminder time.
-	 *
-	 * @param mixed $timestamp
 	 */
 	public function getNextReminderTime(int $timestamp): false|int {
 		/**
@@ -922,9 +920,9 @@ class Recurrence extends BaseRecurrence {
 	/**
 	 * Function which saves the exception data in an attachment.
 	 *
-	 * @param array        $exception_props  the exception data (like any other MAPI appointment)
-	 * @param array        $exception_recips list of recipients
-	 * @param mapi_message $copy_attach_from mapi message from which attachments should be copied
+	 * @param array          $exception_props  the exception data (like any other MAPI appointment)
+	 * @param array          $exception_recips list of recipients
+	 * @param false|resource $copy_attach_from mapi message from which attachments should be copied
 	 */
 	public function createExceptionAttachment($exception_props, $exception_recips = [], $copy_attach_from = false): void {
 		// Create new attachment.
@@ -1017,8 +1015,6 @@ class Recurrence extends BaseRecurrence {
 
 	/**
 	 * Get an exception attachment based on its basedate.
-	 *
-	 * @param mixed $base_date
 	 */
 	public function getExceptionAttachment(int $base_date): mixed {
 		// Retrieve only exceptions which are stored as embedded messages
@@ -1108,8 +1104,6 @@ class Recurrence extends BaseRecurrence {
 	/**
 	 * Function which verifies if on the given date an exception, delete or change, occurs.
 	 *
-	 * @param mixed $basedate
-	 *
 	 * @return bool true - if an exception occurs on the given date, false - no exception occurs on the given date
 	 */
 	public function isException(int $basedate): bool {
@@ -1126,8 +1120,6 @@ class Recurrence extends BaseRecurrence {
 
 	/**
 	 * Returns TRUE if there is a DELETE exception on the given base date.
-	 *
-	 * @param mixed $basedate
 	 */
 	public function isDeleteException(int $basedate): bool {
 		// Check if the occurrence is deleted on the specified date
@@ -1142,8 +1134,6 @@ class Recurrence extends BaseRecurrence {
 
 	/**
 	 * Returns the exception if there is a CHANGE exception on the given base date, or FALSE otherwise.
-	 *
-	 * @param mixed $basedate
 	 */
 	public function getChangeException(int $basedate): array|false {
 		// Check if the occurrence is modified on the specified date
@@ -1158,9 +1148,6 @@ class Recurrence extends BaseRecurrence {
 
 	/**
 	 * Function to see if two dates are on the same day.
-	 *
-	 * @param mixed $date1
-	 * @param mixed $date2
 	 *
 	 * @return bool Returns TRUE when both dates are on the same day
 	 */

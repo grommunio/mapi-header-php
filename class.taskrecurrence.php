@@ -185,7 +185,7 @@ class TaskRecurrence extends BaseRecurrence {
 	/**
 	 * Function which return properties of next occurrence.
 	 *
-	 * @return null|array|false|T startdate/enddate of next occurrence
+	 * @return array|false|null startdate/enddate of next occurrence
 	 */
 	public function getNextOccurrence(): mixed {
 		if ($this->recur) {

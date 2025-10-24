@@ -336,10 +336,10 @@ class Meetingrequest {
 	 * Process every incoming MeetingRequest response.This updates the appointment
 	 * in your calendar to show whether the user has accepted or declined.
 	 *
-	 * @param resource $store        contains the userStore in which the meeting is created
-	 * @param mixed    $calendarItem resource of the calendar item for which this response has arrived
-	 * @param mixed    $basedate     if present the create an exception
-	 * @param array    $messageprops contains message properties
+	 * @param resource  $store        contains the userStore in which the meeting is created
+	 * @param mixed     $calendarItem resource of the calendar item for which this response has arrived
+	 * @param false|int $basedate     if present the create an exception
+	 * @param array     $messageprops contains message properties
 	 */
 	public function processResponse(mixed $store, mixed $calendarItem, mixed $basedate, array $messageprops): ?false {
 		$senderentryid = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
@@ -598,13 +598,13 @@ class Meetingrequest {
 	 * inbox probably) to the calendar. If you don't, it is copied into
 	 * your calendar.
 	 *
-	 * @param bool  $tentative            true if user as tentative accepted the meeting
-	 * @param bool  $sendresponse         true if a response has to be sent to organizer
-	 * @param bool  $move                 true if the meeting request should be moved to the deleted items after processing
-	 * @param mixed $newProposedStartTime contains starttime if user has proposed other time
-	 * @param mixed $newProposedEndTime   contains endtime if user has proposed other time
-	 * @param mixed $basedate             start of day of occurrence for which user has accepted the recurrent meeting
-	 * @param bool  $isImported           true to indicate that MR is imported from .ics or .vcs file else it false.
+	 * @param bool      $tentative            true if user as tentative accepted the meeting
+	 * @param bool      $sendresponse         true if a response has to be sent to organizer
+	 * @param bool      $move                 true if the meeting request should be moved to the deleted items after processing
+	 * @param mixed     $newProposedStartTime contains starttime if user has proposed other time
+	 * @param mixed     $newProposedEndTime   contains endtime if user has proposed other time
+	 * @param false|int $basedate             start of day of occurrence for which user has accepted the recurrent meeting
+	 * @param bool      $isImported           true to indicate that MR is imported from .ics or .vcs file else it false.
 	 *
 	 * @return bool|string $entryid entryid of item which created/updated in calendar
 	 */
@@ -1095,8 +1095,8 @@ class Meetingrequest {
 	 * When an occurrence is decline then false is returned because that
 	 * occurrence is deleted not the recurring item.
 	 *
-	 * @param bool  $sendresponse true if a response has to be sent to organizer
-	 * @param mixed $basedate     if specified contains starttime of day of an occurrence
+	 * @param bool      $sendresponse true if a response has to be sent to organizer
+	 * @param false|int $basedate     if specified contains starttime of day of an occurrence
 	 *
 	 * @return bool true if item is deleted from Calendar else false
 	 */
@@ -1180,7 +1180,7 @@ class Meetingrequest {
 	 * Removes a meeting request from the calendar when the user presses the
 	 * 'remove from calendar' button in response to a meeting cancellation.
 	 *
-	 * @param mixed $basedate if specified contains starttime of day of an occurrence
+	 * @param false|int $basedate if specified contains starttime of day of an occurrence
 	 */
 	public function doRemoveFromCalendar(mixed $basedate): ?false {
 		if ($this->isLocalOrganiser()) {
@@ -1254,7 +1254,7 @@ class Meetingrequest {
 	 * Function can be used to cancel any existing meeting and send cancellation mails to attendees.
 	 * Should only be called from meeting object from calendar.
 	 *
-	 * @param mixed $basedate (optional) basedate of occurrence which should be cancelled
+	 * @param false|int $basedate (optional) basedate of occurrence which should be cancelled
 	 *
 	 * @FIXME cancellation mail is also sent to attendee which has declined the meeting
 	 * @FIXME don't send canellation mail when cancelling meeting from past
@@ -1335,8 +1335,6 @@ class Meetingrequest {
 	 * as a meeting request. The caller has to submit the message. This
 	 * is only used for new MeetingRequests. Pass the appointment item as $message
 	 * in the constructor to do this.
-	 *
-	 * @param mixed $basedate
 	 */
 	public function setMeetingRequest(false|int $basedate = false): void {
 		$props = mapi_getprops($this->message, [$this->proptags['updatecounter']]);
@@ -1491,8 +1489,6 @@ class Meetingrequest {
 	 * the meeting request. You can also call this function instead of 'setMeetingRequest()'
 	 * as it will automatically call setMeetingRequest on this object if it is the first
 	 * call to this function.
-	 *
-	 * @param mixed $basedate
 	 */
 	public function updateMeetingRequest(false|int $basedate = false): void {
 		$messageprops = mapi_getprops($this->message, [$this->proptags['last_updatecounter'], $this->proptags['goid']]);
@@ -1656,7 +1652,7 @@ class Meetingrequest {
 	 * @param int   $prop  proptag of the folder that we want to open
 	 * @param mixed $store {optional} user store from which we need to open default folder
 	 *
-	 * @return resource default folder of store
+	 * @return false|resource default folder of store
 	 */
 	public function openDefaultFolder(int $prop, mixed $store = false): mixed {
 		$entryid = $this->getDefaultFolderEntryID($prop, $store);
@@ -1686,7 +1682,7 @@ class Meetingrequest {
 	 * @param int   $prop  proptag of the folder that we want to open
 	 * @param mixed $store {optional} user store from which we need to open default folder
 	 *
-	 * @return resource default folder of store
+	 * @return false|resource default folder of store
 	 */
 	public function openBaseFolder(int $prop, mixed $store = false): mixed {
 		$entryid = $this->getBaseEntryID($prop, $store);
@@ -1795,12 +1791,12 @@ class Meetingrequest {
 	/**
 	 * Function which sends response to organizer when attendee accepts, declines or proposes new time to a received meeting request.
 	 *
-	 * @param int   $status              response status of attendee
-	 * @param array $proposeNewTimeProps properties of attendee's proposal
-	 * @param mixed $body
-	 * @param mixed $store
-	 * @param mixed $basedate            date of occurrence which attendee has responded
-	 * @param mixed $calFolder
+	 * @param int       $status              response status of attendee
+	 * @param array     $proposeNewTimeProps properties of attendee's proposal
+	 * @param mixed     $body
+	 * @param mixed     $store
+	 * @param false|int $basedate            date of occurrence which attendee has responded
+	 * @param mixed     $calFolder
 	 */
 	public function createResponse($status, $proposeNewTimeProps, $body, $store, $basedate, $calFolder): void {
 		$messageprops = mapi_getprops($this->message, [
@@ -1990,7 +1986,7 @@ class Meetingrequest {
 	 * @param mixed  $calendar         MAPI_folder of user (optional)
 	 * @param bool   $useCleanGlobalId if true then search should be performed on cleanGlobalId(0x23) else globalId(0x3)
 	 *
-	 * @return mixed
+	 * @return array|null
 	 */
 	public function findCalendarItems(string $goid, mixed $calendar = false, bool $useCleanGlobalId = false): ?array {
 		if ($calendar === false) {
@@ -2170,9 +2166,9 @@ class Meetingrequest {
 	 * Function which removes an exception/occurrence from recurrencing meeting
 	 * when a meeting cancellation of an occurrence is processed.
 	 *
-	 * @param mixed    $basedate basedate of an occurrence
-	 * @param mixed    $message  recurring item from which occurrence has to be deleted
-	 * @param resource $store    MAPI_MSG_Store which contains the item
+	 * @param false|int $basedate basedate of an occurrence
+	 * @param mixed     $message  recurring item from which occurrence has to be deleted
+	 * @param resource  $store    MAPI_MSG_Store which contains the item
 	 */
 	public function doRemoveExceptionFromCalendar(mixed $basedate, mixed $message, mixed $store): void {
 		$recurr = new Recurrence($store, $message);
@@ -2201,7 +2197,7 @@ class Meetingrequest {
 	 * Function which sets basedate in globalID of changed occurrence which is to be sent.
 	 *
 	 * @param string              $goid       globalID
-	 * @param mixed               $basedate   of changed occurrence (UTC when $recurrence is provided)
+	 * @param false|int           $basedate   of changed occurrence (UTC when $recurrence is provided)
 	 * @param null|BaseRecurrence $recurrence recurrence helper for timezone conversion
 	 *
 	 * @return false|string globalID with basedate in it
@@ -2297,10 +2293,10 @@ class Meetingrequest {
 	/**
 	 * Function creates meeting item in resource's calendar.
 	 *
-	 * @param resource $message  MAPI_message which is to create in resource's calendar
-	 * @param bool     $cancel   cancel meeting
-	 * @param mixed    $prefix   prefix for subject of meeting
-	 * @param mixed    $basedate
+	 * @param resource  $message  MAPI_message which is to create in resource's calendar
+	 * @param bool      $cancel   cancel meeting
+	 * @param mixed     $prefix   prefix for subject of meeting
+	 * @param false|int $basedate
 	 *
 	 * @return (mixed|resource)[][]
 	 *
@@ -2698,10 +2694,10 @@ class Meetingrequest {
 	 * of same meeting in calendar and we need to remove that exception message and add it to attachment table
 	 * of recurring meeting.
 	 *
-	 * @param resource $recurringItem  reference to MAPI_message of recurring item
-	 * @param resource $occurrenceItem reference to MAPI_message of occurrence
-	 * @param mixed    $basedate       basedate of occurrence
-	 * @param resource $store          user store
+	 * @param resource  $recurringItem  reference to MAPI_message of recurring item
+	 * @param resource  $occurrenceItem reference to MAPI_message of occurrence
+	 * @param false|int $basedate       basedate of occurrence
+	 * @param resource  $store          user store
 	 */
 	public function mergeException(mixed &$recurringItem, mixed &$occurrenceItem, mixed $basedate, mixed $store): void {
 		$recurr = new Recurrence($store, $recurringItem);
@@ -2730,14 +2726,14 @@ class Meetingrequest {
 	/**
 	 * Function which submits meeting request based on arguments passed to it.
 	 *
-	 * @param resource $message        MAPI_message whose meeting request is to be sent
-	 * @param bool     $cancel         if true send request, else send cancellation
-	 * @param mixed    $prefix         subject prefix
-	 * @param mixed    $basedate       basedate for an occurrence
-	 * @param mixed    $recurObject    recurrence object of mr
-	 * @param bool     $copyExceptions When sending update mail for recurring item then we don't send exceptions in attachments
-	 * @param mixed    $modifiedRecips
-	 * @param mixed    $deletedRecips
+	 * @param resource  $message        MAPI_message whose meeting request is to be sent
+	 * @param bool      $cancel         if true send request, else send cancellation
+	 * @param mixed     $prefix         subject prefix
+	 * @param false|int $basedate       basedate for an occurrence
+	 * @param mixed     $recurObject    recurrence object of mr
+	 * @param bool      $copyExceptions When sending update mail for recurring item then we don't send exceptions in attachments
+	 * @param mixed     $modifiedRecips
+	 * @param mixed     $deletedRecips
 	 */
 	public function submitMeetingRequest($message, $cancel, $prefix, $basedate = false, $recurObject = false, $copyExceptions = true, $modifiedRecips = false, $deletedRecips = false): void {
 		$newmessageprops = $messageprops = mapi_getprops($this->message);
@@ -3195,7 +3191,7 @@ class Meetingrequest {
 	/**
 	 * Function which checks that if we have received a meeting response for an updated meeting in organizer's calendar.
 	 *
-	 * @param mixed $basedate basedate of the exception if we want to compare with exception
+	 * @param false|int $basedate basedate of the exception if we want to compare with exception
 	 *
 	 * @return bool true if meeting request is updated later
 	 */
@@ -3247,10 +3243,9 @@ class Meetingrequest {
 	 * 2) duedate has been changed OR
 	 * 3) recurrence pattern has been created, modified or removed.
 	 *
-	 * @param mixed $oldProps
-	 * @param mixed $isRecurrenceChanged for change in recurrence pattern.
-	 *                                   true means Recurrence pattern has been changed,
-	 *                                   so clear all attendees response
+	 * @param bool $isRecurrenceChanged for change in recurrence pattern.
+	 *                                  true means Recurrence pattern has been changed,
+	 *                                  so clear all attendees response
 	 */
 	public function checkSignificantChanges(array $oldProps, mixed $basedate, bool $isRecurrenceChanged = false): void {
 		$message = null;
@@ -3379,11 +3374,11 @@ class Meetingrequest {
 	/**
 	 * Function returns exception item based on the basedate passed.
 	 *
-	 * @param mixed $recurringMessage Resource of Recurring meeting from calendar
-	 * @param mixed $basedate         basedate of exception that needs to be returned
-	 * @param mixed $store            store that contains the recurring calendar item
+	 * @param mixed     $recurringMessage Resource of Recurring meeting from calendar
+	 * @param false|int $basedate         basedate of exception that needs to be returned
+	 * @param mixed     $store            store that contains the recurring calendar item
 	 *
-	 * @return entryid or MAPIMessage resource of exception item
+	 * @return false|resource resource of exception item
 	 */
 	public function getExceptionItem(mixed $recurringMessage, mixed $basedate, mixed $store = false): mixed {
 		$occurItem = false;
