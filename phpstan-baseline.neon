@@ -1,0 +1,1807 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Binary operation "\*" between string and 24 results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 2
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Binary operation "\+" between string and int\<0, 6\> results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 3
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Binary operation "\+" between string and int\<1, max\> results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 2
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Binary operation "\-" between 12 and string results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Binary operation "\-" between float and string results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 2
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Binary operation "\-" between string and 1 results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 3
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Binary operation "\-" between string and float results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Binary operation "\-" between string and int\<0, 6\> results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 7
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Binary operation "\-" between string and string results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 3
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Constant IID_IStream not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Constant PR_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.baserecurrence.php
+
+		-
+			message: '#^Constant MAPI_E_INVALID_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.freebusy.php
+
+		-
+			message: '#^Constant MAPI_E_NOT_FOUND not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.freebusy.php
+
+		-
+			message: '#^Constant PR_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.freebusy.php
+
+		-
+			message: '#^Constant PR_FREEBUSY_ENTRYIDS not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.freebusy.php
+
+		-
+			message: '#^Constant PR_MESSAGE_CLASS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.freebusy.php
+
+		-
+			message: '#^Method FreeBusy\:\:getLocalFreeBusyFolder\(\) should return resource\|false but returns bool\|resource\.$#'
+			identifier: return.type
+			count: 1
+			path: class.freebusy.php
+
+		-
+			message: '#^Method FreeBusy\:\:getLocalFreeBusyMessage\(\) should return resource\|false but returns bool\|resource\.$#'
+			identifier: return.type
+			count: 2
+			path: class.freebusy.php
+
+		-
+			message: '#^Constant MAPI_E_LOGON_FAILED not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant MAPI_E_NETWORK_ERROR not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant MAPI_E_NOT_ENOUGH_MEMORY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant MAPI_E_NOT_FOUND not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant MAPI_E_NO_ACCESS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant MAPI_E_NO_RECIPIENTS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant MAPI_E_UNCONFIGURED not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant MAPI_E_UNKNOWN_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant ecUnknownUser not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.mapiexception.php
+
+		-
+			message: '#^Constant MAPI_E_NO_ACCESS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant MAPI_E_NO_SUPPORT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ACCESS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ATTACHMENT_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ATTACHMENT_HIDDEN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ATTACHMENT_LINKID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ATTACH_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ATTACH_METHOD not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ATTACH_NUM not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_BODY not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_DEFAULT_STORE not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_DISPLAY_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_DISPLAY_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_DISPLAY_TYPE_EX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 19
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_END_DATE not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 52
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_EXCEPTION_STARTTIME not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_FREEBUSY_ENTRYIDS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_HTML not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ICON_INDEX not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_IMPORTANCE not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_IPM_APPOINTMENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 13
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_IPM_OUTBOX_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_IPM_SENTMAIL_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_IPM_WASTEBASKET_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_MAILBOX_OWNER_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_MDB_PROVIDER not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_MESSAGE_CLASS not found\.$#'
+			identifier: constant.notFound
+			count: 37
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_MESSAGE_DELIVERY_TIME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_OBJECT_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_OWNER_APPT_ID not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_PARENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 11
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_PROCESSED not found\.$#'
+			identifier: constant.notFound
+			count: 15
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RCVD_REPRESENTING_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RCVD_REPRESENTING_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RCVD_REPRESENTING_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 24
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RCVD_REPRESENTING_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RCVD_REPRESENTING_SEARCH_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECEIVED_BY_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 6
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECEIVED_BY_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_DISPLAY_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 11
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_PROPOSED not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_PROPOSEDENDTIME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_PROPOSEDSTARTTIME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TRACKSTATUS not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TRACKSTATUS_TIME not found\.$#'
+			identifier: constant.notFound
+			count: 6
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 13
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RESPONSE_REQUESTED not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ROWID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_RTF_COMPRESSED not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SCHDINFO_AUTO_ACCEPT_APPTS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SCHDINFO_DISALLOW_RECURRING_APPTS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SEARCH_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 7
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SENDER_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SEND_INTERNET_ENCODING not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SEND_RICH_INFO not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SENTMAIL_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 12
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 12
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_SEARCH_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_SMTP_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SMTP_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_START_DATE not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_STORE_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_SUBJECT not found\.$#'
+			identifier: constant.notFound
+			count: 20
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_USER_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentCounterProposal not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentEndWhole not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentProposedEndWhole not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentProposedStartWhole not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentRecur not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentSequence not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentStartWhole not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentStateFlags not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidAppointmentSubType not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidBusyStatus not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidClipEnd not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidClipStart not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidExceptionReplaceTime not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidIntendedBusyStatus not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidLocation not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidPrivate not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidRecurrencePattern not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidRecurring not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidReminderDelta not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidReminderSet not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidReminderSignalTime not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidTimeZoneDescription not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PidLidTimeZoneStruct not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant ZARAFA_STORE_PUBLIC_GUID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Method Meetingrequest\:\:createOutgoingMessage\(\) should return resource but returns bool\|resource\.$#'
+			identifier: return.type
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Method Meetingrequest\:\:getExceptionItem\(\) should return resource\|false but returns bool\|resource\.$#'
+			identifier: return.type
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Method Meetingrequest\:\:openBaseFolder\(\) should return resource\|false but returns bool\|resource\.$#'
+			identifier: return.type
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Method Meetingrequest\:\:openCustomUserStore\(\) should return resource but returns bool\|resource\.$#'
+			identifier: return.type
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Method Meetingrequest\:\:openCustomUserStore\(\) should return resource but returns null\.$#'
+			identifier: return.type
+			count: 2
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Method Meetingrequest\:\:openDefaultFolder\(\) should return resource\|false but returns bool\|resource\.$#'
+			identifier: return.type
+			count: 1
+			path: class.meetingrequest.php
+
+		-
+			message: '#^Constant PR_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ATTACHMENT_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ATTACHMENT_HIDDEN not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ATTACHMENT_LINKID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_LONG_FILENAME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_METHOD not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_NUM not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_SIZE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_DISPLAY_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_DISPLAY_TO not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_DISPLAY_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_DISPLAY_TYPE_EX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_EXCEPTION_ENDTIME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_EXCEPTION_STARTTIME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ICON_INDEX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_IMPORTANCE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_MESSAGE_CLASS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_PARENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_DISPLAY_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 14
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TRACKSTATUS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TRACKSTATUS_TIME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_ROWID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SEARCH_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SEND_INTERNET_ENCODING not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SEND_RICH_INFO not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SENSITIVITY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_SEARCH_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PR_SUBJECT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidAppointmentDuration not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidAppointmentEndWhole not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidAppointmentRecur not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidAppointmentStartWhole not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidAppointmentStateFlags not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidAppointmentSubType not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidBusyStatus not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidClipEnd not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidClipStart not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidExceptionReplaceTime not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidIsRecurring not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidLocation not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidPrivate not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidRecurrencePattern not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidRecurring not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidReminderDelta not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidReminderSet not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidReminderSignalTime not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidReminderTime not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidSmartNoAttach not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidTimeZoneDescription not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant PidLidTimeZoneStruct not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.recurrence.php
+
+		-
+			message: '#^Constant IID_IStream not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ATTACHMENT_HIDDEN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_LONG_FILENAME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_METHOD not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_NUM not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ATTACH_SIZE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_BODY not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_DISPLAY_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_DISPLAY_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ICON_INDEX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_IMPORTANCE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_LAST_MODIFICATION_TIME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_MESSAGE_CLASS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_MESSAGE_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_PARENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_DISPLAY_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TRACKSTATUS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TRACKSTATUS_TIME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_ROWID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_SEND_INTERNET_ENCODING not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_SEND_RICH_INFO not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_SENSITIVITY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_STORE_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PR_SUBJECT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidPercentComplete not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidPrivate not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidReminderDelta not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidReminderSet not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidReminderSignalTime not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidReminderTime not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidTaskComplete not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidTaskDateCompleted not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidTaskDueDate not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidTaskStartDate not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant PidLidTaskStatus not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrecurrence.php
+
+		-
+			message: '#^Constant IID_IMessage not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant IID_IStream not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant MAPI_E_INVALID_PARAMETER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant MAPI_E_NO_SUPPORT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ATTACHMENT_HIDDEN not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ATTACH_DATA_OBJ not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ATTACH_METHOD not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ATTACH_NUM not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_BODY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_CONVERSATION_TOPIC not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_DEFAULT_STORE not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_DISPLAY_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_DISPLAY_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 8
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 17
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ICON_INDEX not found\.$#'
+			identifier: constant.notFound
+			count: 8
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_IPM_OUTBOX_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_IPM_SENTMAIL_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_IPM_TASK_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_IPM_WASTEBASKET_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_MAILBOX_OWNER_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_MAILBOX_OWNER_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_MDB_PROVIDER not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_MESSAGE_CC_ME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_MESSAGE_CLASS not found\.$#'
+			identifier: constant.notFound
+			count: 21
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_MESSAGE_DELIVERY_TIME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_MESSAGE_RECIP_ME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_MESSAGE_TO_ME not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_PARENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_PROCESSED not found\.$#'
+			identifier: constant.notFound
+			count: 11
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_RCVD_REPRESENTING_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_DISPLAY_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_FLAGS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TRACKSTATUS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TRACKSTATUS_TIME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_RECIPIENT_TYPE not found\.$#'
+			identifier: constant.notFound
+			count: 7
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ROWID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SEARCH_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENDER_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENDER_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENDER_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENDER_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENDER_SEARCH_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SEND_INTERNET_ENCODING not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SEND_RICH_INFO not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENTMAIL_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_ADDRTYPE not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_EMAIL_ADDRESS not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SENT_REPRESENTING_SEARCH_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 7
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_STORE_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SUBJECT not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_SUBJECT_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PidLidPercentComplete not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PidLidTaskComplete not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PidLidTaskDateCompleted not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PidLidTaskDueDate not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PidLidTaskStartDate not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PidLidTaskStatus not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant ZARAFA_STORE_PUBLIC_GUID not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: class.taskrequest.php
+
+		-
+			message: '#^Constant PR_ENTRYID not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: mapi.util.php
+
+		-
+			message: '#^Constant PidLidAppointmentEndWhole not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: mapi.util.php
+
+		-
+			message: '#^Constant PidLidAppointmentRecur not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: mapi.util.php
+
+		-
+			message: '#^Constant PidLidAppointmentStartWhole not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: mapi.util.php
+
+		-
+			message: '#^Constant PidLidClipEnd not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: mapi.util.php
+
+		-
+			message: '#^Constant PidLidRecurring not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: mapi.util.php
+
+		-
+			message: '#^Constant PidLidTimeZoneStruct not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: mapi.util.php
