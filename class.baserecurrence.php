@@ -1984,6 +1984,33 @@ abstract class BaseRecurrence {
 	}
 
 	/**
+	 * Function to get all exception items in the given range.
+	 *
+	 * @param array $items reference to the array to be added to
+	 * @param date  $start start of timeframe in GMT TIME
+	 * @param date  $end   end of timeframe in GMT TIME
+	 */
+	public function processExceptionItems(&$items, $start, $end): void {
+		$limit = 0;
+		foreach ($this->recur["changed_occurrences"] as $exception) {
+			// Convert to GMT
+			$occstart = $this->toGMT($this->tz, $exception["start"]);
+			$occend = $this->toGMT($this->tz, $exception["end"]);
+
+			// Check range criterium. Exact matches (eg when $occstart == $end), do NOT match since you cannot
+			// see any part of the appointment. Partial overlaps DO match.
+			if ($occstart >= $end || $occend <= $start) {
+				continue;
+			}
+
+			$items[] = $this->getExceptionProperties($exception);
+			if (count($items) == $limit) {
+				break;
+			}
+		}
+	}
+
+	/**
 	 * Function to get all properties of a single changed exception.
 	 *
 	 * @return (mixed|true)[] associative array of properties for the exception

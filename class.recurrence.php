@@ -1106,33 +1106,6 @@ class Recurrence extends BaseRecurrence {
 	}
 
 	/**
-	 * processExceptionItem, adds an all exception item to a list of occurrences, without any constraint on timeframe.
-	 *
-	 * @param array $items reference to the array to be added to
-	 * @param date  $start start of timeframe in GMT TIME
-	 * @param date  $end   end of timeframe in GMT TIME
-	 */
-	public function processExceptionItems(&$items, $start, $end): void {
-		$limit = 0;
-		foreach ($this->recur["changed_occurrences"] as $exception) {
-			// Convert to GMT
-			$occstart = $this->toGMT($this->tz, $exception["start"]);
-			$occend = $this->toGMT($this->tz, $exception["end"]);
-
-			// Check range criterium. Exact matches (eg when $occstart == $end), do NOT match since you cannot
-			// see any part of the appointment. Partial overlaps DO match.
-			if ($occstart >= $end || $occend <= $start) {
-				continue;
-			}
-
-			$items[] = $this->getExceptionProperties($exception);
-			if (count($items) == $limit) {
-				break;
-			}
-		}
-	}
-
-	/**
 	 * Function which verifies if on the given date an exception, delete or change, occurs.
 	 *
 	 * @param mixed $basedate
