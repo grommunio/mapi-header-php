@@ -25,11 +25,13 @@ return $config->
                 'single_line_comment_style' => false,
                 'single_quote' => false,
                 'yoda_style' => ['equal' => false, 'identical' => false, 'less_and_greater' => false],
+                'switch_continue_to_break' => false,
         ])->
         setFinder(
                 PhpCsFixer\Finder::create()->
                         exclude(['vendor', 'node_modules', 'tests'])->
                         notPath('dev/autoloader.php')->
+                        notPath('dev/php-mapi-stub.php')->
                         in(__DIR__)
         )
 ;
