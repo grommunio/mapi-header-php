@@ -112,6 +112,7 @@ class Meetingrequest {
 	 * @var false|string
 	 */
 	private $meetingTimeInfo;
+	private $mti_html;
 
 	/**
 	 * @var null|bool
@@ -2842,9 +2843,13 @@ class Meetingrequest {
 			// will override the PR_BODY because body value is not consistent with
 			// PR_HTML and PR_RTF_COMPRESSED value so in this case PR_RTF_COMPRESSED will
 			// get priority which override the PR_BODY value.
-			unset($newmessageprops[PR_HTML], $newmessageprops[PR_RTF_COMPRESSED]);
-
-			$newmessageprops[PR_BODY] = $meetingTimeInfo;
+			if ($this->mti_html) {
+				unset($newmessageprops[PR_BODY], $newmessageprops[PR_RTF_COMPRESSED]);
+				$newmessageprops[PR_HTML] = $meetingTimeInfo;
+			} else {
+				unset($newmessageprops[PR_HTML], $newmessageprops[PR_RTF_COMPRESSED]);
+				$newmessageprops[PR_BODY] = $meetingTimeInfo;
+			}
 		}
 
 		// Send all recurrence info in mail, if this is a recurrence meeting.
@@ -3624,8 +3629,9 @@ class Meetingrequest {
 	 *
 	 * @param string $meetingTimeInfo info about meeting timing along with message body
 	 */
-	public function setMeetingTimeInfo(false|string $meetingTimeInfo): void {
+	public function setMeetingTimeInfo(false|string $meetingTimeInfo, bool $html = false): void {
 		$this->meetingTimeInfo = $meetingTimeInfo;
+		$this->mti_html = $html;
 	}
 
 	/**
