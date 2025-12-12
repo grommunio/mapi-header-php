@@ -933,7 +933,7 @@ class Meetingrequest {
 						$calItemProps[$this->proptags['recurring_pattern']] = '';
 						$calItemProps[$this->proptags['alldayevent']] = $messageprops[$this->proptags['alldayevent']] ?? false;
 						$calItemProps[$this->proptags['private']] = $messageprops[$this->proptags['private']] ?? false;
-						$calItemProps[$this->proptags['meetingstatus']] = $messageprops[$this->proptags['meetingstatus']] ?? olMeetingReceived;
+						$calItemProps[$this->proptags['meetingstatus']] = olMeetingReceived;
 						if (isset($messageprops[$this->proptags['startdate']])) {
 							$calItemProps[$this->proptags['commonstart']] = $calItemProps[$this->proptags['startdate']] = $messageprops[$this->proptags['startdate']];
 						}
@@ -974,7 +974,7 @@ class Meetingrequest {
 						$props[$this->proptags['recurring_pattern']] = '';
 						$props[$this->proptags['alldayevent']] ??= false;
 						$props[$this->proptags['private']] ??= false;
-						$props[$this->proptags['meetingstatus']] ??= olMeetingReceived;
+						$props[$this->proptags['meetingstatus']] = olMeetingReceived;
 						if (isset($props[$this->proptags['startdate']])) {
 							$props[$this->proptags['commonstart']] = $props[$this->proptags['startdate']];
 						}
