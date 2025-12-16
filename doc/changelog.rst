@@ -1,3 +1,16 @@
+2.1 (2025-12-16)
+================
+
+Fixes:
+
+* Correct PidLidAppointmentStateFlags value for meetings
+
+Enhancements:
+
+* HTML-based meetingTimeInfo
+* ecRights* definitions
+
+
 2.0 (2025-10-24)
 ================
 * Correct logic bug in TaskRequest::isTaskRequestUpdated() that could
