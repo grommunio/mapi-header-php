@@ -262,11 +262,8 @@ abstract class BaseRecurrence {
 				}
 
 				$data = unpack("Vmonth/Veveryn/Vregen/Vmonthday", $rdata);
-				// recurring yearly tasks have a period in months multiple by 12
-				if ($data['regen'] && $data["everyn"] % 12 != 0) {
-					return $ret;
-				}
-				if (!$data['regen'] && $data["everyn"] != 12) {
+				// recurring yearly tasks and events have a period in months multiple by 12
+				if ($data["everyn"] % 12 != 0) {
 					return $ret;
 				}
 
