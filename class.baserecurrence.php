@@ -737,7 +737,7 @@ abstract class BaseRecurrence {
 					}
 				}
 				else {
-					$everyn = $this->recur["regen"] ? ((int) $this->recur["everyn"]) * 12 : 12;
+					$everyn = ((int) $this->recur["everyn"]) * 12;
 				}
 
 				// Get montday/month/year of original start
