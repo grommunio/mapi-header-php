@@ -38,6 +38,11 @@ abstract class BaseRecurrence {
 	public $tz;
 
 	/**
+	 * @var array Cache for gmtime() results keyed by timestamp.
+	 */
+	private array $gmtimeCache = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param resource $store   MAPI Message Store Object
@@ -1474,11 +1479,14 @@ abstract class BaseRecurrence {
 	 * @return array GMT Time
 	 */
 	public function gmtime(int $time): array {
-		$TZOffset = $this->GetTZOffset($time);
+		if (isset($this->gmtimeCache[$time])) {
+			return $this->gmtimeCache[$time];
+		}
 
+		$TZOffset = $this->GetTZOffset($time);
 		$t_time = $time - $TZOffset * 60; # Counter adjust for localtime()
 
-		return localtime($t_time, 1);
+		return $this->gmtimeCache[$time] = localtime($t_time, 1);
 	}
 
 	public function isLeapYear(float|string $year): bool {
