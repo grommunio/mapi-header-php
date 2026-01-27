@@ -10,6 +10,21 @@
  * Recurrence.
  */
 class Recurrence extends BaseRecurrence {
+	/**
+	 * @var array<int, true>|null Lazy-built index for deleted exception lookups
+	 */
+	private ?array $deleteExceptionIndex = null;
+
+	/**
+	 * @var array<int, array>|null Lazy-built index for changed exception lookups
+	 */
+	private ?array $changeExceptionIndex = null;
+
+	/**
+	 * @var array<int, int>|null Lazy-built index mapping dayKey to PR_ATTACH_NUM
+	 */
+	private ?array $exceptionAttachIndex = null;
+
 	/*
 	 * ABOUT TIMEZONES
 	 *
@@ -111,6 +126,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed $copy_attach_from mapi message from which attachments should be copied
 	 */
 	public function createException($exception_props, $base_date, $delete = false, $exception_recips = [], $copy_attach_from = false): bool {
+		$this->invalidateExceptionIndex();
 		$baseday = $this->dayStartOf($base_date);
 		$basetime = $baseday + $this->recur["startocc"] * 60;
 
@@ -197,6 +213,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed $copy_attach_from
 	 */
 	public function modifyException($exception_props, $base_date, $exception_recips = [], $copy_attach_from = false): bool {
+		$this->invalidateExceptionIndex();
 		if (isset($exception_props[$this->proptags["startdate"]]) && !$this->isValidExceptionDate($base_date, $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]))) {
 			return false;
 		}
@@ -374,6 +391,7 @@ class Recurrence extends BaseRecurrence {
 	}
 
 	public function setRecurrence(mixed $tz, mixed $recur): void {
+		$this->invalidateExceptionIndex();
 		// only reset timezone if specified
 		if ($tz) {
 			$this->tz = $tz;
@@ -891,6 +909,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param false|int $base_date
 	 */
 	public function deleteException($base_date): void {
+		$this->invalidateExceptionIndex();
 		// Remove all exceptions on $base_date from the deleted and changed occurrences lists
 
 		// Remove all items in $todelete from deleted_occurrences
@@ -1099,6 +1118,26 @@ class Recurrence extends BaseRecurrence {
 		$items[] = $newitem;
 
 		return null;
+	}
+
+	/**
+	 * Compute an integer key that uniquely identifies a calendar day.
+	 * Used for O(1) exception lookups via hash index.
+	 */
+	private function dayKey(int $date): int {
+		$time = $this->gmtime($date);
+
+		return $time["tm_year"] * 10000 + $time["tm_mon"] * 100 + $time["tm_mday"];
+	}
+
+	/**
+	 * Invalidate the lazy exception indexes.
+	 * Must be called whenever deleted_occurrences or changed_occurrences are modified.
+	 */
+	private function invalidateExceptionIndex(): void {
+		$this->deleteExceptionIndex = null;
+		$this->changeExceptionIndex = null;
+		$this->exceptionAttachIndex = null;
 	}
 
 	/**
