@@ -38,6 +38,21 @@ abstract class BaseRecurrence {
 	public $tz;
 
 	/**
+	 * @var array Cache for gmtime() results keyed by timestamp.
+	 */
+	private array $gmtimeCache = [];
+
+	/**
+	 * @var array Cache for daysInMonth() results keyed by "date:months".
+	 */
+	private array $daysInMonthCache = [];
+
+	/**
+	 * @var array Cache for DST boundaries keyed by tm_year.
+	 */
+	private array $dstBoundaryCache = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param resource $store   MAPI Message Store Object
@@ -1471,11 +1486,14 @@ abstract class BaseRecurrence {
 	 * @return array GMT Time
 	 */
 	public function gmtime(int $time): array {
-		$TZOffset = $this->GetTZOffset($time);
+		if (isset($this->gmtimeCache[$time])) {
+			return $this->gmtimeCache[$time];
+		}
 
+		$TZOffset = $this->GetTZOffset($time);
 		$t_time = $time - $TZOffset * 60; # Counter adjust for localtime()
 
-		return localtime($t_time, 1);
+		return $this->gmtimeCache[$time] = localtime($t_time, 1);
 	}
 
 	public function isLeapYear(float|string $year): bool {
@@ -1539,12 +1557,18 @@ abstract class BaseRecurrence {
 			return 0;
 		}
 
-		$dst = false;
 		$gmdate = $this->gmtime($date);
+		$year = $gmdate["tm_year"];
 
-		$dststart = $this->getDateByYearMonthWeekDayHour($gmdate["tm_year"], $tz["dststartmonth"], $tz["dststartweek"], 0, $tz["dststarthour"]);
-		$dstend = $this->getDateByYearMonthWeekDayHour($gmdate["tm_year"], $tz["dstendmonth"], $tz["dstendweek"], 0, $tz["dstendhour"]);
+		if (!isset($this->dstBoundaryCache[$year])) {
+			$this->dstBoundaryCache[$year] = [
+				$this->getDateByYearMonthWeekDayHour($year, $tz["dststartmonth"], $tz["dststartweek"], 0, $tz["dststarthour"]),
+				$this->getDateByYearMonthWeekDayHour($year, $tz["dstendmonth"], $tz["dstendweek"], 0, $tz["dstendhour"]),
+			];
+		}
+		[$dststart, $dstend] = $this->dstBoundaryCache[$year];
 
+		$dst = false;
 		if ($dststart <= $dstend) {
 			// Northern hemisphere, eg DST is during Mar-Oct
 			if ($date > $dststart && $date < $dstend) {
@@ -1941,13 +1965,17 @@ abstract class BaseRecurrence {
 	 * @return float|int number of days in the specified amount of months
 	 */
 	public function daysInMonth(int $date, int $months): float|int {
-		$days = 0;
+		$key = $date . ':' . $months;
+		if (isset($this->daysInMonthCache[$key])) {
+			return $this->daysInMonthCache[$key];
+		}
 
+		$days = 0;
 		for ($i = 0; $i < $months; ++$i) {
 			$days += date("t", $date + $days * 24 * 60 * 60);
 		}
 
-		return $days;
+		return $this->daysInMonthCache[$key] = $days;
 	}
 
 	// Converts MAPI-style 'minutes' into the month of the year [0..11]
