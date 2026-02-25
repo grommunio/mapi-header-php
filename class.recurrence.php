@@ -10,6 +10,21 @@
  * Recurrence.
  */
 class Recurrence extends BaseRecurrence {
+	/**
+	 * @var array<int, true>|null Lazy-built index for deleted exception lookups
+	 */
+	private ?array $deleteExceptionIndex = null;
+
+	/**
+	 * @var array<int, array>|null Lazy-built index for changed exception lookups
+	 */
+	private ?array $changeExceptionIndex = null;
+
+	/**
+	 * @var array<int, int>|null Lazy-built index mapping dayKey to PR_ATTACH_NUM
+	 */
+	private ?array $exceptionAttachIndex = null;
+
 	/*
 	 * ABOUT TIMEZONES
 	 *
@@ -111,6 +126,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed $copy_attach_from mapi message from which attachments should be copied
 	 */
 	public function createException($exception_props, $base_date, $delete = false, $exception_recips = [], $copy_attach_from = false): bool {
+		$this->invalidateExceptionIndex();
 		$baseday = $this->dayStartOf($base_date);
 		$basetime = $baseday + $this->recur["startocc"] * 60;
 
@@ -197,6 +213,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed $copy_attach_from
 	 */
 	public function modifyException($exception_props, $base_date, $exception_recips = [], $copy_attach_from = false): bool {
+		$this->invalidateExceptionIndex();
 		if (isset($exception_props[$this->proptags["startdate"]]) && !$this->isValidExceptionDate($base_date, $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]))) {
 			return false;
 		}
@@ -374,6 +391,7 @@ class Recurrence extends BaseRecurrence {
 	}
 
 	public function setRecurrence(mixed $tz, mixed $recur): void {
+		$this->invalidateExceptionIndex();
 		// only reset timezone if specified
 		if ($tz) {
 			$this->tz = $tz;
@@ -891,6 +909,7 @@ class Recurrence extends BaseRecurrence {
 	 * @param false|int $base_date
 	 */
 	public function deleteException($base_date): void {
+		$this->invalidateExceptionIndex();
 		// Remove all exceptions on $base_date from the deleted and changed occurrences lists
 
 		// Remove all items in $todelete from deleted_occurrences
@@ -1017,31 +1036,32 @@ class Recurrence extends BaseRecurrence {
 	 * Get an exception attachment based on its basedate.
 	 */
 	public function getExceptionAttachment(int $base_date): mixed {
-		// Retrieve only exceptions which are stored as embedded messages
-		$attach_res = $this->getEmbeddedMessageRestriction();
-		$attachments = mapi_message_getattachmenttable($this->message);
-		$attachRows = mapi_table_queryallrows($attachments, [PR_ATTACH_NUM], $attach_res);
+		if ($this->exceptionAttachIndex === null) {
+			$this->exceptionAttachIndex = [];
+			$attach_res = $this->getEmbeddedMessageRestriction();
+			$attachments = mapi_message_getattachmenttable($this->message);
+			$attachRows = mapi_table_queryallrows($attachments, [PR_ATTACH_NUM], $attach_res);
 
-		if (is_array($attachRows)) {
-			foreach ($attachRows as $attachRow) {
-				$tempattach = mapi_message_openattach($this->message, $attachRow[PR_ATTACH_NUM]);
-				$exception = mapi_attach_openobj($tempattach);
+			if (is_array($attachRows)) {
+				foreach ($attachRows as $attachRow) {
+					$tempattach = mapi_message_openattach($this->message, $attachRow[PR_ATTACH_NUM]);
+					$exception = mapi_attach_openobj($tempattach);
+					$data = mapi_message_getprops($exception, [$this->proptags["basedate"]]);
 
-				$data = mapi_message_getprops($exception, [$this->proptags["basedate"]]);
-
-				if (!isset($data[$this->proptags["basedate"]])) {
-					// if no basedate found then it could be embedded message so ignore it
-					// we need proper restriction to exclude embedded messages as well
-					continue;
-				}
-
-				if ($this->isSameDay($this->fromGMT($this->tz, $data[$this->proptags["basedate"]]), $base_date)) {
-					return $tempattach;
+					if (isset($data[$this->proptags["basedate"]])) {
+						$key = $this->dayKey($this->fromGMT($this->tz, $data[$this->proptags["basedate"]]));
+						$this->exceptionAttachIndex[$key] = $attachRow[PR_ATTACH_NUM];
+					}
 				}
 			}
 		}
 
-		return false;
+		$key = $this->dayKey($base_date);
+		if (!isset($this->exceptionAttachIndex[$key])) {
+			return false;
+		}
+
+		return mapi_message_openattach($this->message, $this->exceptionAttachIndex[$key]);
 	}
 
 	/**
@@ -1102,6 +1122,26 @@ class Recurrence extends BaseRecurrence {
 	}
 
 	/**
+	 * Compute an integer key that uniquely identifies a calendar day.
+	 * Used for O(1) exception lookups via hash index.
+	 */
+	private function dayKey(int $date): int {
+		$time = $this->gmtime($date);
+
+		return $time["tm_year"] * 10000 + $time["tm_mon"] * 100 + $time["tm_mday"];
+	}
+
+	/**
+	 * Invalidate the lazy exception indexes.
+	 * Must be called whenever deleted_occurrences or changed_occurrences are modified.
+	 */
+	private function invalidateExceptionIndex(): void {
+		$this->deleteExceptionIndex = null;
+		$this->changeExceptionIndex = null;
+		$this->exceptionAttachIndex = null;
+	}
+
+	/**
 	 * Function which verifies if on the given date an exception, delete or change, occurs.
 	 *
 	 * @return bool true - if an exception occurs on the given date, false - no exception occurs on the given date
@@ -1122,28 +1162,28 @@ class Recurrence extends BaseRecurrence {
 	 * Returns TRUE if there is a DELETE exception on the given base date.
 	 */
 	public function isDeleteException(int $basedate): bool {
-		// Check if the occurrence is deleted on the specified date
-		foreach ($this->recur["deleted_occurrences"] as $deleted) {
-			if ($this->isSameDay($deleted, $basedate)) {
-				return true;
+		if ($this->deleteExceptionIndex === null) {
+			$this->deleteExceptionIndex = [];
+			foreach ($this->recur["deleted_occurrences"] as $deleted) {
+				$this->deleteExceptionIndex[$this->dayKey($deleted)] = true;
 			}
 		}
 
-		return false;
+		return isset($this->deleteExceptionIndex[$this->dayKey($basedate)]);
 	}
 
 	/**
 	 * Returns the exception if there is a CHANGE exception on the given base date, or FALSE otherwise.
 	 */
 	public function getChangeException(int $basedate): array|false {
-		// Check if the occurrence is modified on the specified date
-		foreach ($this->recur["changed_occurrences"] as $changed) {
-			if ($this->isSameDay($changed["basedate"], $basedate)) {
-				return $changed;
+		if ($this->changeExceptionIndex === null) {
+			$this->changeExceptionIndex = [];
+			foreach ($this->recur["changed_occurrences"] as $changed) {
+				$this->changeExceptionIndex[$this->dayKey($changed["basedate"])] = $changed;
 			}
 		}
 
-		return false;
+		return $this->changeExceptionIndex[$this->dayKey($basedate)] ?? false;
 	}
 
 	/**
