@@ -1222,8 +1222,8 @@ abstract class BaseRecurrence {
 		}
 
 		// UTC date
-		$utcstart = $this->toGMT($this->tz, (int) $this->recur["start"]);
-		$utcend = $this->toGMT($this->tz, (int) $this->recur["end"]);
+		$utcstart = $this->getClipProp("start");
+		$utcend = $this->getClipProp("end");
 
 		// utc date+time
 		$utcfirstoccstartdatetime = (isset($this->recur["startocc"])) ? $utcstart + (((int) $this->recur["startocc"]) * 60) : $utcstart;
@@ -2074,6 +2074,20 @@ abstract class BaseRecurrence {
 
 		return $item;
 	}
-
 	abstract public function processOccurrenceItem(array &$items, false|int $start, int $end, false|int $basedate, mixed $startocc, mixed $endocc, mixed $tz, mixed $reminderonly): ?false;
+
+	/**
+	 * Calculate PidLidClipStart/PidLidClipEnd values.
+	 *
+	 * @param string $type only possible values are "start" or "end"
+	 *
+	 * @return int
+	 */
+	public function getClipProp(string $type): int {
+		if ($type === "end" || $type === "start") {
+			return $this->toGMT($this->tz, (int) $this->recur[$type]);
+		}
+
+		throw new MAPIException("ClipProp type must be either \"start\" or \"end\"");
+	}
 }
