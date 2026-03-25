@@ -742,6 +742,7 @@ class Meetingrequest {
 			// This meeting request item is recurring, so find all occurrences and saves them all as exceptions to this meeting request item.
 			if (!empty($messageprops[$this->proptags['recurring']]) && $basedate === false) {
 				$calendarItem = false;
+				$nonRecurr2Recurr = false; // non-recurring meeting was converted to a recurring
 
 				// Find main recurring item based on GlobalID (0x3)
 				$items = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder);
@@ -765,7 +766,7 @@ class Meetingrequest {
 					}
 					// While we applying updates of MR then all local categories will be removed,
 					// So get the local categories of all occurrence before applying update from organiser.
-					$localCategories = $this->getLocalCategories($calendarItem, $store, $calFolder);
+					$localCategories = $this->getLocalCategories($calendarItem, $store, $calFolder, $nonRecurr2Recurr);
 				}
 
 				if (!$processed) {
@@ -836,7 +837,10 @@ class Meetingrequest {
 
 				// After applying update of organiser all local categories of occurrence was removed,
 				// So if local categories exist then apply it on respective occurrence.
-				if (!empty($localCategories)) {
+				// When a non-recurring meeting was converted to a recurring one, it is not
+				// necessary to apply local categories to exceptions because the meeting
+				// previously didn't have any exceptions.
+				if (!empty($localCategories) && !$nonRecurr2Recurr) {
 					$this->applyLocalCategories($calendarItem, $store, $localCategories);
 				}
 
@@ -3637,17 +3641,29 @@ class Meetingrequest {
 	/**
 	 * Helper function which is use to get local categories of all occurrence.
 	 *
-	 * @param mixed $calendarItem meeting request item
-	 * @param mixed $store        store containing calendar folder
-	 * @param mixed $calFolder    calendar folder
+	 * @param mixed $calendarItem     meeting request item
+	 * @param mixed $store            store containing calendar folder
+	 * @param mixed $calFolder        calendar folder
+	 * @param bool  $nonRecurr2Recurr whether a non-recurring meeting was converted to a recurring
 	 *
 	 * @return array $localCategories which contain array of basedate along with categories
 	 */
-	public function getLocalCategories(mixed $calendarItem, mixed $store, mixed $calFolder): array {
+	public function getLocalCategories(mixed $calendarItem, mixed $store, mixed $calFolder, bool &$nonRecurr2Recurr): array {
 		$calendarItemProps = mapi_getprops($calendarItem);
+		// There's a corner case that a non-recurring meeting was converted to a
+		// recurring meeting. In such a case the calendar item doesn't have the
+		// recurrence information yet.
+		if (!isset($calendarItemProps[$this->proptags['recurring']]) || $calendarItemProps[$this->proptags['recurring']] === false) {
+			$nonRecurr2Recurr = true;
+
+			return $calendarItemProps[$this->proptags['categories']] ?? [];
+		}
+
 		$recurrence = new Recurrence($store, $calendarItem);
 
 		// Retrieve all occurrences(max: 30 occurrence because recurrence can also be set as 'no end date')
+		$calendarItemProps[$this->proptags['clipstart']] = $calendarItemProps[$this->proptags['clipstart']] ?? $recurrence->getClipProp("start");
+		$calendarItemProps[$this->proptags['clipend']] = $calendarItemProps[$this->proptags['clipend']] ?? $recurrence->getClipProp("end");
 		$items = $recurrence->getItems($calendarItemProps[$this->proptags['clipstart']], $calendarItemProps[$this->proptags['clipend']] * (24 * 24 * 60), 30);
 		$localCategories = [];
 
