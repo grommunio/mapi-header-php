@@ -1958,8 +1958,15 @@ class Meetingrequest {
 		}
 
 		// Set body message in Appointment
-		if (isset($body)) {
-			$props[PR_BODY] = $this->getMeetingTimeInfo() ?: $body;
+		$meetingTimeInfo = $this->getMeetingTimeInfo();
+		if ($meetingTimeInfo) {
+			if ($this->mti_html) {
+				$props[PR_HTML] = $meetingTimeInfo;
+			} else {
+				$props[PR_BODY] = $meetingTimeInfo;
+			}
+		} elseif (isset($body)) {
+			$props[PR_BODY] = $body;
 		}
 
 		// PR_START_DATE/PR_END_DATE is used in the UI in Outlook on the response message
