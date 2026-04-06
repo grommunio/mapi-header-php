@@ -1114,7 +1114,12 @@ class Meetingrequest {
 		$calendaritem = false;
 
 		// Remove any previous calendar items with this goid and appt id
-		$messageprops = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2'], PR_RCVD_REPRESENTING_ENTRYID]);
+		$messageprops = mapi_getprops($this->message, [
+			$this->proptags['goid'],
+			$this->proptags['goid2'],
+			PR_RCVD_REPRESENTING_ENTRYID,
+			PR_PARENT_ENTRYID
+		]);
 
 		['store' => $store, 'calFolder' => $calFolder] = $this->resolveDelegateStoreAndCalendar($messageprops);
 
@@ -1192,7 +1197,13 @@ class Meetingrequest {
 			return false;
 		}
 
-		$messageprops = mapi_getprops($this->message, [PR_ENTRYID, $this->proptags['goid'], PR_RCVD_REPRESENTING_ENTRYID, PR_MESSAGE_CLASS]);
+		$messageprops = mapi_getprops($this->message, [
+			PR_ENTRYID,
+			$this->proptags['goid'],
+			PR_RCVD_REPRESENTING_ENTRYID,
+			PR_MESSAGE_CLASS,
+			PR_PARENT_ENTRYID
+		]);
 
 		$goid = $messageprops[$this->proptags['goid']];
 
@@ -3333,7 +3344,13 @@ class Meetingrequest {
 	 * @return bool|resource resource of calendar item
 	 */
 	public function getCorrespondentCalendarItem(bool $open = true): mixed {
-		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS, $this->proptags['goid'], $this->proptags['goid2'], PR_RCVD_REPRESENTING_ENTRYID]);
+		$props = mapi_getprops($this->message, [
+			PR_MESSAGE_CLASS,
+			$this->proptags['goid'],
+			$this->proptags['goid2'],
+			PR_RCVD_REPRESENTING_ENTRYID,
+			PR_PARENT_ENTRYID
+		]);
 
 		if (!$this->isMeetingRequest($props[PR_MESSAGE_CLASS]) && !$this->isMeetingRequestResponse($props[PR_MESSAGE_CLASS]) && !$this->isMeetingCancellation($props[PR_MESSAGE_CLASS])) {
 			// can work only with meeting requests/responses/cancellations
@@ -3829,9 +3846,12 @@ class Meetingrequest {
 	private function resolveDelegateStoreAndCalendar(array $messageprops): array {
 		$store = $this->store;
 		$calFolder = $this->openDefaultCalendar();
+		$inboxEntryid = $this->getDefaultFolderEntryID(PR_ENTRYID, $store);
 
 		// If this meeting request is received by a delegate then open delegator's store
-		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
+		// if the item is the delegator's store (not received as a copy)
+		if (!compareEntryIds($messageprops[PR_PARENT_ENTRYID], $inboxEntryid) &&
+		    isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
 			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
 			if (!empty($delegatorStore['store'])) {
 				$store = $delegatorStore['store'];
