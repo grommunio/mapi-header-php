@@ -21,6 +21,11 @@ if (!defined('PR_EC_RECIPIENT_HISTORY_JSON')) {
 	define('PR_EC_RECIPIENT_HISTORY_JSON', mapi_prop_tag(PT_STRING8, 0x6773));
 }
 
+/* PidTagReceivedBySmtpAddress, not yet registered by older gromox builds */
+if (!defined('PR_RECEIVED_BY_SMTP_ADDRESS')) {
+	define('PR_RECEIVED_BY_SMTP_ADDRESS', mapi_prop_tag(PT_UNICODE, 0x5D07));
+}
+
 /* The persistent settings are settings that will not be touched when the settings are reset */
 if (!defined('PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON')) {
 	define('PR_EC_WEBAPP_PERSISTENT_SETTINGS_JSON', mapi_prop_tag(PT_STRING8, 0x6774));
