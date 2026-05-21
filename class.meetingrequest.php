@@ -3069,6 +3069,9 @@ class Meetingrequest {
 		// PR_START_DATE and PR_END_DATE will be used by outlook to show the position in the calendar
 		$props[PR_START_DATE] = $messageprops[$this->proptags['startdate']];
 		$props[PR_END_DATE] = $messageprops[$this->proptags['duedate']];
+		// Remove MSGFLAG_UNSENT flag, so that the current attendees won't be addded again
+		// when modifying the appointment
+		$props[PR_MESSAGE_FLAGS] = $messageprops[PR_MESSAGE_FLAGS] & ~MSGFLAG_UNSENT;
 
 		mapi_setprops($message, $props);
 
