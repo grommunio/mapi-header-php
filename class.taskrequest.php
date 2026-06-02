@@ -1099,8 +1099,11 @@ class TaskRequest {
 			foreach ($recips as $value) {
 				$owner[] = $value[PR_DISPLAY_NAME];
 			}
-
-			$props = [$this->props['owner'] => implode("; ", $owner)];
+			$owners = implode("; ", $owner);
+			$props = [
+				$this->props['owner'] => $owners,
+				PR_DISPLAY_TO => $owners,
+			];
 			mapi_setprops($this->message, $props);
 		}
 	}
