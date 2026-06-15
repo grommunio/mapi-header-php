@@ -3,7 +3,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2022 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2026 grommunio GmbH
  */
 
 /* Resource types as defined in main.h of the mapi extension */
@@ -735,3 +735,12 @@ define('UP_DAV', 0x800);
 
 define('UP_WANTPRIV_BASIC', 0);
 define('UP_WANTPRIV_METAONLY', 0x40000000);
+
+/* RecurrenceException error codes */
+define('RECURR_NO_TYPE', 1);
+define('RECURR_NO_SUBTYPE', 2);
+define('RECURR_NO_EVERYN', 3);
+define('RECURR_NO_START', 4);
+define('RECURR_NO_END', 5);
+define('RECURR_NO_STARTOCC', 6);
+define('RECURR_NO_ENDOCC', 7);
