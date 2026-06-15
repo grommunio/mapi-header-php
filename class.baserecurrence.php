@@ -3,7 +3,7 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2025 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2026 grommunio GmbH
  */
 
 /**
@@ -1717,8 +1717,11 @@ abstract class BaseRecurrence {
 		if (isset($this->recur['regen'], $this->action['datecompleted']) && $this->recur['regen']) {
 			$daystart = $this->dayStartOf($this->action['datecompleted']);
 		}
-		else {
+		elseif (isset($this->recur["start"])) {
 			$daystart = $this->dayStartOf($this->recur["start"]); // start on first day of occurrence
+		}
+		else {
+			throw new RecurrenceException('Cannot calculate daystart', RECURR_NO_START);
 		}
 
 		// Calculate the last day on which we want to be looking at a recurrence; this is either the end of the view
