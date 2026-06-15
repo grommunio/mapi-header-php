@@ -2,7 +2,7 @@
 
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
- * SPDX-FileCopyrightText: Copyright 2024 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2024-2026 grommunio GmbH
  */
 
 if (!defined('UMAPI_PATH')) {
@@ -21,6 +21,7 @@ require_once UMAPI_PATH . '/mapitags.php';
 require_once UMAPI_PATH . '/mapiguid.php';
 require_once UMAPI_PATH . '/class.baseexception.php';
 require_once UMAPI_PATH . '/class.mapiexception.php';
+require_once UMAPI_PATH . '/class.recurrenceexception.php';
 require_once UMAPI_PATH . '/class.baserecurrence.php';
 require_once UMAPI_PATH . '/class.recurrence.php';
 require_once UMAPI_PATH . '/class.meetingrequest.php';
