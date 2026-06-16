@@ -110,6 +110,7 @@ Core Components
 * ``class.baserecurrence.php`` - Abstract recurrence base class
 * ``class.baseexception.php`` - Base exception with display messages
 * ``class.mapiexception.php`` - MAPI-specific exception handling
+* ``class.recurrenceexception.php`` - Recurrence-specific exception handling
 * ``class.freebusy.php`` - Free/busy utilities
 * ``class.keycloak.php`` - KeyCloak SSO integration
 * ``class.token.php`` - JWT token parsing and validation
@@ -178,7 +179,7 @@ Manage task assignments and delegation:
 * Task history tracking
 * Status updates and completion tracking
 
-BaseException & MAPIException
+BaseException & MAPIException & RecurrenceException
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Structured error handling:
@@ -260,4 +261,4 @@ License
 
 AGPL-3.0-only. See LICENSE.txt for details.
 
-Copyright 2020-2025 grommunio GmbH
+Copyright 2020-2026 grommunio GmbH
