@@ -1124,6 +1124,16 @@ function mapi_linkmessage(resource $ses, ?string $srcheid = null, ?string $msgei
 }
 
 /**
+ * @param resource $ses
+ * @param string $srcheid
+ * @param array $msgeids
+ * @return mixed
+ */
+function mapi_linkmessages(resource $ses, string $srcheid, array $msgeids): mixed {
+	return null;
+}
+
+/**
  * @param string $tz
  * @return string|bool
  */
