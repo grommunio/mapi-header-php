@@ -1280,8 +1280,12 @@ class Meetingrequest {
 			return;
 		}
 
-		// check write access for delegate
-		if ($this->checkCalendarWriteAccess($this->store) !== true) {
+		// check write access on the folder the meeting resides in
+		$parentProps = mapi_getprops($this->message, [PR_PARENT_ENTRYID]);
+		$hasWriteAccess = empty($parentProps[PR_PARENT_ENTRYID]) ?
+			$this->checkCalendarWriteAccess($this->store) :
+			$this->checkFolderWriteAccess($parentProps[PR_PARENT_ENTRYID], $this->store);
+		if ($hasWriteAccess !== true) {
 			// Throw an exception that we don't have write permissions on calendar folder,
 			// error message will be filled by module
 			throw new MAPIException(_("Insufficient permissions"), MAPI_E_NO_ACCESS);
@@ -1635,9 +1639,10 @@ class Meetingrequest {
 	}
 
 	/**
-	 * Function will return entryid of any default folder of store. This method is useful when you want
-	 * to get entryid of folder which is stored as properties of inbox folder
-	 * (PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_CONTACT_ENTRYID, PR_IPM_DRAFTS_ENTRYID, PR_IPM_JOURNAL_ENTRYID, PR_IPM_NOTE_ENTRYID, PR_IPM_TASK_ENTRYID).
+	 * Function will return entryid of any default folder of store. The default folder
+	 * entryids (PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_CONTACT_ENTRYID, ...) are read from
+	 * the store root folder, which is accessible even when the inbox is not.
+	 * PR_ENTRYID returns the entryid of the inbox itself.
 	 *
 	 * @param int   $prop  proptag of the folder for which we want to get entryid
 	 * @param mixed $store {optional} user store from which we need to get entryid of default folder
@@ -1646,16 +1651,20 @@ class Meetingrequest {
 	 */
 	public function getDefaultFolderEntryID(int $prop, mixed $store = false): bool|string {
 		try {
-			$inbox = mapi_msgstore_getreceivefolder($store ?: $this->store);
-			$inboxprops = mapi_getprops($inbox, [$prop]);
+			$entry = $prop === PR_ENTRYID ?
+				mapi_msgstore_getreceivefolder($store ?: $this->store) :
+				mapi_msgstore_openentry($store ?: $this->store);
+			$entryprops = mapi_getprops($entry, [$prop]);
 
-			return $inboxprops[$prop] ?? false;
+			return $entryprops[$prop] ?? false;
 		}
 		catch (MAPIException $e) {
 			// public store doesn't support this method
 			if ($e->getCode() == MAPI_E_NO_SUPPORT) {
 				// don't propagate this error to parent handlers, if store doesn't support it
 				$e->setHandled();
+
+				return false;
 			}
 		}
 
@@ -1672,8 +1681,23 @@ class Meetingrequest {
 	 */
 	public function openDefaultFolder(int $prop, mixed $store = false): mixed {
 		$entryid = $this->getDefaultFolderEntryID($prop, $store);
+		if ($entryid === false) {
+			return false;
+		}
 
-		return $entryid === false ? false : mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		try {
+			return mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		}
+		catch (MAPIException $e) {
+			// gromox reports a folder the user has no rights on as not found
+			if ($e->getCode() == MAPI_E_NO_ACCESS || $e->getCode() == MAPI_E_NOT_FOUND) {
+				$e->setHandled();
+
+				return false;
+			}
+
+			throw $e;
+		}
 	}
 
 	/**
@@ -1728,8 +1752,8 @@ class Meetingrequest {
 			return ($folderProps[PR_ACCESS] & MAPI_ACCESS_CREATE_CONTENTS) === MAPI_ACCESS_CREATE_CONTENTS;
 		}
 		catch (MAPIException $e) {
-			// We don't have rights to open folder, so return false
-			if ($e->getCode() == MAPI_E_NO_ACCESS) {
+			// no rights to open the folder; gromox reports this as not found
+			if ($e->getCode() == MAPI_E_NO_ACCESS || $e->getCode() == MAPI_E_NOT_FOUND) {
 				return false;
 			}
 
@@ -2015,6 +2039,10 @@ class Meetingrequest {
 		if ($calendar === false) {
 			// Open the Calendar
 			$calendar = $this->openDefaultCalendar();
+			if ($calendar === false) {
+				// no access to the calendar folder
+				return null;
+			}
 		}
 
 		// Find the item by restricting all items to the correct ID
@@ -2760,7 +2788,7 @@ class Meetingrequest {
 	 */
 	public function submitMeetingRequest($message, $cancel, $prefix, $basedate = false, $recurObject = false, $copyExceptions = true, $modifiedRecips = false, $deletedRecips = false): void {
 		$newmessageprops = $messageprops = mapi_getprops($this->message);
-		$new = $this->createOutgoingMessage();
+		$new = $this->createOutgoingMessage($this->store);
 
 		// Copy the entire message into the new meeting request message
 		if ($basedate) {
@@ -2844,6 +2872,23 @@ class Meetingrequest {
 
 			$deletedRecips = array_merge($deletedRecips ?: [], $recipients);
 		}
+
+		// don't let the addressing copied from the calendar item override the
+		// sender set up by createOutgoingMessage
+		unset(
+			$newmessageprops[PR_SENDER_ENTRYID],
+			$newmessageprops[PR_SENDER_NAME],
+			$newmessageprops[PR_SENDER_ADDRTYPE],
+			$newmessageprops[PR_SENDER_EMAIL_ADDRESS],
+			$newmessageprops[PR_SENDER_SEARCH_KEY],
+			$newmessageprops[PR_SENDER_SMTP_ADDRESS],
+			$newmessageprops[PR_SENT_REPRESENTING_ENTRYID],
+			$newmessageprops[PR_SENT_REPRESENTING_NAME],
+			$newmessageprops[PR_SENT_REPRESENTING_ADDRTYPE],
+			$newmessageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS],
+			$newmessageprops[PR_SENT_REPRESENTING_SEARCH_KEY],
+			$newmessageprops[PR_SENT_REPRESENTING_SMTP_ADDRESS]
+		);
 
 		// Remove the PR_ICON_INDEX as it is not needed in the sent message.
 		$newmessageprops[PR_ICON_INDEX] = null;
@@ -2997,7 +3042,7 @@ class Meetingrequest {
 			mapi_savechanges($new);
 
 			// Submit message to non-resource recipients
-			mapi_message_submitmessage($new);
+			$this->submitOutgoingMessage($new, (bool) $cancel);
 		}
 
 		// Search through the deleted recipients, and see if any of them is also
@@ -3031,7 +3076,7 @@ class Meetingrequest {
 
 		// Send cancellation to deleted attendees
 		if ($deletedRecips) {
-			$new = $this->createOutgoingMessage();
+			$new = $this->createOutgoingMessage($this->store);
 
 			mapi_message_modifyrecipients($new, MODRECIP_ADD, $deletedRecips);
 
@@ -3046,8 +3091,8 @@ class Meetingrequest {
 			mapi_setprops($new, $newmessageprops);
 			mapi_savechanges($new);
 
-			// Submit message to non-resource recipients
-			mapi_message_submitmessage($new);
+			// mails to removed attendees are always cancellations
+			$this->submitOutgoingMessage($new, true);
 		}
 
 		// Set properties on meeting object in calendar
@@ -3129,25 +3174,27 @@ class Meetingrequest {
 		$outgoing = mapi_folder_createmessage($outbox);
 
 		// check if $store is set and it is not equal to $defaultStore (means its the delegation case)
+		$isDelegate = false;
 		if ($store !== false) {
 			$storeProps = mapi_getprops($store, [PR_ENTRYID]);
 			$userStoreProps = mapi_getprops($userStore, [PR_ENTRYID]);
+			$isDelegate = !compareEntryIds($storeProps[PR_ENTRYID], $userStoreProps[PR_ENTRYID]);
+		}
 
-			if (!compareEntryIds($storeProps[PR_ENTRYID], $userStoreProps[PR_ENTRYID])) {
-				// get the delegator properties and set it into outgoing mail
-				$delegatorDetails = $this->getOwnerAddress($store, false);
-				$this->setAddressProperties($sentprops, $delegatorDetails, 'SENT_REPRESENTING');
+		if ($isDelegate) {
+			// get the delegator properties and set it into outgoing mail
+			$delegatorDetails = $this->getOwnerAddress($store, false);
+			$this->setAddressProperties($sentprops, $delegatorDetails ?: [], 'SENT_REPRESENTING');
 
-				// get the delegate properties and set it into outgoing mail
-				$delegateDetails = $this->getOwnerAddress($userStore, false);
-				$this->setAddressProperties($sentprops, $delegateDetails, 'SENDER');
-			}
+			// get the delegate properties and set it into outgoing mail
+			$delegateDetails = $this->getOwnerAddress($userStore, false);
+			$this->setAddressProperties($sentprops, $delegateDetails ?: [], 'SENDER');
 		}
 		else {
 			// normal user is sending mail, so both set of properties will be same
 			$userDetails = $this->getOwnerAddress($userStore);
-			$this->setAddressProperties($sentprops, $userDetails, 'SENT_REPRESENTING');
-			$this->setAddressProperties($sentprops, $userDetails, 'SENDER');
+			$this->setAddressProperties($sentprops, $userDetails ?: [], 'SENT_REPRESENTING');
+			$this->setAddressProperties($sentprops, $userDetails ?: [], 'SENDER');
 		}
 
 		$sentprops[PR_SENTMAIL_ENTRYID] = $this->getDefaultSentmailEntryID($userStore);
@@ -3155,6 +3202,44 @@ class Meetingrequest {
 		mapi_setprops($outgoing, $sentprops);
 
 		return $outgoing;
+	}
+
+	/**
+	 * Submits an outgoing meeting mail. A cancellation mail may fall back to
+	 * being sent in the name of the acting user when send-on-behalf is denied.
+	 * Updates and responses must not, since the recipient side derives the
+	 * organizer/attendee identity from the sender properties.
+	 *
+	 * @param mixed $outgoing        the outgoing message to submit
+	 * @param bool  $allowSendAsSelf send as the acting user when send-on-behalf
+	 *                               is denied
+	 */
+	public function submitOutgoingMessage(mixed $outgoing, bool $allowSendAsSelf = false): void {
+		try {
+			mapi_message_submitmessage($outgoing);
+		}
+		catch (MAPIException $e) {
+			if (!$allowSendAsSelf || $e->getCode() != MAPI_E_NO_ACCESS) {
+				throw $e;
+			}
+
+			$userStore = $this->openDefaultStore();
+			if ($userStore === false) {
+				throw $e;
+			}
+			$userDetails = $this->getOwnerAddress($userStore);
+			if ($userDetails === false) {
+				throw $e;
+			}
+			$e->setHandled();
+
+			$sentprops = [];
+			$this->setAddressProperties($sentprops, $userDetails, 'SENT_REPRESENTING');
+			$this->setAddressProperties($sentprops, $userDetails, 'SENDER');
+			mapi_setprops($outgoing, $sentprops);
+			mapi_savechanges($outgoing);
+			mapi_message_submitmessage($outgoing);
+		}
 	}
 
 	/**
