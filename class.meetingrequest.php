@@ -3042,7 +3042,7 @@ class Meetingrequest {
 			mapi_savechanges($new);
 
 			// Submit message to non-resource recipients
-			mapi_message_submitmessage($new);
+			$this->submitOutgoingMessage($new, (bool) $cancel);
 		}
 
 		// Search through the deleted recipients, and see if any of them is also
@@ -3091,8 +3091,8 @@ class Meetingrequest {
 			mapi_setprops($new, $newmessageprops);
 			mapi_savechanges($new);
 
-			// Submit message to non-resource recipients
-			mapi_message_submitmessage($new);
+			// mails to removed attendees are always cancellations
+			$this->submitOutgoingMessage($new, true);
 		}
 
 		// Set properties on meeting object in calendar
@@ -3202,6 +3202,44 @@ class Meetingrequest {
 		mapi_setprops($outgoing, $sentprops);
 
 		return $outgoing;
+	}
+
+	/**
+	 * Submits an outgoing meeting mail. A cancellation mail may fall back to
+	 * being sent in the name of the acting user when send-on-behalf is denied.
+	 * Updates and responses must not, since the recipient side derives the
+	 * organizer/attendee identity from the sender properties.
+	 *
+	 * @param mixed $outgoing        the outgoing message to submit
+	 * @param bool  $allowSendAsSelf send as the acting user when send-on-behalf
+	 *                               is denied
+	 */
+	public function submitOutgoingMessage(mixed $outgoing, bool $allowSendAsSelf = false): void {
+		try {
+			mapi_message_submitmessage($outgoing);
+		}
+		catch (MAPIException $e) {
+			if (!$allowSendAsSelf || $e->getCode() != MAPI_E_NO_ACCESS) {
+				throw $e;
+			}
+
+			$userStore = $this->openDefaultStore();
+			if ($userStore === false) {
+				throw $e;
+			}
+			$userDetails = $this->getOwnerAddress($userStore);
+			if ($userDetails === false) {
+				throw $e;
+			}
+			$e->setHandled();
+
+			$sentprops = [];
+			$this->setAddressProperties($sentprops, $userDetails, 'SENT_REPRESENTING');
+			$this->setAddressProperties($sentprops, $userDetails, 'SENDER');
+			mapi_setprops($outgoing, $sentprops);
+			mapi_savechanges($outgoing);
+			mapi_message_submitmessage($outgoing);
+		}
 	}
 
 	/**
