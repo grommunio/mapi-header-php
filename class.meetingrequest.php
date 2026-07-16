@@ -1280,8 +1280,12 @@ class Meetingrequest {
 			return;
 		}
 
-		// check write access for delegate
-		if ($this->checkCalendarWriteAccess($this->store) !== true) {
+		// check write access on the folder the meeting resides in
+		$parentProps = mapi_getprops($this->message, [PR_PARENT_ENTRYID]);
+		$hasWriteAccess = empty($parentProps[PR_PARENT_ENTRYID]) ?
+			$this->checkCalendarWriteAccess($this->store) :
+			$this->checkFolderWriteAccess($parentProps[PR_PARENT_ENTRYID], $this->store);
+		if ($hasWriteAccess !== true) {
 			// Throw an exception that we don't have write permissions on calendar folder,
 			// error message will be filled by module
 			throw new MAPIException(_("Insufficient permissions"), MAPI_E_NO_ACCESS);
