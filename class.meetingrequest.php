@@ -1635,9 +1635,10 @@ class Meetingrequest {
 	}
 
 	/**
-	 * Function will return entryid of any default folder of store. This method is useful when you want
-	 * to get entryid of folder which is stored as properties of inbox folder
-	 * (PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_CONTACT_ENTRYID, PR_IPM_DRAFTS_ENTRYID, PR_IPM_JOURNAL_ENTRYID, PR_IPM_NOTE_ENTRYID, PR_IPM_TASK_ENTRYID).
+	 * Function will return entryid of any default folder of store. The default folder
+	 * entryids (PR_IPM_APPOINTMENT_ENTRYID, PR_IPM_CONTACT_ENTRYID, ...) are read from
+	 * the store root folder, which is accessible even when the inbox is not.
+	 * PR_ENTRYID returns the entryid of the inbox itself.
 	 *
 	 * @param int   $prop  proptag of the folder for which we want to get entryid
 	 * @param mixed $store {optional} user store from which we need to get entryid of default folder
@@ -1646,16 +1647,20 @@ class Meetingrequest {
 	 */
 	public function getDefaultFolderEntryID(int $prop, mixed $store = false): bool|string {
 		try {
-			$inbox = mapi_msgstore_getreceivefolder($store ?: $this->store);
-			$inboxprops = mapi_getprops($inbox, [$prop]);
+			$entry = $prop === PR_ENTRYID ?
+				mapi_msgstore_getreceivefolder($store ?: $this->store) :
+				mapi_msgstore_openentry($store ?: $this->store);
+			$entryprops = mapi_getprops($entry, [$prop]);
 
-			return $inboxprops[$prop] ?? false;
+			return $entryprops[$prop] ?? false;
 		}
 		catch (MAPIException $e) {
 			// public store doesn't support this method
 			if ($e->getCode() == MAPI_E_NO_SUPPORT) {
 				// don't propagate this error to parent handlers, if store doesn't support it
 				$e->setHandled();
+
+				return false;
 			}
 		}
 
