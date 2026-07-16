@@ -2035,6 +2035,10 @@ class Meetingrequest {
 		if ($calendar === false) {
 			// Open the Calendar
 			$calendar = $this->openDefaultCalendar();
+			if ($calendar === false) {
+				// no access to the calendar folder
+				return null;
+			}
 		}
 
 		// Find the item by restricting all items to the correct ID
