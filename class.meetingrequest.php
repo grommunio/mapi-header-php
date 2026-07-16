@@ -2788,7 +2788,7 @@ class Meetingrequest {
 	 */
 	public function submitMeetingRequest($message, $cancel, $prefix, $basedate = false, $recurObject = false, $copyExceptions = true, $modifiedRecips = false, $deletedRecips = false): void {
 		$newmessageprops = $messageprops = mapi_getprops($this->message);
-		$new = $this->createOutgoingMessage();
+		$new = $this->createOutgoingMessage($this->store);
 
 		// Copy the entire message into the new meeting request message
 		if ($basedate) {
@@ -2872,6 +2872,23 @@ class Meetingrequest {
 
 			$deletedRecips = array_merge($deletedRecips ?: [], $recipients);
 		}
+
+		// don't let the addressing copied from the calendar item override the
+		// sender set up by createOutgoingMessage
+		unset(
+			$newmessageprops[PR_SENDER_ENTRYID],
+			$newmessageprops[PR_SENDER_NAME],
+			$newmessageprops[PR_SENDER_ADDRTYPE],
+			$newmessageprops[PR_SENDER_EMAIL_ADDRESS],
+			$newmessageprops[PR_SENDER_SEARCH_KEY],
+			$newmessageprops[PR_SENDER_SMTP_ADDRESS],
+			$newmessageprops[PR_SENT_REPRESENTING_ENTRYID],
+			$newmessageprops[PR_SENT_REPRESENTING_NAME],
+			$newmessageprops[PR_SENT_REPRESENTING_ADDRTYPE],
+			$newmessageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS],
+			$newmessageprops[PR_SENT_REPRESENTING_SEARCH_KEY],
+			$newmessageprops[PR_SENT_REPRESENTING_SMTP_ADDRESS]
+		);
 
 		// Remove the PR_ICON_INDEX as it is not needed in the sent message.
 		$newmessageprops[PR_ICON_INDEX] = null;
@@ -3059,7 +3076,7 @@ class Meetingrequest {
 
 		// Send cancellation to deleted attendees
 		if ($deletedRecips) {
-			$new = $this->createOutgoingMessage();
+			$new = $this->createOutgoingMessage($this->store);
 
 			mapi_message_modifyrecipients($new, MODRECIP_ADD, $deletedRecips);
 
@@ -3157,25 +3174,27 @@ class Meetingrequest {
 		$outgoing = mapi_folder_createmessage($outbox);
 
 		// check if $store is set and it is not equal to $defaultStore (means its the delegation case)
+		$isDelegate = false;
 		if ($store !== false) {
 			$storeProps = mapi_getprops($store, [PR_ENTRYID]);
 			$userStoreProps = mapi_getprops($userStore, [PR_ENTRYID]);
+			$isDelegate = !compareEntryIds($storeProps[PR_ENTRYID], $userStoreProps[PR_ENTRYID]);
+		}
 
-			if (!compareEntryIds($storeProps[PR_ENTRYID], $userStoreProps[PR_ENTRYID])) {
-				// get the delegator properties and set it into outgoing mail
-				$delegatorDetails = $this->getOwnerAddress($store, false);
-				$this->setAddressProperties($sentprops, $delegatorDetails, 'SENT_REPRESENTING');
+		if ($isDelegate) {
+			// get the delegator properties and set it into outgoing mail
+			$delegatorDetails = $this->getOwnerAddress($store, false);
+			$this->setAddressProperties($sentprops, $delegatorDetails ?: [], 'SENT_REPRESENTING');
 
-				// get the delegate properties and set it into outgoing mail
-				$delegateDetails = $this->getOwnerAddress($userStore, false);
-				$this->setAddressProperties($sentprops, $delegateDetails, 'SENDER');
-			}
+			// get the delegate properties and set it into outgoing mail
+			$delegateDetails = $this->getOwnerAddress($userStore, false);
+			$this->setAddressProperties($sentprops, $delegateDetails ?: [], 'SENDER');
 		}
 		else {
 			// normal user is sending mail, so both set of properties will be same
 			$userDetails = $this->getOwnerAddress($userStore);
-			$this->setAddressProperties($sentprops, $userDetails, 'SENT_REPRESENTING');
-			$this->setAddressProperties($sentprops, $userDetails, 'SENDER');
+			$this->setAddressProperties($sentprops, $userDetails ?: [], 'SENT_REPRESENTING');
+			$this->setAddressProperties($sentprops, $userDetails ?: [], 'SENDER');
 		}
 
 		$sentprops[PR_SENTMAIL_ENTRYID] = $this->getDefaultSentmailEntryID($userStore);
