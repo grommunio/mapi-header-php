@@ -1677,8 +1677,23 @@ class Meetingrequest {
 	 */
 	public function openDefaultFolder(int $prop, mixed $store = false): mixed {
 		$entryid = $this->getDefaultFolderEntryID($prop, $store);
+		if ($entryid === false) {
+			return false;
+		}
 
-		return $entryid === false ? false : mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		try {
+			return mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		}
+		catch (MAPIException $e) {
+			// gromox reports a folder the user has no rights on as not found
+			if ($e->getCode() == MAPI_E_NO_ACCESS || $e->getCode() == MAPI_E_NOT_FOUND) {
+				$e->setHandled();
+
+				return false;
+			}
+
+			throw $e;
+		}
 	}
 
 	/**
@@ -1733,8 +1748,8 @@ class Meetingrequest {
 			return ($folderProps[PR_ACCESS] & MAPI_ACCESS_CREATE_CONTENTS) === MAPI_ACCESS_CREATE_CONTENTS;
 		}
 		catch (MAPIException $e) {
-			// We don't have rights to open folder, so return false
-			if ($e->getCode() == MAPI_E_NO_ACCESS) {
+			// no rights to open the folder; gromox reports this as not found
+			if ($e->getCode() == MAPI_E_NO_ACCESS || $e->getCode() == MAPI_E_NOT_FOUND) {
 				return false;
 			}
 
