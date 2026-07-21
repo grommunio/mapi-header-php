@@ -302,12 +302,14 @@ function getGoidFromUid(string $uid): string {
  * @return string an OL compatible GlobalObjectID
  */
 function getGoidFromUidZero(string $uid): string {
-	if (strlen((string) $uid) <= 64) {
-		return hex2bin("040000008200E00074C5B7101A82E0080000000000000000000000000000000000000000" .
-			bin2hex(pack("V", 13 + strlen((string) $uid)) . "vCal-Uid" . pack("V", 1) . $uid) . "00");
+	// uids longer than 64 chars are only passed through as hex encoded goids
+	// if they actually are valid hex
+	if (strlen($uid) > 64 && ctype_xdigit($uid) && strlen($uid) % 2 == 0) {
+		return hex2bin($uid);
 	}
 
-	return hex2bin((string) $uid);
+	return hex2bin("040000008200E00074C5B7101A82E0080000000000000000000000000000000000000000" .
+		bin2hex(pack("V", 13 + strlen($uid)) . "vCal-Uid" . pack("V", 1) . $uid) . "00");
 }
 
 /**
