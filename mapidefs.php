@@ -744,3 +744,7 @@ define('RECURR_NO_START', 4);
 define('RECURR_NO_END', 5);
 define('RECURR_NO_STARTOCC', 6);
 define('RECURR_NO_ENDOCC', 7);
+
+/* Delegate Wastebasket style */
+define('DELEGATE_WASTEBASKET_MAILBOXOWNER', 4);
+define('DELEGATE_WASTEBASKET_MAINUSER', 8);
