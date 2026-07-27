@@ -1,3 +1,31 @@
+2.2 (2026-07-27)
+================
+
+Fixes:
+
+* Calendar events occuring every n years are broken
+* Meeting request processing of delegates opens wrong store
+* PR_RECEIVED_BY_SMTP_ADDRESS tag is undefined
+* MSGFLAG_UNSENT flag is set after sending a meeting request
+* Remove recipients from a meeting request fails
+* Task owner is empty
+* Daystart is not available in a recurrence
+* Shared calendar is unresolveable
+* Canceling meeting request in a shared calendar fails
+* Wrong GOID for uids longer than 64 chars
+
+Enhancements:
+
+* Cache gmtime() results in BaseRecurrence
+* Cache DST boundaries and daysInMonth results
+* Add hash index infrastructure for exception lookups
+* Use hash-indexed lookups for exception methods
+* Category handling for the attendee
+* Set PR_HTML body message with fallback to PR_BODY
+* RecurrenceException class
+* mapi_linkmessages stub
+* Delegate Wastebasket style constants
+
 2.1 (2025-12-16)
 ================
 
