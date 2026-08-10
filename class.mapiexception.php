@@ -32,7 +32,7 @@ class MAPIException extends BaseException {
 			MAPI_E_NO_RECIPIENTS => _("There are no recipients in the message."),
 			MAPI_E_NOT_FOUND => _("Can not find object."),
 			MAPI_E_NOT_ENOUGH_MEMORY => _("Operation failed: Server does not have enough memory."),
-			default => sprintf(_("Unknown MAPI Error: %s"), get_mapi_error_name($this->getCode())),
+			default => _(mapi_strerror($this->getCode())),
 		};
 	}
 }
