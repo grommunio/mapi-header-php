@@ -2,7 +2,7 @@
 
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
- * SPDX-FileCopyrightText: Copyright 2023 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2023-2026 grommunio GmbH
  *
  * Object class to parse a JSON Web Token.
  */
@@ -28,16 +28,15 @@ class Token {
 				if (count($parts) !== 3) {
 					throw new Exception('Invalid token format');
 				}
-				$th = base64_decode($parts[0]);
-				$tp = base64_decode($parts[1]);
-				$ts = base64_decode($parts[2]);
+				$th = $this->base64_url_decode($parts[0]);
+				$tp = $this->base64_url_decode($parts[1]);
 				$this->token_header = json_decode($th, true);
 				$payload = json_decode($tp, true);
 				// Only use decoded payload if it's valid
 				if (is_array($payload)) {
 					$this->token_payload = $payload;
 				}
-				$this->token_signature = $ts;
+				$this->token_signature = $this->base64_url_decode($parts[2]);
 				$this->signed = $parts[0] . '.' . $parts[1];
 			}
 			catch (Exception) {
@@ -80,5 +79,15 @@ class Token {
 	 */
 	public function is_expired(): bool {
 		return ($this->token_payload['exp'] ?? 0) <= time();
+	}
+
+	/**
+	 * Returns decoded JWT/JWS part.
+	 */
+	private function base64_url_decode(string $data): string|false {
+		$data = strtr($data, '-_', '+/');
+		$data .= str_repeat('=', (4 - strlen($data) % 4) % 4);
+
+		return base64_decode($data, true);
 	}
 }
