@@ -2,7 +2,7 @@
 
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
- * SPDX-FileCopyrightText: Copyright 2023 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2023-2026 grommunio GmbH
  *
  * Performs several actions against a KeyCloak server.
  */
@@ -242,7 +242,7 @@ class KeyCloak {
 			return false;
 		}
 
-		return !array_key_exists('error', $data);
+		return is_array($data) && !array_key_exists('error', $data) && ($data['active'] ?? false);
 	}
 
 	/**
