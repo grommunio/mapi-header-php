@@ -204,12 +204,11 @@ class KeyCloak {
 	}
 
 	/**
-	 * Validates the grant represented by the access and refresh tokens in the grant.
-	 * If the refresh token has expired too, return false.
+	 * Validates the grant represented by the access token in the grant.
+	 * If the refresh grant also fails, return false.
 	 */
 	public function validate_grant(): bool {
-		return ($this->validate_token($this->access_token) && $this->validate_token($this->refresh_token)) ||
-			$this->refresh_grant_req();
+		return $this->validate_token($this->access_token) || $this->refresh_grant_req();
 	}
 
 	/**
