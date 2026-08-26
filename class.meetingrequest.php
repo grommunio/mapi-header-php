@@ -701,6 +701,11 @@ class Meetingrequest {
 			$entryid = $this->accept($tentative, $sendresponse, $move, $proposeNewTimeProps, $body, $userAction, $store, $calFolder, $basedate);
 		}
 
+		// A response made on the appointment leaves the request mail in the inbox.
+		if ($entryid && $userAction && !$this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS])) {
+			$this->removeRequestFromInbox($basedate);
+		}
+
 		// if we have first time processed this meeting then set PR_PROCESSED property
 		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && $userAction === false && $isImported === false) {
 			if (!isset($messageprops[PR_PROCESSED]) || $messageprops[PR_PROCESSED] != true) {
@@ -1094,6 +1099,68 @@ class Meetingrequest {
 	}
 
 	/**
+	 * Moves the meeting request mail of the appointment which is being
+	 * responded to into the wastebasket.
+	 *
+	 * @param false|int $basedate basedate of the occurrence which was responded to
+	 */
+	public function removeRequestFromInbox(false|int $basedate = false): void {
+		$props = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2']]);
+
+		// An occurrence carries its basedate inside the GlobalObjectId, so a
+		// response to one occurrence never matches the series invitation.
+		$goid = $basedate !== false && !empty($props[$this->proptags['goid2']]) ?
+			$this->setBasedateInGlobalID($props[$this->proptags['goid2']], $basedate) :
+			($props[$this->proptags['goid']] ?? false);
+		if (empty($goid)) {
+			return;
+		}
+
+		// The request was delivered to the responding user, which for a delegate
+		// is not the store holding the appointment.
+		$store = $this->openDefaultStore();
+		if ($store === false) {
+			return;
+		}
+		$inbox = $this->openDefaultFolder(PR_ENTRYID, $store);
+		$wastebasket = $this->openDefaultWastebasket($store);
+		if ($inbox === false || $wastebasket === false) {
+			return;
+		}
+
+		// Named property ids are assigned per store.
+		$goidtag = getPropIdsFromStrings($store, ['goid' => 'PT_BINARY:PSETID_Meeting:0x3'])['goid'];
+
+		$table = mapi_folder_getcontentstable($inbox);
+		$rows = mapi_table_queryallrows($table, [PR_ENTRYID], [
+			RES_AND,
+			[
+				[
+					RES_PROPERTY,
+					[
+						RELOP => RELOP_EQ,
+						ULPROPTAG => $goidtag,
+						VALUE => $goid,
+					],
+				],
+				[
+					RES_CONTENT,
+					[
+						FUZZYLEVEL => FL_PREFIX | FL_IGNORECASE,
+						ULPROPTAG => PR_MESSAGE_CLASS,
+						VALUE => [PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Request'],
+					],
+				],
+			],
+		]);
+		if (empty($rows)) {
+			return;
+		}
+
+		mapi_folder_copymessages($inbox, array_column($rows, PR_ENTRYID), $wastebasket, MESSAGE_MOVE);
+	}
+
+	/**
 	 * Declines the meeting request by moving the item to the deleted
 	 * items folder and sending a decline message. After declining, you
 	 * can't use this class instance any more. The message is closed.
@@ -1159,6 +1226,11 @@ class Meetingrequest {
 			if ($this->isMeetingRequest()) {
 				$calendaritem = false;
 			}
+		}
+
+		// A response made on the appointment leaves the request mail in the inbox.
+		if (!$this->isMeetingRequest()) {
+			$this->removeRequestFromInbox($basedate);
 		}
 
 		if (!$calendaritem) {
