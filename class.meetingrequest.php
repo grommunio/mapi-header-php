@@ -1434,7 +1434,7 @@ class Meetingrequest {
 			$this->bookResources($this->message, $cancel, $prefix);
 
 			if (!$this->errorSetResource) {
-				$recurr = new Recurrence($this->openDefaultStore(), $this->message);
+				$recurr = new Recurrence($this->store, $this->message);
 
 				// First send meetingrequest for recurring item
 				$this->submitMeetingRequest($this->message, $cancel, $prefix, false, $recurr, false, $modifiedRecips, $deletedRecips);
@@ -1457,7 +1457,7 @@ class Meetingrequest {
 		else {
 			// Basedate found, an exception is to be sent
 			if ($basedate) {
-				$recurr = new Recurrence($this->openDefaultStore(), $this->message);
+				$recurr = new Recurrence($this->store, $this->message);
 
 				if ($cancel) {
 					// @TODO: remove occurrence from Resource's Calendar if resource was booked for whole series
@@ -2366,7 +2366,7 @@ class Meetingrequest {
 		if ($basedate) {
 			$recurrItemProps = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2'], $this->proptags['timezone_data'], $this->proptags['timezone'], PR_OWNER_APPT_ID]);
 
-			$recurrenceHelper = new Recurrence($this->openDefaultStore(), $this->message);
+			$recurrenceHelper = new Recurrence($this->store, $this->message);
 			$basedateUtc = $basedate;
 			if ($recurrenceHelper instanceof BaseRecurrence && isset($recurrenceHelper->tz)) {
 				$basedateUtc = $recurrenceHelper->toGMT($recurrenceHelper->tz, $basedate);
@@ -3629,7 +3629,7 @@ class Meetingrequest {
 					// Get the goid2 from recurring MR which further used to
 					// check the resource conflicts item.
 					$recurrItemProps = mapi_getprops($this->message, [$this->proptags['goid2']]);
-					$recurrenceHelper = new Recurrence($this->openDefaultStore(), $this->message);
+					$recurrenceHelper = new Recurrence($this->store, $this->message);
 					$messageProps[$this->proptags['goid']] = $this->setBasedateInGlobalID($recurrItemProps[$this->proptags['goid2']], $basedate, $recurrenceHelper);
 					$messageProps[$this->proptags['goid2']] = $recurrItemProps[$this->proptags['goid2']];
 				}
