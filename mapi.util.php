@@ -239,7 +239,10 @@ function getCalendarItems(mixed $store, mixed $calendar, int $viewstart, int $vi
 	$proplist = [PR_ENTRYID, $properties["recurring"], $properties["recurring_data"], $properties["timezone_data"]];
 	$proplist = array_merge($proplist, $propsrequested);
 
-	$rows = mapi_table_queryallrows($table, $proplist, $restriction);
+	// Restricting the table filters it while it loads; passing the
+	// restriction to queryallrows instead walks it row by row.
+	mapi_table_restrict($table, $restriction, TBL_BATCH);
+	$rows = mapi_table_queryallrows($table, $proplist);
 
 	// $rows now contains all the items that MAY be in the window; a recurring item needs expansion before including in the output.
 
