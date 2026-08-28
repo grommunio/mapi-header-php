@@ -1106,62 +1106,78 @@ class Meetingrequest {
 	 * Moves the meeting request mail of the appointment which is being
 	 * responded to into the wastebasket.
 	 *
+	 * Only the inbox of the responding user is searched, so a request which a
+	 * rule has filed into another folder is left alone, and so is the request
+	 * of a mailbox which merely shares its calendar with the responding user.
+	 * A response to the series does not match the requests of single
+	 * occurrences either, as those carry their basedate in the GlobalObjectId.
+	 *
+	 * Removing the mail is a courtesy rather than part of the response, so a
+	 * failure to do so is swallowed instead of failing the accept or decline
+	 * which has already been carried out.
+	 *
 	 * @param false|int $basedate basedate of the occurrence which was responded to
 	 */
 	public function removeRequestFromInbox(false|int $basedate = false): void {
-		$props = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2']]);
+		try {
+			$props = mapi_getprops($this->message, [$this->proptags['goid'], $this->proptags['goid2']]);
 
-		// An occurrence carries its basedate inside the GlobalObjectId, so a
-		// response to one occurrence never matches the series invitation.
-		$goid = $basedate !== false && !empty($props[$this->proptags['goid2']]) ?
-			$this->setBasedateInGlobalID($props[$this->proptags['goid2']], $basedate) :
-			($props[$this->proptags['goid']] ?? false);
-		if (empty($goid)) {
-			return;
-		}
+			// An occurrence carries its basedate inside the GlobalObjectId, so a
+			// response to one occurrence never matches the series invitation.
+			$goid = $basedate !== false && !empty($props[$this->proptags['goid2']]) ?
+				$this->setBasedateInGlobalID($props[$this->proptags['goid2']], $basedate) :
+				($props[$this->proptags['goid']] ?? false);
+			if (empty($goid)) {
+				return;
+			}
 
-		// The request was delivered to the responding user, which for a delegate
-		// is not the store holding the appointment.
-		$store = $this->openDefaultStore();
-		if ($store === false) {
-			return;
-		}
-		$inbox = $this->openDefaultFolder(PR_ENTRYID, $store);
-		$wastebasket = $this->openDefaultWastebasket($store);
-		if ($inbox === false || $wastebasket === false) {
-			return;
-		}
+			// The request was delivered to the responding user, which for a delegate
+			// is not the store holding the appointment.
+			$store = $this->openDefaultStore();
+			if ($store === false) {
+				return;
+			}
+			$inbox = $this->openDefaultFolder(PR_ENTRYID, $store);
+			$wastebasket = $this->openDefaultWastebasket($store);
+			if ($inbox === false || $wastebasket === false) {
+				return;
+			}
 
-		// Named property ids are assigned per store.
-		$goidtag = getPropIdsFromStrings($store, ['goid' => 'PT_BINARY:PSETID_Meeting:0x3'])['goid'];
+			// Named property ids are assigned per store.
+			$goidtag = getPropIdsFromStrings($store, ['goid' => 'PT_BINARY:PSETID_Meeting:0x3'])['goid'];
 
-		$table = mapi_folder_getcontentstable($inbox);
-		$rows = mapi_table_queryallrows($table, [PR_ENTRYID], [
-			RES_AND,
-			[
+			$table = mapi_folder_getcontentstable($inbox);
+			$rows = mapi_table_queryallrows($table, [PR_ENTRYID], [
+				RES_AND,
 				[
-					RES_PROPERTY,
 					[
-						RELOP => RELOP_EQ,
-						ULPROPTAG => $goidtag,
-						VALUE => $goid,
+						RES_PROPERTY,
+						[
+							RELOP => RELOP_EQ,
+							ULPROPTAG => $goidtag,
+							VALUE => $goid,
+						],
+					],
+					[
+						RES_CONTENT,
+						[
+							FUZZYLEVEL => FL_PREFIX | FL_IGNORECASE,
+							ULPROPTAG => PR_MESSAGE_CLASS,
+							VALUE => [PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Request'],
+						],
 					],
 				],
-				[
-					RES_CONTENT,
-					[
-						FUZZYLEVEL => FL_PREFIX | FL_IGNORECASE,
-						ULPROPTAG => PR_MESSAGE_CLASS,
-						VALUE => [PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Request'],
-					],
-				],
-			],
-		]);
-		if (empty($rows)) {
-			return;
-		}
+			]);
+			if (empty($rows)) {
+				return;
+			}
 
-		mapi_folder_copymessages($inbox, array_column($rows, PR_ENTRYID), $wastebasket, MESSAGE_MOVE);
+			mapi_folder_copymessages($inbox, array_column($rows, PR_ENTRYID), $wastebasket, MESSAGE_MOVE);
+		}
+		catch (MAPIException $e) {
+			// The response itself succeeded, so do not let the cleanup fail it.
+			$e->setHandled();
+		}
 	}
 
 	/**
