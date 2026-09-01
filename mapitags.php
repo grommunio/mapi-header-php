@@ -36,3 +36,15 @@ define('PR_EC_ARCHIVE_SERVERS', mapi_prop_tag(PT_MV_TSTRING, 0x67C4));
 
 define('PR_EC_WA_ATTACHMENT_ID', mapi_prop_tag(PT_STRING8, 0x67E1));
 define('PR_EC_WA_FILES_ENCRYPTION_KEY', mapi_prop_tag(PT_BINARY, 0x67E2));
+
+/* Conversation threading (MS-OXOMSG): the server computes the id, replies and
+ * forwards inherit the index and the topic. */
+if (!defined('PR_CONVERSATION_TOPIC')) {
+	define('PR_CONVERSATION_TOPIC', mapi_prop_tag(PT_TSTRING, 0x0070));
+}
+if (!defined('PR_CONVERSATION_INDEX')) {
+	define('PR_CONVERSATION_INDEX', mapi_prop_tag(PT_BINARY, 0x0071));
+}
+if (!defined('PR_CONVERSATION_ID')) {
+	define('PR_CONVERSATION_ID', mapi_prop_tag(PT_BINARY, 0x3013));
+}
