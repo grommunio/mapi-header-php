@@ -106,6 +106,14 @@ class Meetingrequest {
 	 */
 	public $errorSetResource;
 
+	/**
+	 * Response message prepared by createResponse() but not yet submitted.
+	 * Held only for the duration of one accept()/doAccept() call.
+	 *
+	 * @var mixed
+	 */
+	private $pendingResponse;
+
 	public $proptags;
 
 	/**
@@ -698,11 +706,19 @@ class Meetingrequest {
 		// While sender is receiver then we have to process the meeting request as per the intended busy status
 		// instead of tentative, and accept the same as per the intended busystatus.
 		$senderEntryId = $messageprops[PR_SENT_REPRESENTING_ENTRYID] ?? $messageprops[PR_SENDER_ENTRYID];
-		if (isset($messageprops[PR_RECEIVED_BY_ENTRYID]) && compareEntryIds($senderEntryId, $messageprops[PR_RECEIVED_BY_ENTRYID])) {
-			$entryid = $this->accept(false, $sendresponse, $move, $proposeNewTimeProps, $body, true, $store, $calFolder, $basedate);
+
+		try {
+			if (isset($messageprops[PR_RECEIVED_BY_ENTRYID]) && compareEntryIds($senderEntryId, $messageprops[PR_RECEIVED_BY_ENTRYID])) {
+				$entryid = $this->accept(false, $sendresponse, $move, $proposeNewTimeProps, $body, true, $store, $calFolder, $basedate);
+			}
+			else {
+				$entryid = $this->accept($tentative, $sendresponse, $move, $proposeNewTimeProps, $body, $userAction, $store, $calFolder, $basedate);
+			}
 		}
-		else {
-			$entryid = $this->accept($tentative, $sendresponse, $move, $proposeNewTimeProps, $body, $userAction, $store, $calFolder, $basedate);
+		finally {
+			// accept() clears this once it has submitted; anything left means it
+			// threw, and an unsent response must not stay behind in the Outbox.
+			$this->discardPendingResponse();
 		}
 
 		// Opt-in; by default the request mail stays in the inbox.
@@ -734,7 +750,15 @@ class Meetingrequest {
 		$entryid = '';
 
 		if ($sendresponse) {
-			$this->createResponse($tentative ? olResponseTentative : olResponseAccepted, $proposeNewTimeProps, $body, $store, $basedate, $calFolder);
+			/*
+			 * Only prepared here, not sent. Everything the response is built
+			 * from has to be read while the request message is still intact -
+			 * the $move path below copies it into the calendar and removes the
+			 * original - but sending it before the calendar item exists means
+			 * a failure further down leaves the organiser with an acceptance
+			 * for a meeting the attendee does not have.
+			 */
+			$this->pendingResponse = $this->createResponse($tentative ? olResponseTentative : olResponseAccepted, $proposeNewTimeProps, $body, $store, $basedate, $calFolder, true);
 		}
 
 		/*
@@ -1098,6 +1122,8 @@ class Meetingrequest {
 
 			$entryid = $messageprops[PR_ENTRYID];
 		}
+
+		$this->submitPendingResponse($entryid);
 
 		return $entryid;
 	}
@@ -1930,7 +1956,7 @@ class Meetingrequest {
 	 * @param false|int $basedate            date of occurrence which attendee has responded
 	 * @param mixed     $calFolder
 	 */
-	public function createResponse($status, $proposeNewTimeProps, $body, $store, $basedate, $calFolder): void {
+	public function createResponse($status, $proposeNewTimeProps, $body, $store, $basedate, $calFolder, bool $defer = false): mixed {
 		$messageprops = mapi_getprops($this->message, [
 			PR_SENT_REPRESENTING_ENTRYID,
 			PR_SENT_REPRESENTING_EMAIL_ADDRESS,
@@ -2115,7 +2141,13 @@ class Meetingrequest {
 		mapi_setprops($message, $props);
 		mapi_message_modifyrecipients($message, MODRECIP_ADD, [$recip]);
 		mapi_savechanges($message);
+		if ($defer) {
+			// Caller submits once the calendar item is actually stored.
+			return $message;
+		}
 		mapi_message_submitmessage($message);
+
+		return null;
 	}
 
 	/**
@@ -4067,6 +4099,47 @@ class Meetingrequest {
 	 *
 	 * @throws MAPIException with MAPI_E_NO_ACCESS if write access is denied
 	 */
+	/**
+	 * Submit the response prepared by createResponse(), but only if the accept
+	 * actually produced a calendar item. Without an entryid nothing was stored,
+	 * so telling the organiser the meeting was accepted would be wrong.
+	 */
+	private function submitPendingResponse(mixed $entryid): void {
+		$message = $this->pendingResponse;
+		$this->pendingResponse = null;
+		if ($message === null) {
+			return;
+		}
+		if (empty($entryid)) {
+			$this->deleteOutgoingMessage($message);
+
+			return;
+		}
+		mapi_message_submitmessage($message);
+	}
+
+	/**
+	 * Drop a response that was prepared but never submitted, so it does not sit
+	 * in the Outbox as an unsent message.
+	 */
+	private function discardPendingResponse(): void {
+		$message = $this->pendingResponse;
+		$this->pendingResponse = null;
+		if ($message !== null) {
+			$this->deleteOutgoingMessage($message);
+		}
+	}
+
+	private function deleteOutgoingMessage(mixed $message): void {
+		$props = mapi_getprops($message, [PR_ENTRYID, PR_PARENT_ENTRYID]);
+		if (!isset($props[PR_ENTRYID], $props[PR_PARENT_ENTRYID])) {
+			return;
+		}
+		$store = $this->openDefaultStore();
+		$parent = mapi_msgstore_openentry($store, $props[PR_PARENT_ENTRYID]);
+		mapi_folder_deletemessages($parent, [$props[PR_ENTRYID]]);
+	}
+
 	private function ensureCalendarWriteAccess(mixed $store): void {
 		if ($this->checkCalendarWriteAccess($store) !== true) {
 			throw new MAPIException(_("Insufficient permissions"), MAPI_E_NO_ACCESS);
