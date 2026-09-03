@@ -756,9 +756,9 @@ abstract class BaseRecurrence {
 				}
 
 				// Get montday/month/year of original start
-				$curmonthday = gmdate("j", (int) $this->recur["start"]);
-				$curyear = gmdate("Y", (int) $this->recur["start"]);
-				$curmonth = gmdate("n", (int) $this->recur["start"]);
+				$curmonthday = (int) gmdate("j", (int) $this->recur["start"]);
+				$curyear = (int) gmdate("Y", (int) $this->recur["start"]);
+				$curmonth = (int) gmdate("n", (int) $this->recur["start"]);
 
 				// Check if the recurrence ends after a number of occurrences, in that case we must calculate the
 				// remaining occurrences based on the start of the recurrence.
@@ -827,8 +827,8 @@ abstract class BaseRecurrence {
 						// if the day of the month we got is wrong, and then back up to the last day of the previous
 						// month.
 						if (((int) $this->recur["monthday"]) >= 28 && ((int) $this->recur["monthday"]) <= 31 &&
-							gmdate("j", (int) $this->recur["start"]) < ((int) $this->recur["monthday"])) {
-							$this->recur["start"] -= gmdate("j", (int) $this->recur["start"]) * 24 * 60 * 60;
+							(int) gmdate("j", (int) $this->recur["start"]) < ((int) $this->recur["monthday"])) {
+							$this->recur["start"] -= (int) gmdate("j", (int) $this->recur["start"]) * 24 * 60 * 60;
 						}
 
 						// "start" is now the first occurrence
@@ -870,11 +870,11 @@ abstract class BaseRecurrence {
 
 						if ($nday == 5) {
 							// Set date on the last day of the last month
-							$monthbegindow += (gmdate("t", $monthbegindow) - gmdate("j", $monthbegindow)) * 24 * 60 * 60;
+							$monthbegindow += ((int) gmdate("t", $monthbegindow) - (int) gmdate("j", $monthbegindow)) * 24 * 60 * 60;
 						}
 						else {
 							// Set on the first day of the month
-							$monthbegindow -= ((gmdate("j", $monthbegindow) - 1) * 24 * 60 * 60);
+							$monthbegindow -= (((int) gmdate("j", $monthbegindow) - 1) * 24 * 60 * 60);
 						}
 
 						if ($rtype == IDC_RCEV_PAT_ORB_YEARLY) {
@@ -899,10 +899,10 @@ abstract class BaseRecurrence {
 						else {
 							// Check or you exist in the right month
 
-							$dayofweek = gmdate("w", $monthbegindow);
+							$dayofweek = (int) gmdate("w", $monthbegindow);
 							for ($i = 0; $i < 7; ++$i) {
 								if ($nday == 5 && (($dayofweek - $i) % 7 >= 0) && (1 << (($dayofweek - $i) % 7)) & $weekdays) {
-									$day = gmdate("j", $monthbegindow) - $i;
+									$day = (int) gmdate("j", $monthbegindow) - $i;
 									break;
 								}
 								if ($nday != 5 && (1 << (($dayofweek + $i) % 7)) & $weekdays) {
@@ -912,7 +912,7 @@ abstract class BaseRecurrence {
 							}
 
 							// Goto the next X month
-							if (isset($day) && ($day < gmdate("j", (int) $this->recur["start"]))) {
+							if (isset($day) && ($day < (int) gmdate("j", (int) $this->recur["start"]))) {
 								if ($nday == 5) {
 									$monthbegindow += 24 * 60 * 60;
 									if ($curmonth == 12) {
@@ -942,7 +942,7 @@ abstract class BaseRecurrence {
 
 						$day = 0;
 						// Set start on the right day
-						$dayofweek = gmdate("w", $monthbegindow);
+						$dayofweek = (int) gmdate("w", $monthbegindow);
 						for ($i = 0; $i < 7; ++$i) {
 							if ($nday == 5 && (($dayofweek - $i) % 7) >= 0 && (1 << (($dayofweek - $i) % 7)) & $weekdays) {
 								$day = $i;
@@ -1106,7 +1106,7 @@ abstract class BaseRecurrence {
 						// Add the weeks till the last item
 						$occenddate += ($forwardcount * 7 * 24 * 60 * 60);
 
-						$dayofweek = gmdate("w", $occenddate);
+						$dayofweek = (int) gmdate("w", $occenddate);
 
 						// Loop through the last occurrences until we have had them all
 						for ($j = 1; $restocc > 0; ++$j) {
@@ -1128,8 +1128,8 @@ abstract class BaseRecurrence {
 
 					case IDC_RCEV_PAT_ORB_MONTHLY:
 					case IDC_RCEV_PAT_ORB_YEARLY:
-						$curyear = gmdate("Y", (int) $this->recur["start"]);
-						$curmonth = gmdate("n", (int) $this->recur["start"]);
+						$curyear = (int) gmdate("Y", (int) $this->recur["start"]);
+						$curmonth = (int) gmdate("n", (int) $this->recur["start"]);
 						// $forwardcount = months
 
 						switch ((int) $this->recur["subtype"]) {
@@ -1149,12 +1149,12 @@ abstract class BaseRecurrence {
 
 								// compensation between 28 and 31
 								if (((int) $this->recur["monthday"]) >= 28 && ((int) $this->recur["monthday"]) <= 31 &&
-									gmdate("j", $occenddate) < ((int) $this->recur["monthday"])) {
-									if (gmdate("j", $occenddate) < 28) {
-										$occenddate -= gmdate("j", $occenddate) * 24 * 60 * 60;
+									(int) gmdate("j", $occenddate) < ((int) $this->recur["monthday"])) {
+									if ((int) gmdate("j", $occenddate) < 28) {
+										$occenddate -= (int) gmdate("j", $occenddate) * 24 * 60 * 60;
 									}
 									else {
-										$occenddate += (gmdate("t", $occenddate) - gmdate("j", $occenddate)) * 24 * 60 * 60;
+										$occenddate += ((int) gmdate("t", $occenddate) - (int) gmdate("j", $occenddate)) * 24 * 60 * 60;
 									}
 								}
 
@@ -1179,14 +1179,14 @@ abstract class BaseRecurrence {
 
 								if ($nday == 5) {
 									// Set date on the last day of the last month
-									$occenddate += (gmdate("t", $occenddate) - gmdate("j", $occenddate)) * 24 * 60 * 60;
+									$occenddate += ((int) gmdate("t", $occenddate) - (int) gmdate("j", $occenddate)) * 24 * 60 * 60;
 								}
 								else {
 									// Set date on the first day of the last month
-									$occenddate -= (gmdate("j", $occenddate) - 1) * 24 * 60 * 60;
+									$occenddate -= ((int) gmdate("j", $occenddate) - 1) * 24 * 60 * 60;
 								}
 
-								$dayofweek = gmdate("w", $occenddate);
+								$dayofweek = (int) gmdate("w", $occenddate);
 								for ($i = 0; $i < 7; ++$i) {
 									if ($nday == 5 && (($dayofweek - $i) % 7) >= 0 && (1 << (($dayofweek - $i) % 7)) & $weekdays) {
 										$occenddate -= $i * 24 * 60 * 60;
