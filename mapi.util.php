@@ -606,3 +606,19 @@ function readMapiPropStream(mixed $mapiobj, int $proptag): string {
 
 	return $datastring;
 }
+
+/**
+ * Helper to write a MAPI property through a stream.
+ */
+function writeMapiPropStream(mixed $mapiobj, int $proptag, string $data): bool {
+	$stream = mapi_openproperty($mapiobj, $proptag, IID_IStream, STGM_TRANSACTED, MAPI_CREATE | MAPI_MODIFY);
+	if ($stream === false) {
+		return false;
+	}
+	mapi_stream_setsize($stream, strlen($data));
+	if (mapi_stream_write($stream, $data) === false) {
+		return false;
+	}
+
+	return mapi_stream_commit($stream);
+}

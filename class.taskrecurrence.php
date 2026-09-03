@@ -290,10 +290,7 @@ class TaskRecurrence extends BaseRecurrence {
 
 		if (!empty($msgbody) && strrpos($msgbody, $separator) === false) {
 			$msgbody = $separator . $msgbody;
-			$stream = mapi_openproperty($this->message, PR_BODY, IID_IStream, STGM_TRANSACTED, 0);
-			mapi_stream_setsize($stream, strlen($msgbody));
-			mapi_stream_write($stream, $msgbody);
-			mapi_stream_commit($stream);
+			writeMapiPropStream($this->message, PR_BODY, $msgbody);
 		}
 
 		// We need these properties to notify client
