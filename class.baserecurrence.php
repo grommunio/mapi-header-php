@@ -283,7 +283,7 @@ abstract class BaseRecurrence {
 				}
 
 				$ret["month"] = $data["month"];
-				$ret["everyn"] = $data["everyn"];
+				$ret["everyn"] = $data["everyn"] / 12;
 				$ret["regen"] = $data["regen"];
 
 				if ($ret["subtype"] == rptMonthNth) {
