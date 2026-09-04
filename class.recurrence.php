@@ -126,6 +126,14 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed $copy_attach_from mapi message from which attachments should be copied
 	 */
 	public function createException($exception_props, $base_date, $delete = false, $exception_recips = [], $copy_attach_from = false): bool {
+		if (!$delete && isset($exception_props[$this->proptags["startdate"]]) && !$this->isValidExceptionDate($base_date, $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]))) {
+			return false;
+		}
+
+		if (!$delete && $this->applyCategoriesToSeries($exception_props)) {
+			return true;
+		}
+
 		$this->invalidateExceptionIndex();
 		$baseday = $this->dayStartOf($base_date);
 		$basetime = $baseday + $this->recur["startocc"] * 60;
@@ -136,9 +144,6 @@ class Recurrence extends BaseRecurrence {
 		}
 
 		if (!$delete) {
-			if (isset($exception_props[$this->proptags["startdate"]]) && !$this->isValidExceptionDate($base_date, $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]))) {
-				return false;
-			}
 			$changed_item = [];
 			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date
 			foreach (["subject", "location", "label", "reminder", "reminder_minutes", "alldayevent", "busystatus"] as $propname) {
@@ -213,11 +218,11 @@ class Recurrence extends BaseRecurrence {
 	 * @param mixed $copy_attach_from
 	 */
 	public function modifyException($exception_props, $base_date, $exception_recips = [], $copy_attach_from = false): bool {
-		$this->invalidateExceptionIndex();
 		if (isset($exception_props[$this->proptags["startdate"]]) && !$this->isValidExceptionDate($base_date, $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]))) {
 			return false;
 		}
 
+		$this->invalidateExceptionIndex();
 		$baseday = $this->dayStartOf($base_date);
 		$extomodify = false;
 
@@ -230,6 +235,10 @@ class Recurrence extends BaseRecurrence {
 
 		if (!$extomodify) {
 			return false;
+		}
+
+		if ($this->applyCategoriesToSeries($exception_props)) {
+			return true;
 		}
 
 		// remove basedate property as we want to preserve the old value
@@ -307,6 +316,56 @@ class Recurrence extends BaseRecurrence {
 		$this->saveRecurrence();
 
 		return true;
+	}
+
+	/**
+	 * Apply categories from an occurrence update to the recurring series.
+	 *
+	 * Outlook and Exchange only support categories on the series master. Remove
+	 * the property from the exception update and from existing exceptions so it
+	 * cannot override the series categories when an occurrence is expanded.
+	 *
+	 * @param array $exception_props occurrence properties, modified in place
+	 *
+	 * @return bool true when categories were the only occurrence property
+	 */
+	private function applyCategoriesToSeries(array &$exception_props): bool {
+		$categoriesTag = $this->proptags["categories"];
+		if (!array_key_exists($categoriesTag, $exception_props)) {
+			return false;
+		}
+
+		$categories = $exception_props[$categoriesTag];
+		unset($exception_props[$categoriesTag]);
+
+		if ($categories === null) {
+			mapi_deleteprops($this->message, [$categoriesTag]);
+			unset($this->messageprops[$categoriesTag]);
+		}
+		else {
+			mapi_setprops($this->message, [$categoriesTag => $categories]);
+			$this->messageprops[$categoriesTag] = $categories;
+		}
+
+		$this->removeCategoriesFromExceptions($categoriesTag);
+
+		return empty($exception_props);
+	}
+
+	/**
+	 * Remove occurrence-specific categories from all exception attachments.
+	 */
+	private function removeCategoriesFromExceptions(int $categoriesTag): void {
+		$attachments = mapi_message_getattachmenttable($this->message);
+		$attachRows = mapi_table_queryallrows($attachments, [PR_ATTACH_NUM], $this->getEmbeddedMessageRestriction());
+
+		foreach ($attachRows as $attachRow) {
+			$attachment = mapi_message_openattach($this->message, $attachRow[PR_ATTACH_NUM]);
+			$exception = mapi_attach_openobj($attachment, MAPI_MODIFY);
+			mapi_deleteprops($exception, [$categoriesTag]);
+			mapi_savechanges($exception);
+			mapi_savechanges($attachment);
+		}
 	}
 
 	// Checks to see if the following is true:
