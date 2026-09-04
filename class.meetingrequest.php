@@ -773,8 +773,8 @@ class Meetingrequest {
 						// for the first time
 						$processed = true;
 					}
-					// While we applying updates of MR then all local categories will be removed,
-					// So get the local categories of all occurrence before applying update from organiser.
+					// Preserve the attendee's local categories on the series while applying
+					// the update from the organizer.
 					$localCategories = $this->getLocalCategories($calendarItem, $store, $calFolder, $nonRecurr2Recurr);
 				}
 
@@ -844,11 +844,9 @@ class Meetingrequest {
 
 				mapi_savechanges($calendarItem);
 
-				// After applying update of organiser all local categories of occurrence was removed,
-				// So if local categories exist then apply it on respective occurrence.
+				// Restore the attendee's local categories on the series.
 				// When a non-recurring meeting was converted to a recurring one, it is not
-				// necessary to apply local categories to exceptions because the meeting
-				// previously didn't have any exceptions.
+				// necessary to restore them because they remain on the same master item.
 				if (!empty($localCategories) && !$nonRecurr2Recurr) {
 					$this->applyLocalCategories($calendarItem, $store, $localCategories);
 				}
@@ -3843,14 +3841,14 @@ class Meetingrequest {
 	}
 
 	/**
-	 * Helper function which is use to get local categories of all occurrence.
+	 * Get the attendee's local categories from the series master.
 	 *
 	 * @param mixed $calendarItem     meeting request item
 	 * @param mixed $store            store containing calendar folder
 	 * @param mixed $calFolder        calendar folder
 	 * @param bool  $nonRecurr2Recurr whether a non-recurring meeting was converted to a recurring
 	 *
-	 * @return array $localCategories which contain array of basedate along with categories
+	 * @return array local categories of the series
 	 */
 	public function getLocalCategories(mixed $calendarItem, mixed $store, mixed $calFolder, bool &$nonRecurr2Recurr): array {
 		$calendarItemProps = mapi_getprops($calendarItem);
@@ -3863,58 +3861,19 @@ class Meetingrequest {
 			return $calendarItemProps[$this->proptags['categories']] ?? [];
 		}
 
-		$recurrence = new Recurrence($store, $calendarItem);
-
-		// Retrieve all occurrences(max: 30 occurrence because recurrence can also be set as 'no end date')
-		$calendarItemProps[$this->proptags['clipstart']] = $calendarItemProps[$this->proptags['clipstart']] ?? $recurrence->getClipProp("start");
-		$calendarItemProps[$this->proptags['clipend']] = $calendarItemProps[$this->proptags['clipend']] ?? $recurrence->getClipProp("end");
-		$items = $recurrence->getItems($calendarItemProps[$this->proptags['clipstart']], $calendarItemProps[$this->proptags['clipend']] * (24 * 24 * 60), 30);
-		$localCategories = [];
-
-		foreach ($items as $item) {
-			$recurrenceItems = $recurrence->getCalendarItems($store, $calFolder, $item[$this->proptags['startdate']], $item[$this->proptags['duedate']], [$this->proptags['goid'], $this->proptags['busystatus'], $this->proptags['categories']]);
-			foreach ($recurrenceItems as $recurrenceItem) {
-				// Check if occurrence is exception then get the local categories of that occurrence.
-				if (isset($recurrenceItem[$this->proptags['goid']]) && $recurrenceItem[$this->proptags['goid']] == $calendarItemProps[$this->proptags['goid']]) {
-					$exceptionAttach = $recurrence->getExceptionAttachment($recurrenceItem['basedate']);
-
-					if ($exceptionAttach) {
-						$exception = mapi_attach_openobj($exceptionAttach, 0);
-						$exceptionProps = mapi_getprops($exception, [$this->proptags['categories']]);
-						if (isset($exceptionProps[$this->proptags['categories']])) {
-							$localCategories[$recurrenceItem['basedate']] = $exceptionProps[$this->proptags['categories']];
-						}
-					}
-				}
-			}
-		}
-
-		return $localCategories;
+		return $calendarItemProps[$this->proptags['categories']] ?? [];
 	}
 
 	/**
-	 * Helper function which is use to apply local categories on respective occurrences.
+	 * Apply the attendee's local categories to the series master.
 	 *
 	 * @param mixed $calendarItem    meeting request item
 	 * @param mixed $store           store containing calendar folder
-	 * @param array $localCategories array contains basedate and array of categories
+	 * @param array $localCategories local categories of the series
 	 */
 	public function applyLocalCategories(mixed $calendarItem, mixed $store, array $localCategories): void {
-		$calendarItemProps = mapi_getprops($calendarItem, [PR_PARENT_ENTRYID, PR_ENTRYID]);
-		$message = mapi_msgstore_openentry($store, $calendarItemProps[PR_ENTRYID]);
-		$recurrence = new Recurrence($store, $message);
-
-		// Check for all occurrence if it is exception then modify the exception by setting up categories,
-		// Otherwise create new exception with categories.
-		foreach ($localCategories as $key => $value) {
-			if ($recurrence->isException($key)) {
-				$recurrence->modifyException([$this->proptags['categories'] => $value], $key);
-			}
-			else {
-				$recurrence->createException([$this->proptags['categories'] => $value], $key, false);
-			}
-			mapi_savechanges($message);
-		}
+		mapi_setprops($calendarItem, [$this->proptags['categories'] => $localCategories]);
+		mapi_savechanges($calendarItem);
 	}
 
 	/**
