@@ -622,3 +622,25 @@ function writeMapiPropStream(mixed $mapiobj, int $proptag, string $data): bool {
 
 	return mapi_stream_commit($stream);
 }
+
+/**
+ * Whether mapi_getprops() reported $property as too large to be returned inline.
+ */
+function propIsTooLarge(int $property, array $propArray): bool {
+	$error = propIsError($property, $propArray);
+
+	// php-mapi reports the code unsigned, older builds signed
+	return $error !== false && ((int) $error & 0xFFFFFFFF) === (MAPI_E_NOT_ENOUGH_MEMORY & 0xFFFFFFFF);
+}
+
+/**
+ * Value of $proptag from a mapi_getprops() result, streamed when it was too
+ * large for the result. null when the property is not set.
+ */
+function readMapiProp(mixed $mapiobj, int $proptag, array $propArray): mixed {
+	if (isset($propArray[$proptag])) {
+		return $propArray[$proptag];
+	}
+
+	return propIsTooLarge($proptag, $propArray) ? readMapiPropStream($mapiobj, $proptag) : null;
+}

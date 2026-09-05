@@ -90,4 +90,22 @@ class UtilityFunctionsTest extends TestCase {
 	public function testSecondsPerDayConstant(): void {
 		$this->assertEquals(86400, SECONDS_PER_DAY);
 	}
+
+	public function testPropIsTooLarge(): void {
+		$tag = mapi_prop_tag(PT_STRING8, 0x1000);
+		$errorTag = mapi_prop_tag(PT_ERROR, 0x1000);
+
+		$this->assertFalse(propIsTooLarge($tag, []));
+		$this->assertFalse(propIsTooLarge($tag, [$errorTag => MAPI_E_NOT_FOUND]));
+		$this->assertTrue(propIsTooLarge($tag, [$errorTag => MAPI_E_NOT_ENOUGH_MEMORY]));
+		// the signed representation older php-mapi builds hand out
+		$this->assertTrue(propIsTooLarge($tag, [$errorTag => MAPI_E_NOT_ENOUGH_MEMORY - 0x100000000]));
+	}
+
+	public function testReadMapiPropReturnsInlineValue(): void {
+		$tag = mapi_prop_tag(PT_STRING8, 0x1000);
+
+		$this->assertSame('value', readMapiProp(null, $tag, [$tag => 'value']));
+		$this->assertNull(readMapiProp(null, $tag, []));
+	}
 }
