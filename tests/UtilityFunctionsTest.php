@@ -108,4 +108,40 @@ class UtilityFunctionsTest extends TestCase {
 		$this->assertSame('value', readMapiProp(null, $tag, [$tag => 'value']));
 		$this->assertNull(readMapiProp(null, $tag, []));
 	}
+
+	private function timezoneDefinition(int $flags, int $bias, int $dstbias): string {
+		$keyname = 'W. Europe Standard Time';
+		$blob = pack('CCvvv', 2, 1, 0, 0, strlen($keyname)) . mb_convert_encoding($keyname, 'UTF-16LE', 'UTF-8') . pack('v', 1);
+		$blob .= pack('CCvvv', 2, 1, 0, $flags, 0) . str_repeat("\0", 14) . pack('lll', $bias, 0, $dstbias);
+		$blob .= pack('vvvvvvvv', 0, 10, 0, 5, 3, 0, 0, 0); // last Sunday of October, 03:00
+		$blob .= pack('vvvvvvvv', 0, 3, 0, 5, 2, 0, 0, 0); // last Sunday of March, 02:00
+
+		return $blob;
+	}
+
+	public function testParseTimezoneDefinition(): void {
+		$tzdef = parseTimezoneDefinition($this->timezoneDefinition(TZRULE_FLAG_EFFECTIVE_TZREG, -60, -60));
+
+		$this->assertSame(1, $tzdef['crules']);
+		$this->assertCount(1, $tzdef['rules']);
+		$this->assertSame(-60, $tzdef['rules'][0]['bias']);
+		$this->assertSame(-60, $tzdef['rules'][0]['dstbias']);
+		$this->assertSame(10, $tzdef['rules'][0]['stStandardDate']['month']);
+		$this->assertSame(3, $tzdef['rules'][0]['stDaylightDate']['month']);
+		$this->assertSame(5, $tzdef['rules'][0]['stDaylightDate']['day']);
+	}
+
+	public function testParseTimezoneDefinitionRejectsTruncatedBlobs(): void {
+		$this->assertSame([], parseTimezoneDefinition(null));
+		$this->assertSame([], parseTimezoneDefinition(''));
+		$this->assertSame([], parseTimezoneDefinition(substr($this->timezoneDefinition(0, 0, 0), 0, 40)));
+	}
+
+	public function testGetEffectiveTimezoneRule(): void {
+		$this->assertNull(getEffectiveTimezoneRule([]));
+		$this->assertNull(getEffectiveTimezoneRule(parseTimezoneDefinition($this->timezoneDefinition(TZRULE_FLAG_RECUR_CURRENT_TZREG, -60, -60))));
+
+		$rule = getEffectiveTimezoneRule(parseTimezoneDefinition($this->timezoneDefinition(TZRULE_FLAG_EFFECTIVE_TZREG, -120, -60)));
+		$this->assertSame(-120, $rule['bias']);
+	}
 }

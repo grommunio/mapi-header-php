@@ -644,3 +644,54 @@ function readMapiProp(mixed $mapiobj, int $proptag, array $propArray): mixed {
 
 	return propIsTooLarge($proptag, $propArray) ? readMapiPropStream($mapiobj, $proptag) : null;
 }
+
+/**
+ * Parses a PidLidAppointmentTimeZoneDefinition* blob (MS-OXOCAL 2.2.1.41).
+ *
+ * @return array empty when the blob is missing or truncated
+ */
+function parseTimezoneDefinition(?string $tzdef): array {
+	if ($tzdef === null || strlen($tzdef) < 8) {
+		return [];
+	}
+
+	$res = unpack("Cmajorver/Cminorver/vcbheader/vreserved/vcchkeyname", $tzdef);
+	$offset = 8;
+	$cchKeyName = $res['cchkeyname'] * 2;
+	if (strlen($tzdef) < $offset + $cchKeyName + 2) {
+		return [];
+	}
+	$data = unpack("a{$cchKeyName}keyname/vcrules", substr($tzdef, $offset, $cchKeyName + 2));
+	$res['keyname'] = $data['keyname'];
+	$res['crules'] = $data['crules'];
+	$res['rules'] = [];
+	$offset += $cchKeyName + 2;
+
+	for ($i = 0; $i < $res['crules']; ++$i) {
+		if (strlen($tzdef) < $offset + 66) {
+			return [];
+		}
+		$rule = unpack("Cmajorver/Cminorver/vreserved/vtzruleflags/vwyear/a14x/lbias/lstdbias/ldstbias", substr($tzdef, $offset, 34));
+		$offset += 34;
+		$rule['stStandardDate'] = unpack("vyear/vmonth/vdayofweek/vday/vhour/vminute/vsecond/vmiliseconds", substr($tzdef, $offset, 16));
+		$offset += 16;
+		$rule['stDaylightDate'] = unpack("vyear/vmonth/vdayofweek/vday/vhour/vminute/vsecond/vmiliseconds", substr($tzdef, $offset, 16));
+		$offset += 16;
+		$res['rules'][] = $rule;
+	}
+
+	return $res;
+}
+
+/**
+ * The rule flagged TZRULE_FLAG_EFFECTIVE_TZREG of a parsed timezone definition.
+ */
+function getEffectiveTimezoneRule(array $tzdef): ?array {
+	foreach ($tzdef['rules'] ?? [] as $rule) {
+		if ($rule['tzruleflags'] & TZRULE_FLAG_EFFECTIVE_TZREG) {
+			return $rule;
+		}
+	}
+
+	return null;
+}
