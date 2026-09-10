@@ -144,4 +144,26 @@ class UtilityFunctionsTest extends TestCase {
 		$rule = getEffectiveTimezoneRule(parseTimezoneDefinition($this->timezoneDefinition(TZRULE_FLAG_EFFECTIVE_TZREG, -120, -60)));
 		$this->assertSame(-120, $rule['bias']);
 	}
+
+	public function testGetCodepageCharset(): void {
+		$this->assertSame('utf-8', getCodepageCharset(65001));
+		$this->assertSame('windows-1252', getCodepageCharset(1252));
+		$this->assertSame('iso-8859-15', getCodepageCharset(28605));
+		$this->assertSame('iso-8859-15', getCodepageCharset(0));
+		$this->assertSame('UTF-16', getCodepageCharset(1200));
+		$this->assertSame('DIN_66003', getCodepageCharset(20106));
+	}
+
+	public function testGetCodepageCharsetNamesResolveInIconv(): void {
+		if (!function_exists('iconv')) {
+			$this->markTestSkipped('iconv is not available');
+		}
+		for ($codepage = 0; $codepage < 66000; ++$codepage) {
+			$charset = getCodepageCharset($codepage);
+			if ($charset === 'iso-8859-15' && $codepage !== 28605) {
+				continue;
+			}
+			$this->assertNotFalse(@iconv($charset, 'UTF-8', ''), "codepage {$codepage} maps to unknown charset {$charset}");
+		}
+	}
 }
