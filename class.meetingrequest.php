@@ -2064,6 +2064,9 @@ class Meetingrequest {
 		);
 		$props[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
 		$props[$this->proptags['updatecounter']] = $messageprops[$this->proptags['updatecounter']] ?? 0;
+		// When the answer was given. The organizer orders responses by it, and it
+		// is what the outgoing iCal REPLY carries as its DTSTAMP.
+		$props[$this->proptags['attendee_critical_change']] = time();
 
 		if (!empty($proposeNewTimeProps)) {
 			// merge proposal properties to message properties which will be sent to organizer
