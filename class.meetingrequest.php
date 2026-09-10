@@ -632,19 +632,7 @@ class Meetingrequest {
 			return false;
 		}
 
-		$calFolder = $this->openDefaultCalendar();
-		$store = $this->store;
-		// If this meeting request is received by a delegate then open delegator's store.
-		if (isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID]) &&
-			!compareEntryIds($messageprops[PR_RCVD_REPRESENTING_ENTRYID], $messageprops[PR_RECEIVED_BY_ENTRYID])) {
-			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
-			if (!empty($delegatorStore['store'])) {
-				$store = $delegatorStore['store'];
-			}
-			if (!empty($delegatorStore[PR_IPM_APPOINTMENT_ENTRYID])) {
-				$calFolder = $delegatorStore[PR_IPM_APPOINTMENT_ENTRYID];
-			}
-		}
+		['store' => $store, 'calFolder' => $calFolder] = $this->resolveDelegateStoreAndCalendar($messageprops);
 
 		// check for calendar access
 		$this->ensureCalendarWriteAccess($store);
@@ -3985,13 +3973,12 @@ class Meetingrequest {
 	private function resolveDelegateStoreAndCalendar(array $messageprops): array {
 		$store = $this->store;
 		$calFolder = $this->openDefaultCalendar();
-		$inboxEntryid = $this->getDefaultFolderEntryID(PR_ENTRYID, $store);
 
-		// If this meeting request is received by a delegate then open delegator's store
-		// if the item is the delegator's store (not received as a copy)
-		if (!compareEntryIds($messageprops[PR_PARENT_ENTRYID], $inboxEntryid) &&
-		    isset($messageprops[PR_RCVD_REPRESENTING_ENTRYID])) {
-			$delegatorStore = $this->getDelegatorStore($messageprops[PR_RCVD_REPRESENTING_ENTRYID], [PR_IPM_APPOINTMENT_ENTRYID]);
+		// A meeting addressed to somebody else belongs in their calendar, whether
+		// it was opened in their inbox or in the copy a delegate received.
+		$delegator = $this->getDelegatorEntryId($messageprops);
+		if ($delegator !== false) {
+			$delegatorStore = $this->getDelegatorStore($delegator, [PR_IPM_APPOINTMENT_ENTRYID]);
 			if (!empty($delegatorStore['store'])) {
 				$store = $delegatorStore['store'];
 			}
@@ -4001,6 +3988,34 @@ class Meetingrequest {
 		}
 
 		return ['store' => $store, 'calFolder' => $calFolder];
+	}
+
+	/**
+	 * The address book entryid of the mailbox this message was addressed to when
+	 * that is somebody other than the acting user, false otherwise.
+	 *
+	 * PR_RECEIVED_BY is no help in telling the two apart: gromox stamps it with
+	 * the delegator on the copy a delegate receives, exactly like
+	 * PR_RCVD_REPRESENTING. The acting user is what the message has to be
+	 * measured against.
+	 */
+	private function getDelegatorEntryId(array $messageprops): string|false {
+		$representing = $messageprops[PR_RCVD_REPRESENTING_ENTRYID] ?? false;
+		if (empty($representing)) {
+			return false;
+		}
+
+		$userStore = $this->openDefaultStore();
+		if ($userStore === false) {
+			return false;
+		}
+		$userProps = mapi_getprops($userStore, [PR_MAILBOX_OWNER_ENTRYID]);
+		if (empty($userProps[PR_MAILBOX_OWNER_ENTRYID])) {
+			return false;
+		}
+
+		return $this->compareABEntryIDs($representing, $userProps[PR_MAILBOX_OWNER_ENTRYID]) ?
+			false : $representing;
 	}
 
 	/**
