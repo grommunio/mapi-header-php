@@ -1882,6 +1882,10 @@ abstract class BaseRecurrence {
 				if ($this->recur["everyn"] <= 0) {
 					$this->recur["everyn"] = 12;
 				}
+				// everyn saves a perior in years, but it must be calculated in months.
+				else {
+					$this->recur["everyn"] *= 12;
+				}
 
 				for ($now = $this->yearStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $this->recur["everyn"]) * 24 * 60 * 60) {
 					if (isset($this->recur["monthday"]) && !$this->recur['regen']) { // same as monthly, but in a specific month
