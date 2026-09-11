@@ -1092,6 +1092,29 @@ class Recurrence extends BaseRecurrence {
 	}
 
 	/**
+	 * Turn a recurring series back into a single appointment.
+	 *
+	 * Clearing PidLidRecurring alone is not enough: the recurrence blob outlives it and
+	 * is read back when the item travels, so an attendee of a meeting would keep seeing
+	 * a series after the organizer removed the recurrence.
+	 */
+	public function deleteRecurrence(): void {
+		$this->invalidateExceptionIndex();
+		$this->deleteAttachments();
+
+		mapi_deleteprops($this->message, [
+			$this->proptags["recurring_data"],
+			$this->proptags["startdate_recurring"],
+			$this->proptags["enddate_recurring"],
+			$this->proptags["recurring_pattern"],
+			$this->proptags["recurrencetype"],
+		]);
+		mapi_setprops($this->message, [$this->proptags["recurring"] => false]);
+
+		$this->recur = [];
+	}
+
+	/**
 	 * Get an exception attachment based on its basedate.
 	 */
 	public function getExceptionAttachment(int $base_date): mixed {
