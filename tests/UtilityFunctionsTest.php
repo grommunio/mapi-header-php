@@ -166,4 +166,19 @@ class UtilityFunctionsTest extends TestCase {
 			$this->assertNotFalse(@iconv($charset, 'UTF-8', ''), "codepage {$codepage} maps to unknown charset {$charset}");
 		}
 	}
+
+	public function testGetCalendarRestriction(): void {
+		$props = ['starttime' => 1, 'endtime' => 2, 'isrecurring' => 3, 'recurrenceend' => 4];
+		$restriction = getCalendarRestriction($props, 100, 200);
+
+		$this->assertSame(RES_OR, $restriction[0]);
+		$this->assertCount(3, $restriction[1]);
+		[$window, $bounded, $open] = $restriction[1];
+		$this->assertSame([RELOP => RELOP_LE, ULPROPTAG => 1, VALUE => 200], $window[1][0][1]);
+		$this->assertSame([RELOP => RELOP_GE, ULPROPTAG => 2, VALUE => 100], $window[1][1][1]);
+		$this->assertSame(RES_EXIST, $bounded[1][0][0]);
+		$this->assertSame([RELOP => RELOP_GE, ULPROPTAG => 4, VALUE => 100], $bounded[1][2][1]);
+		$this->assertSame(RES_NOT, $open[1][0][0]);
+		$this->assertSame([RELOP => RELOP_EQ, ULPROPTAG => 3, VALUE => true], $open[1][2][1]);
+	}
 }

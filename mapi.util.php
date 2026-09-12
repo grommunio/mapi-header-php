@@ -815,3 +815,30 @@ function getCodepageCharset(int $codepage): string {
 	// and utf-8 is binary compatible with the lower 7 bits of iso-8859-15.
 	return $codepages[$codepage] ?? "iso-8859-15";
 }
+
+/**
+ * Restriction for the appointments of a calendar that touch <$start, $end>,
+ * recurring series included. $props holds the resolved tags for "starttime",
+ * "endtime", "isrecurring" and "recurrenceend".
+ */
+function getCalendarRestriction(array $props, int $start, int $end): array {
+	return [RES_OR, [
+		// item.end >= start && item.start <= end
+		[RES_AND, [
+			[RES_PROPERTY, [RELOP => RELOP_LE, ULPROPTAG => $props["starttime"], VALUE => $end]],
+			[RES_PROPERTY, [RELOP => RELOP_GE, ULPROPTAG => $props["endtime"], VALUE => $start]],
+		]],
+		// recurring series that still runs at start
+		[RES_AND, [
+			[RES_EXIST, [ULPROPTAG => $props["recurrenceend"]]],
+			[RES_PROPERTY, [RELOP => RELOP_EQ, ULPROPTAG => $props["isrecurring"], VALUE => true]],
+			[RES_PROPERTY, [RELOP => RELOP_GE, ULPROPTAG => $props["recurrenceend"], VALUE => $start]],
+		]],
+		// open-ended recurring series that started before end
+		[RES_AND, [
+			[RES_NOT, [[RES_EXIST, [ULPROPTAG => $props["recurrenceend"]]]]],
+			[RES_PROPERTY, [RELOP => RELOP_LE, ULPROPTAG => $props["starttime"], VALUE => $end]],
+			[RES_PROPERTY, [RELOP => RELOP_EQ, ULPROPTAG => $props["isrecurring"], VALUE => true]],
+		]],
+	]];
+}
