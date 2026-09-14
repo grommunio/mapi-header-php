@@ -1992,10 +1992,12 @@ class Meetingrequest {
 				if ($isException) {
 					$props[$this->proptags['is_exception']] = $messageprops[$this->proptags['is_exception']];
 				}
+				// The series may be gone from the calendar (or not be there yet),
+				// the request carries the recurrence then.
 				$calendaritems = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder);
-
-				$calendaritem = mapi_msgstore_openentry($store, $calendaritems[0]);
-				$recurr = new Recurrence($store, $calendaritem);
+				$recurr = !empty($calendaritems) ?
+					new Recurrence($store, mapi_msgstore_openentry($store, $calendaritems[0])) :
+					new Recurrence($store, $this->message);
 			}
 		}
 
