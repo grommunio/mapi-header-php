@@ -1987,7 +1987,7 @@ abstract class BaseRecurrence {
 
 		$days = 0;
 		for ($i = 0; $i < $months; ++$i) {
-			$days += date("t", $date + $days * 24 * 60 * 60);
+			$days += (int) gmdate("t", $date + $days * 24 * 60 * 60);
 		}
 
 		return $this->daysInMonthCache[$key] = $days;
