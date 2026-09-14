@@ -1543,19 +1543,22 @@ abstract class BaseRecurrence {
 	/**
 	 * Function to get a date by Year Nr, Month Nr, Week Nr, Day Nr, and hour.
 	 *
+	 * @param int $year  years since 1900
+	 * @param int $month month (1..12)
+	 * @param int $week  occurrence of the weekday in the month (1..4, 5 = last)
+	 * @param int $day   weekday (0 = Sunday .. 6 = Saturday)
+	 * @param int $hour  hour of the day
+	 *
 	 * @return int the timestamp of the given date, timezone-independent
 	 */
 	public function getDateByYearMonthWeekDayHour(int $year, int $month, int $week, int $day, int $hour): int {
 		// get first day of month
-		$date = gmmktime(0, 0, 0, $month, 0, $year + 1900);
+		$date = gmmktime(0, 0, 0, $month, 1, $year + 1900);
 
-		// get wday info
+		// go to the first $day of the month, then to the correct week nr
 		$gmdate = $this->gmtime($date);
-
-		$date -= $gmdate["tm_wday"] * 24 * 60 * 60; // back up to start of week
-
-		$date += $week * 7 * 24 * 60 * 60; // go to correct week nr
-		$date += $day * 24 * 60 * 60;
+		$date += (($day - $gmdate["tm_wday"] + 7) % 7) * 24 * 60 * 60;
+		$date += ($week - 1) * 7 * 24 * 60 * 60;
 		$date += $hour * 60 * 60;
 
 		$gmdate = $this->gmtime($date);
@@ -1585,8 +1588,8 @@ abstract class BaseRecurrence {
 
 		if (!isset($this->dstBoundaryCache[$year])) {
 			$this->dstBoundaryCache[$year] = [
-				$this->getDateByYearMonthWeekDayHour($year, $tz["dststartmonth"], $tz["dststartweek"], 0, $tz["dststarthour"]),
-				$this->getDateByYearMonthWeekDayHour($year, $tz["dstendmonth"], $tz["dstendweek"], 0, $tz["dstendhour"]),
+				$this->getDateByYearMonthWeekDayHour($year, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"]),
+				$this->getDateByYearMonthWeekDayHour($year, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"]),
 			];
 		}
 		[$dststart, $dstend] = $this->dstBoundaryCache[$year];
@@ -1622,11 +1625,37 @@ abstract class BaseRecurrence {
 			return null;
 		}
 
-		return unpack("ltimezone/lunk/ltimezonedst/lunk/ldstendmonth/vdstendweek/vdstendhour/lunk/lunk/vunk/ldststartmonth/vdststartweek/vdststarthour/lunk/vunk", (string) $data);
+		// lBias, lStandardBias, lDaylightBias, wStandardYear, stStandardDate, wDaylightYear,
+		// stDaylightDate; a SYSTEMTIME is wYear, wMonth, wDayOfWeek, wDay, wHour, wMinute,
+		// wSecond, wMilliseconds, where wDay is the occurrence of wDayOfWeek in the month
+		return unpack("ltimezone/lunk/ltimezonedst/vunk/vunk/vdstendmonth/vdstendday/vdstendweek/vdstendhour/vdstendminute/vdstendsecond/vdstendmillis/vunk/vunk/vdststartmonth/vdststartday/vdststartweek/vdststarthour/vdststartminute/vdststartsecond/vdststartmillis", (string) $data);
 	}
 
 	public function getTimezoneData(mixed $tz): false|string {
-		return pack("lllllvvllvlvvlv", $tz["timezone"], 0, $tz["timezonedst"], 0, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendhour"], 0, 0, 0, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststarthour"], 0, 0);
+		return pack(
+			"lllvvvvvvvvvvvvvvvvvv",
+			$tz["timezone"],
+			0,
+			$tz["timezonedst"],
+			0,
+			0,
+			$tz["dstendmonth"],
+			$tz["dstendday"] ?? 0,
+			$tz["dstendweek"],
+			$tz["dstendhour"],
+			$tz["dstendminute"] ?? 0,
+			$tz["dstendsecond"] ?? 0,
+			$tz["dstendmillis"] ?? 0,
+			0,
+			0,
+			$tz["dststartmonth"],
+			$tz["dststartday"] ?? 0,
+			$tz["dststartweek"],
+			$tz["dststarthour"],
+			$tz["dststartminute"] ?? 0,
+			$tz["dststartsecond"] ?? 0,
+			$tz["dststartmillis"] ?? 0
+		);
 	}
 
 	/**
