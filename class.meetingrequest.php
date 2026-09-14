@@ -2057,11 +2057,9 @@ class Meetingrequest {
 		}
 
 		// Set GlobalId AND CleanGlobalId, if exception then also set basedate into GlobalId(0x3).
-		$props[$this->proptags['goid']] = $this->setBasedateInGlobalID(
-			$messageprops[$this->proptags['goid2']],
-			$basedate,
-			isset($recurr) && $recurr instanceof BaseRecurrence ? $recurr : null
-		);
+		// $basedate is the local day of the occurrence already (from the client or
+		// from the GlobalId of the request), so it must not be converted from UTC.
+		$props[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedate);
 		$props[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
 		$props[$this->proptags['updatecounter']] = $messageprops[$this->proptags['updatecounter']] ?? 0;
 		// When the answer was given. The organizer orders responses by it, and it
@@ -2362,7 +2360,9 @@ class Meetingrequest {
 	 * Function which sets basedate in globalID of changed occurrence which is to be sent.
 	 *
 	 * @param string              $goid       globalID
-	 * @param false|int           $basedate   of changed occurrence (UTC when $recurrence is provided)
+	 * @param false|int           $basedate   of changed occurrence: a UTC time on the original
+	 *                                        occurrence when $recurrence is provided, else its
+	 *                                        local day as a UTC timestamp (a recurrence basedate)
 	 * @param null|BaseRecurrence $recurrence recurrence helper for timezone conversion
 	 *
 	 * @return false|string globalID with basedate in it
