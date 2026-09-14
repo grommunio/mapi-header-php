@@ -1709,7 +1709,7 @@ abstract class BaseRecurrence {
 			// Loop through all changed exceptions
 			foreach ($this->recur["changed_occurrences"] as $exception) {
 				// Check reminder set
-				if (!isset($exception["reminder"]) || $exception["reminder"] === false) {
+				if (empty($exception["reminder_set"])) {
 					continue;
 				}
 

@@ -145,17 +145,27 @@ class Recurrence extends BaseRecurrence {
 
 		if (!$delete) {
 			$changed_item = [];
-			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date
-			foreach (["subject", "location", "label", "reminder", "reminder_minutes", "alldayevent", "busystatus"] as $propname) {
+			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date.
+			// The changed ones go into the recurrence blob under the names parseRecurrence() uses.
+			$changedNames = [
+				"subject" => "subject",
+				"location" => "location",
+				"label" => "label",
+				"reminder" => "reminder_set",
+				"reminder_minutes" => "remind_before",
+				"alldayevent" => "alldayevent",
+				"busystatus" => "busystatus",
+			];
+			foreach ($changedNames as $propname => $changedname) {
 				if (isset($this->messageprops[$this->proptags[$propname]])) {
 					$props[$this->proptags[$propname]] = $this->messageprops[$this->proptags[$propname]];
 					if (isset($exception_props[$this->proptags[$propname]]) &&
 						$this->messageprops[$this->proptags[$propname]] != $exception_props[$this->proptags[$propname]]) {
-						$changed_item[$propname] = $exception_props[$this->proptags[$propname]];
+						$changed_item[$changedname] = $exception_props[$this->proptags[$propname]];
 					}
 				}
 				elseif (isset($exception_props[$this->proptags[$propname]])) {
-					$changed_item[$propname] = $exception_props[$this->proptags[$propname]];
+					$changed_item[$changedname] = $exception_props[$this->proptags[$propname]];
 				}
 			}
 
