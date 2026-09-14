@@ -208,6 +208,8 @@ class Recurrence extends BaseRecurrence {
 			// Delete the occurrence by placing it in the deleted occurrences list
 			$this->recur["deleted_occurrences"][] = $baseday;
 		}
+		// The isException() above built the index without the new exception
+		$this->invalidateExceptionIndex();
 
 		// Turn on hideattachments, because the attachments in this item are the exceptions
 		mapi_setprops($this->message, [$this->proptags["hideattachments"] => true]);
@@ -321,6 +323,8 @@ class Recurrence extends BaseRecurrence {
 
 			mapi_savechanges($attach);
 		}
+		// $extomodify changed after the index was invalidated above
+		$this->invalidateExceptionIndex();
 
 		// Save recurrence data to message
 		$this->saveRecurrence();
