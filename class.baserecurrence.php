@@ -1891,15 +1891,11 @@ abstract class BaseRecurrence {
 				break;
 
 			case IDC_RCEV_PAT_ORB_YEARLY:
-				if ($this->recur["everyn"] <= 0) {
-					$this->recur["everyn"] = 12;
-				}
-				// everyn saves a perior in years, but it must be calculated in months.
-				else {
-					$this->recur["everyn"] *= 12;
-				}
+				// everyn is the period in years, but it is calculated in months.
+				// Keep that out of $this->recur, which saveRecurrence() writes back.
+				$everyn = $this->recur["everyn"] <= 0 ? 12 : $this->recur["everyn"] * 12;
 
-				for ($now = $this->yearStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $this->recur["everyn"]) * 24 * 60 * 60) {
+				for ($now = $this->yearStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $everyn) * 24 * 60 * 60) {
 					if (isset($this->recur["monthday"]) && !$this->recur['regen']) { // same as monthly, but in a specific month
 						// recur["month"] is in minutes since the beginning of the year
 						$month = $this->monthOfYear($this->recur["month"]); // $month is now month of year [0..11]
