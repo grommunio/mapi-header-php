@@ -284,8 +284,9 @@ class TaskRecurrence extends BaseRecurrence {
 		mapi_savechanges($newMessage);
 
 		// Update body of original message
-		$msgbody = mapi_openproperty($this->message, PR_BODY);
-		$msgbody = trim($msgbody, "\0");
+		// A task without a body has no PR_BODY to open
+		$msgbody = readMapiProp($this->message, PR_BODY, mapi_getprops($this->message, [PR_BODY])) ?? '';
+		$msgbody = trim((string) $msgbody, "\0");
 		$separator = "------------\r\n";
 
 		if (!empty($msgbody) && strrpos($msgbody, $separator) === false) {
