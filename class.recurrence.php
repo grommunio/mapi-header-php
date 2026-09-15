@@ -555,135 +555,114 @@ class Recurrence extends BaseRecurrence {
 	 */
 
 	/**
-	 * Returns langified daily recurrence type string, whether it's singular or plural,
-	 * recurrence interval.
+	 * Fill {0}, {1}, ... in a message with the given arguments.
+	 *
+	 * The web client formats the very same messages with Ext's String.format, so
+	 * both sides share one set of msgids and one set of translations.
 	 */
-	public function getI18RecTypeDaily(mixed $type, mixed $interval, bool $occSingleDayRank): array {
-		switch ($interval) {
-			case 1: // workdays
-				$type = _('workday');
-				$occSingleDayRank = true;
-				break;
-
-			case 1440: // daily
-				$type = _('day');
-				$occSingleDayRank = true;
-				break;
-
-			default: // every $interval days
-				$interval /= 1440;
-				$type = _('days');
-				$occSingleDayRank = false;
-				break;
-		}
-
-		return [
-			'type' => $type,
-			'interval' => $interval,
-			'occSingleDayRank' => boolval($occSingleDayRank),
-		];
+	private static function format(string $message, string ...$args): string {
+		return preg_replace_callback(
+			'/\{(\d+)\}/',
+			fn (array $m): string => $args[(int) $m[1]] ?? $m[0],
+			$message
+		);
 	}
 
 	/**
-	 * Returns langified weekly recurrence type string, whether it's singular or plural,
-	 * recurrence interval.
+	 * Returns the translated frequency of a daily recurrence, e.g. "every 3 days".
 	 */
-	public function getI18RecTypeWeekly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
-		if ($interval == 1) {
-			$type = _('week');
-			$occSingleDayRank = true;
-		}
-		else {
-			$type = _('weeks');
-			$occSingleDayRank = false;
-		}
-		$daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-		$type .= sprintf(" %s ", _('on'));
+	private function getI18nFreqDaily(int $interval): string {
+		return match ($interval) {
+			1 => pgettext('recurrence', 'every workday'),
+			1440 => pgettext('recurrence', 'every day'),
+			default => self::format(
+				npgettext('recurrence', 'every {0} day', 'every {0} days', intdiv($interval, 1440)),
+				(string) intdiv($interval, 1440)
+			),
+		};
+	}
 
-		for ($j = 0, $weekdays = (int) $this->recur["weekdays"]; $j < 7; ++$j) {
-			if ($weekdays & (1 << $j)) {
-				$type .= sprintf("%s, ", _($daysOfWeek[$j]));
+	/**
+	 * Returns the translated frequency of a weekly recurrence, including the week
+	 * days it falls on, e.g. "every 2 weeks on Monday and Thursday".
+	 */
+	private function getI18nFreqWeekly(int $interval): string {
+		$frequency = $interval == 1 ?
+			pgettext('recurrence', 'every week') :
+			self::format(
+				npgettext('recurrence', 'every {0} week', 'every {0} weeks', $interval),
+				(string) $interval
+			);
+
+		$daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+		$weekdays = [];
+		for ($j = 0, $selected = (int) $this->recur["weekdays"]; $j < 7; ++$j) {
+			if ($selected & (1 << $j)) {
+				$weekdays[] = _($daysOfWeek[$j]);
 			}
 		}
-		$type = trim($type, ", ");
-		if (($pos = strrpos($type, ",")) !== false) {
-			$type = substr_replace($type, " " . _('and'), $pos, 1);
+		if (empty($weekdays)) {
+			return $frequency;
 		}
 
-		return [
-			'type' => $type,
-			'interval' => $interval,
-			'occSingleDayRank' => boolval($occSingleDayRank),
-		];
+		// Grow the enumeration one item at a time: the separator and the word before
+		// the last item are punctuation the translator owns, not something to append.
+		$list = array_shift($weekdays);
+		$last = array_pop($weekdays);
+		foreach ($weekdays as $weekday) {
+			$list = self::format(_('{0}, {1}'), $list, $weekday);
+		}
+		if ($last !== null) {
+			$list = self::format(_('{0} and {1}'), $list, $last);
+		}
+
+		return self::format(_('{0} on {1}'), $frequency, $list);
 	}
 
 	/**
-	 * Returns langified monthly recurrence type string, whether it's singular or plural,
-	 * recurrence interval.
+	 * Returns the translated frequency of a monthly recurrence, e.g. "every 3 months".
 	 */
-	public function getI18RecTypeMonthly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
-		if ($interval == 1) {
-			$type = _('month');
-			$occSingleDayRank = true;
-		}
-		else {
-			$type = _('months');
-			$occSingleDayRank = false;
-		}
-
-		return [
-			'type' => $type,
-			'interval' => $interval,
-			'occSingleDayRank' => boolval($occSingleDayRank),
-		];
+	private function getI18nFreqMonthly(int $interval): string {
+		return $interval == 1 ?
+			pgettext('recurrence', 'every month') :
+			self::format(
+				npgettext('recurrence', 'every {0} month', 'every {0} months', $interval),
+				(string) $interval
+			);
 	}
 
 	/**
-	 * Returns langified yearly recurrence type string, whether it's singular or plural,
-	 * recurrence interval.
+	 * Returns the translated frequency of a yearly recurrence, e.g. "every 2 years".
 	 */
-	public function getI18RecTypeYearly(mixed $type, mixed $interval, bool $occSingleDayRank): array {
-		if ($interval <= 12) {
-			$interval = 1;
-			$type = _('year');
-			$occSingleDayRank = true;
-		}
-		else {
-			$interval = $interval / 12;
-			$type = _('years');
-			$occSingleDayRank = false;
-		}
-
-		return [
-			'type' => $type,
-			'interval' => $interval,
-			'occSingleDayRank' => boolval($occSingleDayRank),
-		];
+	private function getI18nFreqYearly(int $interval): string {
+		return $interval <= 12 ?
+			pgettext('recurrence', 'every year') :
+			self::format(
+				npgettext('recurrence', 'every {0} year', 'every {0} years', intdiv($interval, 12)),
+				(string) intdiv($interval, 12)
+			);
 	}
 
 	/**
-	 * Returns langified recurrence type string, whether it's singular or plural,
-	 * recurrence interval.
+	 * Returns how often the series recurs as one translated phrase.
+	 *
+	 * It is one message rather than a number next to a noun, because the determiner
+	 * in front of that noun has to agree with it, which a translator cannot do when
+	 * the code substitutes the noun ("jede Woche", "jedes Jahr").
 	 */
-	public function getI18nRecurrenceType(): array {
-		$type = $this->recur['type'];
-		$interval = $this->recur['everyn'];
-		$occSingleDayRank = false;
+	private function getI18nFrequency(): string {
+		$interval = (int) $this->recur['everyn'];
 
-		return match ($type) {
+		return match ($this->recur['type']) {
 			// Daily
-			0x0A => $this->getI18RecTypeDaily($type, $interval, $occSingleDayRank),
+			0x0A => $this->getI18nFreqDaily($interval),
 			// Weekly
-			0x0B => $this->getI18RecTypeWeekly($type, $interval, $occSingleDayRank),
+			0x0B => $this->getI18nFreqWeekly($interval),
 			// Monthly
-			0x0C => $this->getI18RecTypeMonthly($type, $interval, $occSingleDayRank),
+			0x0C => $this->getI18nFreqMonthly($interval),
 			// Yearly
-			0x0D => $this->getI18RecTypeYearly($type, $interval, $occSingleDayRank),
-			default => [
-				'type' => $type,
-				'interval' => $interval,
-				'occSingleDayRank' => boolval($occSingleDayRank),
-			],
+			0x0D => $this->getI18nFreqYearly($interval),
+			default => (string) $interval,
 		};
 	}
 
@@ -710,52 +689,28 @@ class Recurrence extends BaseRecurrence {
 	/**
 	 * Returns langified recurrence pattern termination after the given date.
 	 */
-	public function getI18nRecTermDate(
+	private function getI18nRecTermDate(
 		bool $occTimeRange,
-		bool $occSingleDayRank,
-		mixed $type,
-		mixed $interval,
+		string $frequency,
 		string $start,
 		string $end,
 		string $startocc,
 		string $endocc
 	): string {
 		return $occTimeRange ?
-			(
-				$occSingleDayRank ?
-					sprintf(
-						_('Occurs every %s effective %s until %s from %s to %s.'),
-						$type,
-						$start,
-						$end,
-						$startocc,
-						$endocc
-					) :
-					sprintf(
-						_('Occurs every %s %s effective %s until %s from %s to %s.'),
-						$interval,
-						$type,
-						$start,
-						$end,
-						$startocc,
-						$endocc
-					)
+			self::format(
+				_('Occurs {0} effective {1} until {2} from {3} to {4}.'),
+				$frequency,
+				$start,
+				$end,
+				$startocc,
+				$endocc
 			) :
-			(
-				$occSingleDayRank ?
-					sprintf(
-						_('Occurs every %s effective %s until %s.'),
-						$type,
-						$start,
-						$end
-					) :
-					sprintf(
-						_('Occurs every %s %s effective %s until %s.'),
-						$interval,
-						$type,
-						$start,
-						$end
-					)
+			self::format(
+				_('Occurs {0} effective {1} until {2}.'),
+				$frequency,
+				$start,
+				$end
 			);
 	}
 
@@ -763,143 +718,80 @@ class Recurrence extends BaseRecurrence {
 	 * Returns langified recurrence pattern termination after a number of
 	 * occurrences.
 	 */
-	public function getI18nRecTermNrOcc(
+	private function getI18nRecTermNrOcc(
 		bool $occTimeRange,
-		bool $occSingleDayRank,
-		mixed $type,
-		mixed $interval,
+		string $frequency,
 		string $start,
-		mixed $numocc,
+		int $numocc,
 		string $startocc,
 		string $endocc
 	): string {
 		return $occTimeRange ?
-			(
-				$occSingleDayRank ?
-					sprintf(
-						dngettext(
-							'zarafa',
-							'Occurs every %s effective %s for %s occurrence from %s to %s.',
-							'Occurs every %s effective %s for %s occurrences from %s to %s.',
-							$numocc
-						),
-						$type,
-						$start,
-						$numocc,
-						$startocc,
-						$endocc
-					) :
-					sprintf(
-						dngettext(
-							'zarafa',
-							'Occurs every %s %s effective %s for %s occurrence from %s to %s.',
-							'Occurs every %s %s effective %s for %s occurrences %s to %s.',
-							$numocc
-						),
-						$interval,
-						$type,
-						$start,
-						$numocc,
-						$startocc,
-						$endocc
-					)
+			self::format(
+				ngettext(
+					'Occurs {0} effective {1} for {2} occurrence from {3} to {4}.',
+					'Occurs {0} effective {1} for {2} occurrences from {3} to {4}.',
+					$numocc
+				),
+				$frequency,
+				$start,
+				(string) $numocc,
+				$startocc,
+				$endocc
 			) :
-			(
-				$occSingleDayRank ?
-					sprintf(
-						dngettext(
-							'zarafa',
-							'Occurs every %s effective %s for %s occurrence.',
-							'Occurs every %s effective %s for %s occurrences.',
-							$numocc
-						),
-						$type,
-						$start,
-						$numocc
-					) :
-					sprintf(
-						dngettext(
-							'zarafa',
-							'Occurs every %s %s effective %s for %s occurrence.',
-							'Occurs every %s %s effective %s for %s occurrences.',
-							$numocc
-						),
-						$interval,
-						$type,
-						$start,
-						$numocc
-					)
+			self::format(
+				ngettext(
+					'Occurs {0} effective {1} for {2} occurrence.',
+					'Occurs {0} effective {1} for {2} occurrences.',
+					$numocc
+				),
+				$frequency,
+				$start,
+				(string) $numocc
 			);
 	}
 
 	/**
 	 * Returns langified recurrence pattern termination with no end date.
 	 */
-	public function getI18nRecTermNoEnd(
+	private function getI18nRecTermNoEnd(
 		bool $occTimeRange,
-		bool $occSingleDayRank,
-		mixed $type,
-		mixed $interval,
+		string $frequency,
 		string $start,
 		string $startocc,
 		string $endocc
 	): string {
 		return $occTimeRange ?
-			(
-				$occSingleDayRank ?
-					sprintf(
-						_('Occurs every %s effective %s from %s to %s.'),
-						$type,
-						$start,
-						$startocc,
-						$endocc
-					) :
-					sprintf(
-						_('Occurs every %s %s effective %s from %s to %s.'),
-						$interval,
-						$type,
-						$start,
-						$startocc,
-						$endocc
-					)
+			self::format(
+				_('Occurs {0} effective {1} from {2} to {3}.'),
+				$frequency,
+				$start,
+				$startocc,
+				$endocc
 			) :
-			(
-				$occSingleDayRank ?
-					sprintf(
-						_('Occurs every %s effective %s.'),
-						$type,
-						$start
-					) :
-					sprintf(
-						_('Occurs every %s %s effective %s.'),
-						$interval,
-						$type,
-						$start
-					)
+			self::format(
+				_('Occurs {0} effective {1}.'),
+				$frequency,
+				$start
 			);
 	}
 
 	/**
-	 * Generates and stores recurrence pattern string to recurring_pattern property.
+	 * Generate recurrence pattern in human readable form and store it in
+	 * PidLidRecurrencePattern, so other clients show the same sentence.
 	 */
 	public function saveRecurrencePattern(): string {
-		// Start formatting the properties in such a way we can apply
-		// them directly into the recurrence pattern.
 		$pattern = '';
 		$occTimeRange = $this->recur['startocc'] != 0 && $this->recur['endocc'] != 0;
-
-		[
-			'type' => $type,
-			'interval' => $interval,
-			'occSingleDayRank' => $occSingleDayRank,
-		] = $this->getI18nRecurrenceType();
+		$frequency = $this->getI18nFrequency();
 
 		// get timings of the first occurrence
 		$firstoccstartdate = $this->getOccDate();
 		$firstoccenddate = $this->getOccDate(false);
 
-		$start = $this->getI18nTime('d-m-Y', $firstoccstartdate);
-		$end = $this->getI18nTime('d-m-Y', $firstoccenddate);
+		// # TRANSLATORS: See http://docs.sencha.com/extjs/3.4.0/#!/api/Date for the meaning of these formatting instructions
+		$start = $this->getI18nTime('d/m/Y', $firstoccstartdate);
+		$end = $this->getI18nTime('d/m/Y', $firstoccenddate);
 		$startocc = $this->getI18nTime('G:i', $firstoccstartdate);
 		$endocc = $this->getI18nTime('G:i', $firstoccenddate);
 
@@ -914,9 +806,7 @@ class Recurrence extends BaseRecurrence {
 			case 0x21: // After the given enddate
 				$pattern = $this->getI18nRecTermDate(
 					$occTimeRange,
-					boolval($occSingleDayRank),
-					$type,
-					$interval,
+					$frequency,
 					$start,
 					$end,
 					$startocc,
@@ -927,11 +817,9 @@ class Recurrence extends BaseRecurrence {
 			case 0x22: // After a number of times
 				$pattern = $this->getI18nRecTermNrOcc(
 					$occTimeRange,
-					boolval($occSingleDayRank),
-					$type,
-					$interval,
+					$frequency,
 					$start,
-					$this->recur['numoccur'] ?? 0,
+					(int) ($this->recur['numoccur'] ?? 0),
 					$startocc,
 					$endocc
 				);
@@ -940,9 +828,7 @@ class Recurrence extends BaseRecurrence {
 			case 0x23: // Never ends
 				$pattern = $this->getI18nRecTermNoEnd(
 					$occTimeRange,
-					boolval($occSingleDayRank),
-					$type,
-					$interval,
+					$frequency,
 					$start,
 					$startocc,
 					$endocc

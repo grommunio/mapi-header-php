@@ -23,5 +23,11 @@ if (!function_exists('_')) {
 	}
 }
 
+if (!function_exists('ngettext')) {
+	function ngettext(string $singular, string $plural, int $count): string {
+		return $count == 1 ? $singular : $plural;
+	}
+}
+
 // Load the main library bootstrap
 require_once __DIR__ . '/../bootstrap.php';
