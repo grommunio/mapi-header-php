@@ -3643,6 +3643,9 @@ class Meetingrequest {
 				PR_RCVD_REPRESENTING_ENTRYID,
 				$this->proptags['basedate'],
 				PR_RCVD_REPRESENTING_NAME,
+				PR_ENTRYID,
+				PR_SUBJECT,
+				$this->proptags['recurrence_data'],
 			]
 		);
 
@@ -3671,7 +3674,20 @@ class Meetingrequest {
 			if (isset($messageProps[$this->proptags['recurring']]) && $messageProps[$this->proptags['recurring']] === true) {
 				// Apply recurrence class and retrieve all occurrences(max: 30 occurrence because recurrence can also be set as 'no end date')
 				$recurr = new Recurrence($userStore, $message);
-				$items = $recurr->getItems($messageProps[$this->proptags['clipstart']], $messageProps[$this->proptags['clipend']] * (24 * 24 * 60), 30);
+				try {
+					$items = $recurr->getItems($messageProps[$this->proptags['clipstart']], $messageProps[$this->proptags['clipend']] * (24 * 24 * 60), 30);
+				}
+				catch (RecurrenceException $re) {
+					error_log(sprintf(
+						"isMeetingConflicting RecurrenceException (%d) for item '%s' - %s - %s",
+						$re->getCode(),
+						$messageProps[PR_SUBJECT] ?? '<empty subject>',
+						bin2hex($messageProps[PR_ENTRYID]),
+						bin2hex($messageProps[$this->proptags['recurring_data']])
+					));
+					$re->setHandled();
+					return $returnValue;
+				}
 
 				foreach ($items as $item) {
 					// Get all items in the timeframe that we want to book, and get the goid and busystatus for each item
