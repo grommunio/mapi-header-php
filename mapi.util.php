@@ -236,7 +236,7 @@ function getCalendarItems(mixed $store, mixed $calendar, int $viewstart, int $vi
 		];		// global OR
 
 	// Get requested properties, plus whatever we need
-	$proplist = [PR_ENTRYID, $properties["recurring"], $properties["recurring_data"], $properties["timezone_data"]];
+	$proplist = [PR_ENTRYID, $properties["recurring"], $properties["recurring_data"], $properties["timezone_data"], PR_SUBJECT];
 	$proplist = array_merge($proplist, $propsrequested);
 
 	// Restricting the table filters it while it loads; passing the
@@ -254,11 +254,23 @@ function getCalendarItems(mixed $store, mixed $calendar, int $viewstart, int $vi
 			$rec = new Recurrence($store, $row);
 
 			// GetItems guarantees that the item overlaps the interval <$viewstart, $viewend>
-			$occurrences = $rec->getItems($viewstart, $viewend);
-			foreach ($occurrences as $occurrence) {
-				// The occurrence takes all properties from the main row, but overrides some properties (like start and end obviously)
-				$item = $occurrence + $row;
-				$items[] = $item;
+			try {
+				$occurrences = $rec->getItems($viewstart, $viewend);
+				foreach ($occurrences as $occurrence) {
+					// The occurrence takes all properties from the main row, but overrides some properties (like start and end obviously)
+					$item = $occurrence + $row;
+					$items[] = $item;
+				}
+			}
+			catch (RecurrenceException $re) {
+				error_log(sprintf(
+					"getCalendarItems RecurrenceException (%d) for item '%s' - %s - %s",
+					$re->getCode(),
+					$row[PR_SUBJECT] ?? '<empty subject>',
+					bin2hex($row[PR_ENTRYID]),
+					bin2hex($row[$properties["recurring_data"]])
+				));
+				$re->setHandled();
 			}
 		}
 		else {
