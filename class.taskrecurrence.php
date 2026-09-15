@@ -251,7 +251,7 @@ class TaskRecurrence extends BaseRecurrence {
 			$taskItemProps[$this->proptags["reminder"]] = false;
 			$taskItemProps[$this->proptags["date_completed"]] = $this->action["date_completed"];
 
-			unset($this->action[$this->proptags['date_completed']]);
+			unset($this->action['date_completed']);
 		}
 
 		// Recurrence ends for this item
