@@ -48,7 +48,7 @@ abstract class BaseRecurrence {
 	private array $daysInMonthCache = [];
 
 	/**
-	 * @var array Cache for DST boundaries keyed by tm_year.
+	 * @var array Cache for DST boundaries keyed by tm_year and the DST rules.
 	 */
 	private array $dstBoundaryCache = [];
 
@@ -1594,13 +1594,19 @@ abstract class BaseRecurrence {
 		$gmdate = $this->gmtime($date);
 		$year = $gmdate["tm_year"];
 
-		if (!isset($this->dstBoundaryCache[$year])) {
-			$this->dstBoundaryCache[$year] = [
+		// The timezone of the object may change (setRecurrence()), and getTimezone()
+		// may be asked for another one, so the rules are part of the key
+		$key = $year . ':' . implode(',', [
+			$tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"],
+			$tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"],
+		]);
+		if (!isset($this->dstBoundaryCache[$key])) {
+			$this->dstBoundaryCache[$key] = [
 				$this->getDateByYearMonthWeekDayHour($year, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"]),
 				$this->getDateByYearMonthWeekDayHour($year, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"]),
 			];
 		}
-		[$dststart, $dstend] = $this->dstBoundaryCache[$year];
+		[$dststart, $dstend] = $this->dstBoundaryCache[$key];
 
 		$dst = false;
 		if ($dststart <= $dstend) {
