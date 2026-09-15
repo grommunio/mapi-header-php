@@ -3416,9 +3416,10 @@ class Meetingrequest {
 				$this->proptags['updatecounter'],
 			]);
 
-			$updateCounter = (isset($calendarItemProps[$this->proptags['updatecounter']]) && $props[$this->proptags['updatecounter']] < $calendarItemProps[$this->proptags['updatecounter']]);
+			// A request without these properties counts as the oldest one
+			$updateCounter = (isset($calendarItemProps[$this->proptags['updatecounter']]) && ($props[$this->proptags['updatecounter']] ?? 0) < $calendarItemProps[$this->proptags['updatecounter']]);
 
-			$criticalChange = (isset($calendarItemProps[$this->proptags['owner_critical_change']]) && $props[$this->proptags['owner_critical_change']] < $calendarItemProps[$this->proptags['owner_critical_change']]);
+			$criticalChange = (isset($calendarItemProps[$this->proptags['owner_critical_change']]) && ($props[$this->proptags['owner_critical_change']] ?? 0) < $calendarItemProps[$this->proptags['owner_critical_change']]);
 
 			if ($updateCounter || $criticalChange) {
 				// meeting request is out of date, set properties to indicate this
