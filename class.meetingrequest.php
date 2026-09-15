@@ -2683,16 +2683,16 @@ class Meetingrequest {
 
 				if (!compareEntryIds($storeProps[PR_ENTRYID], $defaultStoreProps[PR_ENTRYID])) {
 					// get delegate information
-					$addrInfo = $this->getOwnerAddress($defaultStore, false);
+					$addrInfo = $this->getOwnerAddress($defaultStore, false) ?: [];
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
 
 					// get delegator information
-					$addrInfo = $this->getOwnerAddress($this->store, false);
+					$addrInfo = $this->getOwnerAddress($this->store, false) ?: [];
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
 				}
 				else {
 					// get organizer information
-					$addrInfo = $this->getOwnerAddress($this->store);
+					$addrInfo = $this->getOwnerAddress($this->store) ?: [];
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
 				}
