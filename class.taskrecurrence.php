@@ -86,7 +86,14 @@ class TaskRecurrence extends BaseRecurrence {
 
 		// Update $this->recur with proper startrecurrdate and endrecurrdate updated after saving recurrence
 		$msgProps = mapi_getprops($this->message, [$this->proptags['recurring_data']]);
+		// saveRecurrence() writes nothing for an invalid recurrence
+		if (!isset($msgProps[$this->proptags['recurring_data']])) {
+			return false;
+		}
 		$recurring_data = $this->parseRecurrence($msgProps[$this->proptags['recurring_data']]);
+		if ($recurring_data === null) {
+			return false;
+		}
 		foreach ($recurring_data as $key => $value) {
 			$this->recur[$key] = $value;
 		}
