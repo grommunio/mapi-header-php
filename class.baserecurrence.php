@@ -1480,7 +1480,8 @@ abstract class BaseRecurrence {
 	 * @return float|int the converted date in minutes
 	 */
 	public function unixDataToRecurData(int $date): float|int {
-		return ($date / 60) + 194074560;
+		// whole minutes; a float with seconds in it is deprecated as operand of %
+		return intdiv($date, 60) + 194074560;
 	}
 
 	/**
