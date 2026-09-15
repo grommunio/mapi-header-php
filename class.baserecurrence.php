@@ -668,6 +668,11 @@ abstract class BaseRecurrence {
 					return;
 				}
 
+				// The interval of "every N days" divides the start below
+				if ($this->recur["subtype"] != rptWeek && (int) $this->recur["everyn"] == 0) {
+					return;
+				}
+
 				if ($this->recur["subtype"] == rptWeek) {
 					// Daily every workday
 					$rdata .= pack("VVVV", 6 * 24 * 60, 1, 0, 0x3E);
@@ -681,11 +686,11 @@ abstract class BaseRecurrence {
 				break;
 
 			case IDC_RCEV_PAT_ORB_WEEKLY:
-				if (!isset($this->recur["everyn"]) || $this->recur["everyn"] > 99 || (int) $this->recur["everyn"] < 0) {
+				if (!isset($this->recur["everyn"]) || $this->recur["everyn"] > 99 || (int) $this->recur["everyn"] <= 0) {
 					return;
 				}
 
-				if (!$this->recur["regen"] && !isset($this->recur["weekdays"])) {
+				if (!$this->recur["regen"] && empty($this->recur["weekdays"])) {
 					return;
 				}
 
@@ -759,11 +764,14 @@ abstract class BaseRecurrence {
 
 				if ($rtype == IDC_RCEV_PAT_ORB_MONTHLY) {
 					$everyn = (int) $this->recur["everyn"];
-					if ($everyn > 99 || $everyn < 0) {
+					if ($everyn > 99 || $everyn <= 0) {
 						return;
 					}
 				}
 				else {
+					if ((int) $this->recur["everyn"] <= 0) {
+						return;
+					}
 					$everyn = ((int) $this->recur["everyn"]) * 12;
 				}
 
