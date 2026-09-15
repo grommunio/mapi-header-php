@@ -15,6 +15,7 @@ if (!extension_loaded('mapi') && file_exists('dev/php-mapi-stub.php')) {
 }
 
 // Include the files
+require_once UMAPI_PATH . '/gettext.php';
 require_once UMAPI_PATH . '/mapi.util.php';
 require_once UMAPI_PATH . '/mapidefs.php';
 require_once UMAPI_PATH . '/mapitags.php';
