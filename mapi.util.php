@@ -3,11 +3,14 @@
 /*
  * SPDX-License-Identifier: AGPL-3.0-only
  * SPDX-FileCopyrightText: Copyright 2005-2016 Zarafa Deutschland GmbH
- * SPDX-FileCopyrightText: Copyright 2020-2024 grommunio GmbH
+ * SPDX-FileCopyrightText: Copyright 2020-2026 grommunio GmbH
  */
 
 define('NOERROR', 0);
 define('SECONDS_PER_DAY', 86400);
+if (!defined('BLOCK_SIZE')) {
+	define('BLOCK_SIZE', 1048576);
+}
 
 // Load all mapi defs
 mapi_load_mapidefs(1);
@@ -569,4 +572,37 @@ function simplifyRestriction(mixed $restriction): mixed {
 	}
 
 	return $restriction;
+}
+
+/**
+ * Helper to stream a MAPI property.
+*/
+function readMapiPropStream(mixed $mapiobj, int $proptag): string {
+	$stream = mapi_openproperty($mapiobj, $proptag, IID_IStream, 0, 0);
+	$stat = mapi_stream_stat($stream);
+	mapi_stream_seek($stream, 0, STREAM_SEEK_SET);
+
+	// A read may return less than a full block, so count bytes rather than
+	// iterations: advancing by BLOCK_SIZE regardless returns a short value.
+	$datastring = '';
+	while (strlen($datastring) < $stat['cb']) {
+		$chunk = mapi_stream_read($stream, BLOCK_SIZE);
+		if ($chunk === false || $chunk === '') {
+			break;
+		}
+
+		$datastring .= $chunk;
+	}
+
+	// The caller cannot tell a short value from a complete one, so say so here.
+	if (strlen($datastring) < $stat['cb']) {
+		error_log(sprintf(
+			"readMapiPropStream(): property 0x%08X is truncated, read %d of %d bytes",
+			$proptag,
+			strlen($datastring),
+			$stat['cb']
+		));
+	}
+
+	return $datastring;
 }
