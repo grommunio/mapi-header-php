@@ -53,6 +53,10 @@ abstract class BaseRecurrence {
 	private array $dstBoundaryCache = [];
 
 	/**
+	 * var int First day of week set by the user (default: 1 - Monday)
+	 */
+	private int $firstDayOfWeek = 1;
+	/**
 	 * Constructor.
 	 *
 	 * @param resource $store   MAPI Message Store Object
@@ -77,6 +81,14 @@ abstract class BaseRecurrence {
 		}
 		if (isset($this->proptags["timezone_data"], $this->messageprops[$this->proptags["timezone_data"]])) {
 			$this->tz = $this->parseTimezone($this->messageprops[$this->proptags["timezone_data"]]);
+		}
+
+		// Get the first day of week from the user's settings, fallback to 1 (Monday)
+		// if it is not explicitely set.
+		$websettings = readMapiPropStream($store, PR_EC_WEBACCESS_SETTINGS_JSON);
+		if (!empty($websettings)) {
+			$settings = json_decode($websettings, true);
+			$this->firstDayOfWeek = $settings['settings']['grommunio']['v1']['main']['week_start'] ?? 1;
 		}
 	}
 
@@ -641,7 +653,7 @@ abstract class BaseRecurrence {
 		}
 
 		$rdata = pack("vvvvv", 0x3004, 0x3004, $rtype, (int) $this->recur["subtype"], MAPI_CAL_DEFAULT);
-		$weekstart = 1; // monday
+		$weekstart = $this->firstDayOfWeek;
 		$forwardcount = 0;
 		$count = 0;
 		$restocc = 0;
@@ -1013,8 +1025,8 @@ abstract class BaseRecurrence {
 				break;
 		}
 
-		// Persist first day of week (defaults to Monday for weekly recurrences)
-		$firstDow = $this->recur["first_dow"] ?? ($rtype == IDC_RCEV_PAT_ORB_WEEKLY && ((int) $this->recur["subtype"]) == 1 ? 1 : 0);
+		// Persist first day of week (previously saved recurrences maintain the fdow)
+		$firstDow = $this->recur["first_dow"] ?? $this->firstDayOfWeek;
 		$rdata .= pack("V", (int) $firstDow);
 
 		// Exception data
