@@ -579,6 +579,9 @@ function simplifyRestriction(mixed $restriction): mixed {
 */
 function readMapiPropStream(mixed $mapiobj, int $proptag): string {
 	$stream = mapi_openproperty($mapiobj, $proptag, IID_IStream, 0, 0);
+	if ($stream === false) {
+		return '';
+	}
 	$stat = mapi_stream_stat($stream);
 	mapi_stream_seek($stream, 0, STREAM_SEEK_SET);
 
