@@ -85,7 +85,7 @@ abstract class BaseRecurrence {
 
 		// Get the first day of week from the user's settings, fallback to 1 (Monday)
 		// if it is not explicitely set.
-		$websettings = readMapiPropStream($store, PR_EC_WEBACCESS_SETTINGS_JSON);
+		$websettings = readMapiProp($store, PR_EC_WEBACCESS_SETTINGS_JSON, mapi_getprops($store, [PR_EC_WEBACCESS_SETTINGS_JSON]));
 		if (!empty($websettings)) {
 			$settings = json_decode($websettings, true);
 			$this->firstDayOfWeek = $settings['settings']['grommunio']['v1']['main']['week_start'] ?? 1;
