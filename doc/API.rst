@@ -491,6 +491,59 @@ Property ID Resolution
         $proptags['location']
     ]);
 
+Large Properties
+~~~~~~~~~~~~~~~~
+
+.. code-block:: php
+
+    <?php
+    // Value from a mapi_getprops() result, streamed when it was too large
+    $props = mapi_getprops($message, [PR_HTML]);
+    $html = readMapiProp($message, PR_HTML, $props);
+
+    // Stream a property unconditionally
+    $body = readMapiPropStream($message, PR_BODY);
+
+    // Write a property through a stream
+    writeMapiPropStream($message, PR_HTML, $html);
+
+Timezone Definitions
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: php
+
+    <?php
+    // PidLidAppointmentTimeZoneDefinitionStartDisplay
+    $tzdef = parseTimezoneDefinition($props[$proptags['tzdefstart']]);
+    $rule = getEffectiveTimezoneRule($tzdef);
+    if ($rule !== null) {
+        $utc = $localStart + $rule['bias'] * 60;
+    }
+
+Calendar Restriction
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: php
+
+    <?php
+    $proptags = getPropIdsFromStrings($store, [
+        'starttime' => 'PT_SYSTIME:PSETID_Appointment:' . PidLidAppointmentStartWhole,
+        'endtime' => 'PT_SYSTIME:PSETID_Appointment:' . PidLidAppointmentEndWhole,
+        'isrecurring' => 'PT_BOOLEAN:PSETID_Appointment:' . PidLidRecurring,
+        'recurrenceend' => 'PT_SYSTIME:PSETID_Appointment:' . PidLidClipEnd,
+    ]);
+    $table = mapi_folder_getcontentstable($calendar);
+    mapi_table_restrict($table, getCalendarRestriction($proptags, $start, $end));
+
+Codepages
+~~~~~~~~~
+
+.. code-block:: php
+
+    <?php
+    $charset = getCodepageCharset($props[PR_INTERNET_CPID]);
+    $utf8 = iconv($charset, 'utf-8', $html);
+
 GUID Operations
 ~~~~~~~~~~~~~~~
 
