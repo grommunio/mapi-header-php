@@ -98,7 +98,9 @@ Core Components
 * ``mapidefs.php`` - Core MAPI constants, property types, object types
 * ``mapiguid.php`` - MAPI GUID constants for property sets (PSETID_*)
 * ``mapitags.php`` - Custom property tag definitions
-* ``mapi.util.php`` - Utility functions for MAPI operations
+* ``mapi.util.php`` - Utility functions: named properties, property streams,
+  timezone definitions, codepages, calendar restrictions, GOIDs
+* ``gettext.php`` - Context-aware ``pgettext()`` and ``npgettext()``
 * ``bootstrap.php`` - Bootstrap loader for all headers
 
 **Class Files**
