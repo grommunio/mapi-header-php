@@ -579,6 +579,9 @@ function simplifyRestriction(mixed $restriction): mixed {
 */
 function readMapiPropStream(mixed $mapiobj, int $proptag): string {
 	$stream = mapi_openproperty($mapiobj, $proptag, IID_IStream, 0, 0);
+	if ($stream === false) {
+		return '';
+	}
 	$stat = mapi_stream_stat($stream);
 	mapi_stream_seek($stream, 0, STREAM_SEEK_SET);
 
@@ -605,4 +608,240 @@ function readMapiPropStream(mixed $mapiobj, int $proptag): string {
 	}
 
 	return $datastring;
+}
+
+/**
+ * Helper to write a MAPI property through a stream.
+ */
+function writeMapiPropStream(mixed $mapiobj, int $proptag, string $data): bool {
+	$stream = mapi_openproperty($mapiobj, $proptag, IID_IStream, STGM_TRANSACTED, MAPI_CREATE | MAPI_MODIFY);
+	if ($stream === false) {
+		return false;
+	}
+	mapi_stream_setsize($stream, strlen($data));
+	if (mapi_stream_write($stream, $data) === false) {
+		return false;
+	}
+
+	return mapi_stream_commit($stream);
+}
+
+/**
+ * Whether mapi_getprops() reported $property as too large to be returned inline.
+ */
+function propIsTooLarge(int $property, array $propArray): bool {
+	$error = propIsError($property, $propArray);
+
+	// php-mapi reports the code unsigned, older builds signed
+	return $error !== false && ((int) $error & 0xFFFFFFFF) === (MAPI_E_NOT_ENOUGH_MEMORY & 0xFFFFFFFF);
+}
+
+/**
+ * Value of $proptag from a mapi_getprops() result, streamed when it was too
+ * large for the result. null when the property is not set.
+ */
+function readMapiProp(mixed $mapiobj, int $proptag, array $propArray): mixed {
+	if (isset($propArray[$proptag])) {
+		return $propArray[$proptag];
+	}
+
+	return propIsTooLarge($proptag, $propArray) ? readMapiPropStream($mapiobj, $proptag) : null;
+}
+
+/**
+ * Parses a PidLidAppointmentTimeZoneDefinition* blob (MS-OXOCAL 2.2.1.41).
+ *
+ * @return array empty when the blob is missing or truncated
+ */
+function parseTimezoneDefinition(?string $tzdef): array {
+	if ($tzdef === null || strlen($tzdef) < 8) {
+		return [];
+	}
+
+	$res = unpack("Cmajorver/Cminorver/vcbheader/vreserved/vcchkeyname", $tzdef);
+	$offset = 8;
+	$cchKeyName = $res['cchkeyname'] * 2;
+	if (strlen($tzdef) < $offset + $cchKeyName + 2) {
+		return [];
+	}
+	$data = unpack("a{$cchKeyName}keyname/vcrules", substr($tzdef, $offset, $cchKeyName + 2));
+	$res['keyname'] = $data['keyname'];
+	$res['crules'] = $data['crules'];
+	$res['rules'] = [];
+	$offset += $cchKeyName + 2;
+
+	for ($i = 0; $i < $res['crules']; ++$i) {
+		if (strlen($tzdef) < $offset + 66) {
+			return [];
+		}
+		$rule = unpack("Cmajorver/Cminorver/vreserved/vtzruleflags/vwyear/a14x/lbias/lstdbias/ldstbias", substr($tzdef, $offset, 34));
+		$offset += 34;
+		$rule['stStandardDate'] = unpack("vyear/vmonth/vdayofweek/vday/vhour/vminute/vsecond/vmiliseconds", substr($tzdef, $offset, 16));
+		$offset += 16;
+		$rule['stDaylightDate'] = unpack("vyear/vmonth/vdayofweek/vday/vhour/vminute/vsecond/vmiliseconds", substr($tzdef, $offset, 16));
+		$offset += 16;
+		$res['rules'][] = $rule;
+	}
+
+	return $res;
+}
+
+/**
+ * The rule flagged TZRULE_FLAG_EFFECTIVE_TZREG of a parsed timezone definition.
+ */
+function getEffectiveTimezoneRule(array $tzdef): ?array {
+	foreach ($tzdef['rules'] ?? [] as $rule) {
+		if ($rule['tzruleflags'] & TZRULE_FLAG_EFFECTIVE_TZREG) {
+			return $rule;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * iconv charset name for a Windows codepage, iso-8859-15 when the codepage is
+ * unknown or has no name this iconv resolves. Built from gromox' cpid.txt with
+ * glibc spellings; 936 maps to GB18030, the superset of gbk.
+ */
+function getCodepageCharset(int $codepage): string {
+	static $codepages = [
+		37 => "IBM037",
+		437 => "IBM437",
+		500 => "IBM500",
+		708 => "ASMO-708",
+		775 => "ibm775",
+		850 => "ibm850",
+		852 => "ibm852",
+		855 => "IBM855",
+		857 => "ibm857",
+		858 => "IBM858",
+		860 => "IBM860",
+		861 => "ibm861",
+		862 => "IBM862",
+		863 => "IBM863",
+		864 => "IBM864",
+		865 => "IBM865",
+		866 => "cp866",
+		869 => "ibm869",
+		870 => "IBM870",
+		874 => "windows-874",
+		875 => "IBM875",
+		932 => "shift_jis",
+		936 => "GB18030",
+		949 => "cp949",
+		950 => "big5",
+		1026 => "IBM1026",
+		1047 => "IBM1047",
+		1140 => "IBM1140",
+		1141 => "IBM1141",
+		1142 => "IBM1142",
+		1143 => "IBM1143",
+		1144 => "IBM1144",
+		1145 => "IBM1145",
+		1146 => "IBM1146",
+		1147 => "IBM1147",
+		1148 => "IBM1148",
+		1149 => "IBM1149",
+		1200 => "UTF-16",
+		1201 => "UTF-16BE",
+		1250 => "windows-1250",
+		1251 => "windows-1251",
+		1252 => "windows-1252",
+		1253 => "windows-1253",
+		1254 => "windows-1254",
+		1255 => "windows-1255",
+		1256 => "windows-1256",
+		1257 => "windows-1257",
+		1258 => "windows-1258",
+		1361 => "Johab",
+		10000 => "MACINTOSH",
+		10007 => "MAC-CYRILLIC",
+		10017 => "MAC-UK",
+		10029 => "MAC-CENTRALEUROPE",
+		10079 => "MAC-IS",
+		12000 => "UTF-32",
+		12001 => "UTF-32BE",
+		20000 => "EUC-TW",
+		20106 => "DIN_66003",
+		20107 => "SEN_850200_B",
+		20108 => "NS_4551-1",
+		20127 => "us-ascii",
+		20261 => "T.61-8BIT",
+		20269 => "ISO_6937",
+		20273 => "IBM273",
+		20277 => "IBM277",
+		20278 => "IBM278",
+		20280 => "IBM280",
+		20284 => "IBM284",
+		20285 => "IBM285",
+		20290 => "IBM290",
+		20297 => "IBM297",
+		20420 => "IBM420",
+		20423 => "IBM423",
+		20424 => "IBM424",
+		20866 => "koi8-r",
+		20871 => "IBM871",
+		20880 => "IBM880",
+		20905 => "IBM905",
+		20932 => "EUC-JP",
+		20936 => "GB2312",
+		20949 => "EUC-KR",
+		21025 => "IBM1025",
+		21866 => "koi8-u",
+		28591 => "iso-8859-1",
+		28592 => "iso-8859-2",
+		28593 => "iso-8859-3",
+		28594 => "iso-8859-4",
+		28595 => "iso-8859-5",
+		28596 => "iso-8859-6",
+		28597 => "iso-8859-7",
+		28598 => "iso-8859-8",
+		28599 => "iso-8859-9",
+		28603 => "iso-8859-13",
+		28605 => "iso-8859-15",
+		38598 => "ISO-8859-8",
+		50220 => "iso-2022-jp",
+		50221 => "csISO2022JP",
+		50222 => "iso-2022-jp",
+		50225 => "iso-2022-kr",
+		50227 => "ISO-2022-CN",
+		51932 => "euc-jp",
+		51936 => "EUC-CN",
+		51949 => "euc-kr",
+		54936 => "GB18030",
+		65000 => "utf-7",
+		65001 => "utf-8",
+	];
+
+	// West-European mails are the ones most likely to carry a wrong codepage,
+	// and utf-8 is binary compatible with the lower 7 bits of iso-8859-15.
+	return $codepages[$codepage] ?? "iso-8859-15";
+}
+
+/**
+ * Restriction for the appointments of a calendar that touch <$start, $end>,
+ * recurring series included. $props holds the resolved tags for "starttime",
+ * "endtime", "isrecurring" and "recurrenceend".
+ */
+function getCalendarRestriction(array $props, int $start, int $end): array {
+	return [RES_OR, [
+		// item.end >= start && item.start <= end
+		[RES_AND, [
+			[RES_PROPERTY, [RELOP => RELOP_LE, ULPROPTAG => $props["starttime"], VALUE => $end]],
+			[RES_PROPERTY, [RELOP => RELOP_GE, ULPROPTAG => $props["endtime"], VALUE => $start]],
+		]],
+		// recurring series that still runs at start
+		[RES_AND, [
+			[RES_EXIST, [ULPROPTAG => $props["recurrenceend"]]],
+			[RES_PROPERTY, [RELOP => RELOP_EQ, ULPROPTAG => $props["isrecurring"], VALUE => true]],
+			[RES_PROPERTY, [RELOP => RELOP_GE, ULPROPTAG => $props["recurrenceend"], VALUE => $start]],
+		]],
+		// open-ended recurring series that started before end
+		[RES_AND, [
+			[RES_NOT, [[RES_EXIST, [ULPROPTAG => $props["recurrenceend"]]]]],
+			[RES_PROPERTY, [RELOP => RELOP_LE, ULPROPTAG => $props["starttime"], VALUE => $end]],
+			[RES_PROPERTY, [RELOP => RELOP_EQ, ULPROPTAG => $props["isrecurring"], VALUE => true]],
+		]],
+	]];
 }

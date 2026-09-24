@@ -972,10 +972,7 @@ class TaskRequest {
 		// edit response before sending task response.
 		if ($this->taskCommentsInfo != '') {
 			$comments = $this->getTaskCommentsInfo();
-			$stream = mapi_openproperty($outgoing, PR_BODY, IID_IStream, STGM_TRANSACTED, MAPI_CREATE | MAPI_MODIFY);
-			mapi_stream_setsize($stream, strlen($comments));
-			mapi_stream_write($stream, $comments);
-			mapi_stream_commit($stream);
+			writeMapiPropStream($outgoing, PR_BODY, $comments);
 		}
 
 		mapi_savechanges($outgoing);

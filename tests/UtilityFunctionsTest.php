@@ -90,4 +90,95 @@ class UtilityFunctionsTest extends TestCase {
 	public function testSecondsPerDayConstant(): void {
 		$this->assertEquals(86400, SECONDS_PER_DAY);
 	}
+
+	public function testPropIsTooLarge(): void {
+		$tag = mapi_prop_tag(PT_STRING8, 0x1000);
+		$errorTag = mapi_prop_tag(PT_ERROR, 0x1000);
+
+		$this->assertFalse(propIsTooLarge($tag, []));
+		$this->assertFalse(propIsTooLarge($tag, [$errorTag => MAPI_E_NOT_FOUND]));
+		$this->assertTrue(propIsTooLarge($tag, [$errorTag => MAPI_E_NOT_ENOUGH_MEMORY]));
+		// the signed representation older php-mapi builds hand out
+		$this->assertTrue(propIsTooLarge($tag, [$errorTag => MAPI_E_NOT_ENOUGH_MEMORY - 0x100000000]));
+	}
+
+	public function testReadMapiPropReturnsInlineValue(): void {
+		$tag = mapi_prop_tag(PT_STRING8, 0x1000);
+
+		$this->assertSame('value', readMapiProp(null, $tag, [$tag => 'value']));
+		$this->assertNull(readMapiProp(null, $tag, []));
+	}
+
+	private function timezoneDefinition(int $flags, int $bias, int $dstbias): string {
+		$keyname = 'W. Europe Standard Time';
+		$blob = pack('CCvvv', 2, 1, 0, 0, strlen($keyname)) . mb_convert_encoding($keyname, 'UTF-16LE', 'UTF-8') . pack('v', 1);
+		$blob .= pack('CCvvv', 2, 1, 0, $flags, 0) . str_repeat("\0", 14) . pack('lll', $bias, 0, $dstbias);
+		$blob .= pack('vvvvvvvv', 0, 10, 0, 5, 3, 0, 0, 0); // last Sunday of October, 03:00
+		$blob .= pack('vvvvvvvv', 0, 3, 0, 5, 2, 0, 0, 0); // last Sunday of March, 02:00
+
+		return $blob;
+	}
+
+	public function testParseTimezoneDefinition(): void {
+		$tzdef = parseTimezoneDefinition($this->timezoneDefinition(TZRULE_FLAG_EFFECTIVE_TZREG, -60, -60));
+
+		$this->assertSame(1, $tzdef['crules']);
+		$this->assertCount(1, $tzdef['rules']);
+		$this->assertSame(-60, $tzdef['rules'][0]['bias']);
+		$this->assertSame(-60, $tzdef['rules'][0]['dstbias']);
+		$this->assertSame(10, $tzdef['rules'][0]['stStandardDate']['month']);
+		$this->assertSame(3, $tzdef['rules'][0]['stDaylightDate']['month']);
+		$this->assertSame(5, $tzdef['rules'][0]['stDaylightDate']['day']);
+	}
+
+	public function testParseTimezoneDefinitionRejectsTruncatedBlobs(): void {
+		$this->assertSame([], parseTimezoneDefinition(null));
+		$this->assertSame([], parseTimezoneDefinition(''));
+		$this->assertSame([], parseTimezoneDefinition(substr($this->timezoneDefinition(0, 0, 0), 0, 40)));
+	}
+
+	public function testGetEffectiveTimezoneRule(): void {
+		$this->assertNull(getEffectiveTimezoneRule([]));
+		$this->assertNull(getEffectiveTimezoneRule(parseTimezoneDefinition($this->timezoneDefinition(TZRULE_FLAG_RECUR_CURRENT_TZREG, -60, -60))));
+
+		$rule = getEffectiveTimezoneRule(parseTimezoneDefinition($this->timezoneDefinition(TZRULE_FLAG_EFFECTIVE_TZREG, -120, -60)));
+		$this->assertSame(-120, $rule['bias']);
+	}
+
+	public function testGetCodepageCharset(): void {
+		$this->assertSame('utf-8', getCodepageCharset(65001));
+		$this->assertSame('windows-1252', getCodepageCharset(1252));
+		$this->assertSame('iso-8859-15', getCodepageCharset(28605));
+		$this->assertSame('iso-8859-15', getCodepageCharset(0));
+		$this->assertSame('UTF-16', getCodepageCharset(1200));
+		$this->assertSame('DIN_66003', getCodepageCharset(20106));
+	}
+
+	public function testGetCodepageCharsetNamesResolveInIconv(): void {
+		if (!function_exists('iconv')) {
+			$this->markTestSkipped('iconv is not available');
+		}
+		for ($codepage = 0; $codepage < 66000; ++$codepage) {
+			$charset = getCodepageCharset($codepage);
+			if ($charset === 'iso-8859-15' && $codepage !== 28605) {
+				continue;
+			}
+			$this->assertNotFalse(@iconv($charset, 'UTF-8', ''), "codepage {$codepage} maps to unknown charset {$charset}");
+		}
+	}
+
+	public function testGetCalendarRestriction(): void {
+		$props = ['starttime' => 1, 'endtime' => 2, 'isrecurring' => 3, 'recurrenceend' => 4];
+		$restriction = getCalendarRestriction($props, 100, 200);
+
+		$this->assertSame(RES_OR, $restriction[0]);
+		$this->assertCount(3, $restriction[1]);
+		[$window, $bounded, $open] = $restriction[1];
+		$this->assertSame([RELOP => RELOP_LE, ULPROPTAG => 1, VALUE => 200], $window[1][0][1]);
+		$this->assertSame([RELOP => RELOP_GE, ULPROPTAG => 2, VALUE => 100], $window[1][1][1]);
+		$this->assertSame(RES_EXIST, $bounded[1][0][0]);
+		$this->assertSame([RELOP => RELOP_GE, ULPROPTAG => 4, VALUE => 100], $bounded[1][2][1]);
+		$this->assertSame(RES_NOT, $open[1][0][0]);
+		$this->assertSame([RELOP => RELOP_EQ, ULPROPTAG => 3, VALUE => true], $open[1][2][1]);
+	}
 }

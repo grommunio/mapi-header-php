@@ -57,7 +57,7 @@ class KeyCloak {
 
 		// @type {bool} checks if client is a public client and extracts the public key
 		$this->is_public = $keycloak_config['public-client'] ?? false;
-		$this->public_key = $this->is_public == false ? "" : "-----BEGIN PUBLIC KEY-----\n" . chunk_split((string) $keycloak_config['realm-public-key'], 64, "\n") . "\n-----END PUBLIC KEY-----\n";
+		$this->public_key = $this->is_public == false ? "" : "-----BEGIN PUBLIC KEY-----\n" . chunk_split((string) ($keycloak_config['realm-public-key'] ?? ''), 64, "\n") . "\n-----END PUBLIC KEY-----\n";
 
 		// client secret => obtained if client is not a public client
 		if (!$this->is_public) {
