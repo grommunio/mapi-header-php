@@ -1,3 +1,37 @@
+2.3 (2026-09-24)
+================
+
+Fixes:
+
+* Yearly recurrence period wrong after parsing and when calculating occurrences
+* Broken recurrence data aborted calendar processing, it is skipped and logged
+* A delegate's meeting response was given as the delegate, not the mailbox owner
+* Meeting responses carried no DTSTAMP
+* Request mail cleanup could fail an otherwise complete meeting response
+* Meeting request recurrence helper opened the wrong store
+* gmdate() results were compared as strings in recurrence month calculations
+* Recurrence pattern sentence could not be translated grammatically
+* Token: base64url decoding
+* KeyCloak: token activity checked on validation, refresh token not validated
+  on grant validation, missing realm-public-key of a public client
+* readMapiPropStream() returns an empty string when the stream cannot be opened
+
+Enhancements:
+
+* writeMapiPropStream(), propIsTooLarge() and readMapiProp() helpers
+* readMapiPropStream() helper
+* parseTimezoneDefinition() and getEffectiveTimezoneRule() helpers
+* getCodepageCharset() with iconv-verified charset names
+* getCalendarRestriction() helper
+* PR_CONVERSATION_ID, PR_CONVERSATION_INDEX and PR_CONVERSATION_TOPIC
+* Calendar view restriction pushed into the table load
+* deleteRecurrence() turns a series back into a single item
+* Categories applied to the whole series
+* Optional removal of the request mail on meeting response
+* First day of week taken from the user's settings for new recurrences
+* mapi_strerror() for generic exception explanations
+* API documentation for the new helpers
+
 2.2 (2026-07-27)
 ================
 
