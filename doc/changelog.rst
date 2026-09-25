@@ -3,34 +3,48 @@
 
 Fixes:
 
-* Yearly recurrence period wrong after parsing and when calculating occurrences
-* Broken recurrence data aborted calendar processing, it is skipped and logged
-* A delegate's meeting response was given as the delegate, not the mailbox owner
-* Meeting responses carried no DTSTAMP
-* Request mail cleanup could fail an otherwise complete meeting response
-* Meeting request recurrence helper opened the wrong store
-* gmdate() results were compared as strings in recurrence month calculations
-* Recurrence pattern sentence could not be translated grammatically
-* Token: base64url decoding
-* KeyCloak: token activity checked on validation, refresh token not validated
-  on grant validation, missing realm-public-key of a public client
-* readMapiPropStream() returns an empty string when the stream cannot be opened
+* Incorrect yearly recurrence periods after parsing and when
+  calculating occurrences have been repaired.
+* Broken recurrence data used to abort calendar processing, now it is skipped
+  and logged.
+* A delegate's meeting response was erroneously reported as the delegate, not
+  the mailbox owner.
+* Meeting responses will now have PidLidAttendeeCriticalChange set (and thus
+  generate a DTSTAMP line when converted to iCal)
+* No longer report a failure from the mail cleanup routine even when a meeting
+  request is complete.
+* Results from gmdate() are now compared as integers in recurrence month
+  calculations.
+* PidLidRecurrencePattern is now filled with grammatically correct
+  translations.
+* Keycloak token decoding was switched from base64 to base64url.
+* Keycloak: On validation, tokens are checked for being active.
+* Keycloak: On grant validations, refresh tokens are no longer validated.
+* Keycloak: Avoid raising an undefined index warning when a public client
+  without realm public key connects.
+* readMapiPropStream() now returns aeturn an empty string when the property
+  stream cannot be opened.
+* readMapiPropStream() now returns an empty string when the stream cannot be
+  opened.
 
 Enhancements:
 
-* writeMapiPropStream(), propIsTooLarge() and readMapiProp() helpers
-* readMapiPropStream() helper
-* parseTimezoneDefinition() and getEffectiveTimezoneRule() helpers
-* getCodepageCharset() with iconv-verified charset names
-* getCalendarRestriction() helper
-* PR_CONVERSATION_ID, PR_CONVERSATION_INDEX and PR_CONVERSATION_TOPIC
-* Calendar view restriction pushed into the table load
+* Added helpers writeMapiPropStream(), propIsTooLarge(), readMapiProp() ,
+  readMapiPropStream(), parseTimezoneDefinition(), getEffectiveTimezoneRule()
+  getCalendarRestriction().
+* Added getCodepageCharset() with iconv-verified charset names.
+* Added proptag defines for PR_CONVERSATION_ID, PR_CONVERSATION_INDEX and
+  PR_CONVERSATION_TOPIC.
+* Restrictions are applied more efficiently (less runtime) within
+  getCalendarItems().
 * deleteRecurrence() turns a series back into a single item
-* Categories applied to the whole series
-* Optional removal of the request mail on meeting response
-* First day of week taken from the user's settings for new recurrences
-* mapi_strerror() for generic exception explanations
-* API documentation for the new helpers
+* Categories are applied to the whole series now.
+* The MeetingRequest class constructor can take an additional parameter to
+  indicate that requests should be deleted when responding.
+* For new recurrences, the first day of the week is now taken from the user's
+  settings.
+* mapi_strerror is now used for generic exception explanation strings.
+* Added API documentation for the new helpers.
 
 2.2 (2026-07-27)
 ================
