@@ -2879,7 +2879,9 @@ class Meetingrequest {
 
 			$basedateUtc = $basedate;
 			if ($recurObject instanceof BaseRecurrence && isset($recurObject->tz)) {
-				$basedateUtc = $recurObject->toGMT($recurObject->tz, $basedate);
+				// PidLidExceptionReplaceTime is the original start, not the day
+				$origStart = $recurObject->dayStartOf($basedate) + $recurObject->recur['startocc'] * 60;
+				$basedateUtc = $recurObject->toGMT($recurObject->tz, $origStart);
 			}
 
 			// Ensure that the correct basedate is set in the new message
