@@ -2186,6 +2186,39 @@ class Meetingrequest {
 		return $props[PR_SMTP_ADDRESS];
 	}
 
+	// Returns TRUE if both recipient rows denote the same address; rows
+	// need not carry PR_ENTRYID
+	public function compareRecipients(array $recip1, array $recip2): bool {
+		if (isset($recip1[PR_ENTRYID], $recip2[PR_ENTRYID])) {
+			return $this->compareABEntryIDs($recip1[PR_ENTRYID], $recip2[PR_ENTRYID]);
+		}
+
+		$smtp1 = $this->getRecipientSMTPAddress($recip1);
+		$smtp2 = $this->getRecipientSMTPAddress($recip2);
+		if ($smtp1 !== '' && $smtp2 !== '') {
+			return strcasecmp($smtp1, $smtp2) == 0;
+		}
+
+		return !empty($recip1[PR_EMAIL_ADDRESS]) && !empty($recip2[PR_EMAIL_ADDRESS]) &&
+			strcasecmp($recip1[PR_ADDRTYPE] ?? '', $recip2[PR_ADDRTYPE] ?? '') == 0 &&
+			strcasecmp($recip1[PR_EMAIL_ADDRESS], $recip2[PR_EMAIL_ADDRESS]) == 0;
+	}
+
+	private function getRecipientSMTPAddress(array $recip): string {
+		if (!empty($recip[PR_SMTP_ADDRESS])) {
+			return $recip[PR_SMTP_ADDRESS];
+		}
+		if (isset($recip[PR_ADDRTYPE], $recip[PR_EMAIL_ADDRESS]) &&
+			strcasecmp($recip[PR_ADDRTYPE], 'SMTP') == 0) {
+			return $recip[PR_EMAIL_ADDRESS];
+		}
+		if (isset($recip[PR_ENTRYID])) {
+			return (string) $this->getSMTPAddress($recip[PR_ENTRYID]);
+		}
+
+		return '';
+	}
+
 	/**
 	 * Gets the properties associated with the owner of the passed store:
 	 * PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_ADDRTYPE, PR_ENTRYID, PR_SEARCH_KEY.
@@ -3141,7 +3174,7 @@ class Meetingrequest {
 				// Search if the deleted recipient can be found inside
 				// the updated recipients as well.
 				foreach ($modifiedRecips as $recip) {
-					if ($this->compareABEntryIDs($recip[PR_ENTRYID], $delRecip[PR_ENTRYID])) {
+					if ($this->compareRecipients($recip, $delRecip)) {
 						$found = true;
 						break;
 					}
