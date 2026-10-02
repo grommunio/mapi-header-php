@@ -377,10 +377,10 @@ class Recurrence extends BaseRecurrence {
 		// The way we do this is to look at the days that we're 'moving' the item in the exception. Each
 		// of these days may only contain the item that we're modifying. Any other item violates the rules.
 
-		if ($this->isException($basedate)) {
+		$oldexception = $this->getChangeException($basedate);
+		if ($oldexception !== false) {
 			// If we're modifying an exception, we want to look at the days that we're 'moving' compared to where
 			// the exception used to be.
-			$oldexception = $this->getChangeException($basedate);
 			$prevday = $this->dayStartOf($oldexception["start"]);
 		}
 		else {
