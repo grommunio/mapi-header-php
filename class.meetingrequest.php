@@ -1883,7 +1883,7 @@ class Meetingrequest {
 	 *
 	 * @param string $ownerentryid the entryid of the user
 	 *
-	 * @return resource store of the user
+	 * @return mixed store of the user, null if the user cannot be resolved
 	 */
 	public function openCustomUserStore(string $ownerentryid): mixed {
 		$ab = mapi_openaddressbook($this->session);
@@ -2528,7 +2528,18 @@ class Meetingrequest {
 		$i = 0;
 		$len = count($resourceRecipients);
 		while (!$this->errorSetResource && $i < $len) {
-			$userStore = $this->openCustomUserStore($resourceRecipients[$i][PR_ENTRYID]);
+			try {
+				$userStore = $this->openCustomUserStore($resourceRecipients[$i][PR_ENTRYID]);
+			}
+			catch (MAPIException $e) {
+				$e->setHandled();
+				$userStore = null;
+			}
+			if (!$userStore) {
+				$this->errorSetResource = 1; // No access
+
+				break;
+			}
 
 			// Open root folder
 			$userRoot = mapi_msgstore_openentry($userStore);
