@@ -698,6 +698,8 @@ define('wbsidJournal', 0x00000007); // Shortcut is grouped under Journal.
 
 define('TZRULE_FLAG_RECUR_CURRENT_TZREG', 0x0001);
 define('TZRULE_FLAG_EFFECTIVE_TZREG', 0x0002);
+define('TZDEFINITION_FLAG_VALID_GUID', 0x0001);
+define('TZDEFINITION_FLAG_VALID_KEYNAME', 0x0002);
 
 /* RecurrencePattern related values */
 define('MAPI_CAL_DEFAULT', 0);
