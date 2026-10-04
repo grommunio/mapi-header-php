@@ -1407,43 +1407,485 @@ class TimezoneUtil {
 	 * @return array
 	 */
 	public static function GetTzFromTimezoneDef($tzdef) {
-		$tz = [
-			'tzname' => '',
-			'tznamedst' => '',
-		];
-
 		$rule = getEffectiveTimezoneRule($tzdef);
-		if ($rule !== null) {
-			$tz['bias'] = $rule['bias'];
-			$tz['dstendyear'] = $rule['stStandardDate']['year'];
-			$tz['dstendmonth'] = $rule['stStandardDate']['month'];
-			$tz['dstendday'] = $rule['stStandardDate']['dayofweek'];
-			$tz['dstendweek'] = $rule['stStandardDate']['day'];
-			$tz['dstendhour'] = $rule['stStandardDate']['hour'];
-			$tz['dstendminute'] = $rule['stStandardDate']['minute'];
-			$tz['dstendsecond'] = $rule['stStandardDate']['second'];
-			$tz['dstendmillis'] = $rule['stStandardDate']['miliseconds'];
-			$tz['stdbias'] = $rule['stdbias'];
-			$tz['dststartyear'] = $rule['stDaylightDate']['year'];
-			$tz['dststartmonth'] = $rule['stDaylightDate']['month'];
-			$tz['dststartday'] = $rule['stDaylightDate']['dayofweek'];
-			$tz['dststartweek'] = $rule['stDaylightDate']['day'];
-			$tz['dststarthour'] = $rule['stDaylightDate']['hour'];
-			$tz['dststartminute'] = $rule['stDaylightDate']['minute'];
-			$tz['dststartsecond'] = $rule['stDaylightDate']['second'];
-			$tz['dststartmillis'] = $rule['stDaylightDate']['miliseconds'];
-			$tz['dstbias'] = $rule['dstbias'];
-		}
-
 		// Fallback if there isn't effective timezone
-		if (!isset($tz['bias'])) {
-			$tz = self::GetGMTTz();
-		}
+		$tz = $rule !== null ? self::getTzFromRule($rule) : self::GetGMTTz();
 
 		// Make the structure compatible with class.recurrence.php
 		$tz['timezone'] = $tz['bias'];
 		$tz['timezonedst'] = $tz['dstbias'];
 
 		return $tz;
+	}
+
+	/**
+	 * Timezone array of a TZRULE of a parsed timezone definition.
+	 */
+	private static function getTzFromRule(array $rule): array {
+		return [
+			'tzname' => '',
+			'tznamedst' => '',
+			'bias' => $rule['bias'],
+			'dstendyear' => $rule['stStandardDate']['year'],
+			'dstendmonth' => $rule['stStandardDate']['month'],
+			'dstendday' => $rule['stStandardDate']['dayofweek'],
+			'dstendweek' => $rule['stStandardDate']['day'],
+			'dstendhour' => $rule['stStandardDate']['hour'],
+			'dstendminute' => $rule['stStandardDate']['minute'],
+			'dstendsecond' => $rule['stStandardDate']['second'],
+			'dstendmillis' => $rule['stStandardDate']['miliseconds'],
+			'stdbias' => $rule['stdbias'],
+			'dststartyear' => $rule['stDaylightDate']['year'],
+			'dststartmonth' => $rule['stDaylightDate']['month'],
+			'dststartday' => $rule['stDaylightDate']['dayofweek'],
+			'dststartweek' => $rule['stDaylightDate']['day'],
+			'dststarthour' => $rule['stDaylightDate']['hour'],
+			'dststartminute' => $rule['stDaylightDate']['minute'],
+			'dststartsecond' => $rule['stDaylightDate']['second'],
+			'dststartmillis' => $rule['stDaylightDate']['miliseconds'],
+			'dstbias' => $rule['dstbias'],
+		];
+	}
+
+	/**
+	 * Unpacks a PidLidTimeZoneStruct (TZREG, MS-OXOCAL 2.2.1.39).
+	 *
+	 * @param string $data
+	 *
+	 * @return array|false
+	 */
+	public static function GetTzFromTimezoneStruct($data) {
+		return unpack("lbias/lstdbias/ldstbias/" .
+						   "vconst1/vdstendyear/vdstendmonth/vdstendday/vdstendweek/vdstendhour/vdstendminute/vdstendsecond/vdstendmillis/" .
+						   "vconst2/vdststartyear/vdststartmonth/vdststartday/vdststartweek/vdststarthour/vdststartminute/vdststartsecond/vdststartmillis", $data);
+	}
+
+	/**
+	 * Packs a timezone array as PidLidTimeZoneStruct (TZREG, MS-OXOCAL 2.2.1.39).
+	 *
+	 * @param array $tz
+	 *
+	 * @return string
+	 */
+	public static function GetTimezoneStructFromTz($tz) {
+		return pack(
+			"lllvvvvvvvvvvvvvvvvvv",
+			$tz["bias"],
+			$tz["stdbias"],
+			$tz["dstbias"],
+			0,
+			0,
+			$tz["dstendmonth"],
+			$tz["dstendday"],
+			$tz["dstendweek"],
+			$tz["dstendhour"],
+			$tz["dstendminute"],
+			$tz["dstendsecond"],
+			$tz["dstendmillis"],
+			0,
+			0,
+			$tz["dststartmonth"],
+			$tz["dststartday"],
+			$tz["dststartweek"],
+			$tz["dststarthour"],
+			$tz["dststartminute"],
+			$tz["dststartsecond"],
+			$tz["dststartmillis"]
+		);
+	}
+
+	/**
+	 * Unpacks an ActiveSync TimeZone structure (MS-ASDTYPE 2.6.4).
+	 *
+	 * @param string $data
+	 *
+	 * @return array|false
+	 */
+	public static function GetTzFromSyncBlob($data) {
+		$tz = unpack("lbias/a64tzname/vdstendyear/vdstendmonth/vdstendday/vdstendweek/vdstendhour/vdstendminute/vdstendsecond/vdstendmillis/" .
+						"lstdbias/a64tznamedst/vdststartyear/vdststartmonth/vdststartday/vdststartweek/vdststarthour/vdststartminute/vdststartsecond/vdststartmillis/" .
+						"ldstbias", $data);
+
+		// Make the structure compatible with class.recurrence.php
+		$tz["timezone"] = $tz["bias"];
+		$tz["timezonedst"] = $tz["dstbias"];
+
+		return $tz;
+	}
+
+	/**
+	 * Returns the UTC time of a local time in the given timezone.
+	 *
+	 * @param int        $localtime
+	 * @param null|array $tz
+	 *
+	 * @return int
+	 */
+	public static function GetUtcTimeByTz($localtime, $tz) {
+		if (!isset($tz) || !is_array($tz)) {
+			return $localtime;
+		}
+
+		return $localtime + self::getBias($tz, self::IsDst($localtime, $tz)) * 60;
+	}
+
+	/**
+	 * Returns the local time of a UTC time in the given timezone.
+	 *
+	 * @param int        $utctime
+	 * @param null|array $tz
+	 *
+	 * @return int
+	 */
+	public static function GetLocalTimeByTz($utctime, $tz) {
+		if (!isset($tz) || !is_array($tz)) {
+			return $utctime;
+		}
+
+		return $utctime - self::GetBiasAtUtc($utctime, $tz) * 60;
+	}
+
+	/**
+	 * Returns the bias in effect at a UTC time in the given timezone,
+	 * so that UTC = local time + bias.
+	 *
+	 * @param int   $utctime
+	 * @param array $tz
+	 *
+	 * @return int bias in minutes
+	 */
+	public static function GetBiasAtUtc($utctime, $tz) {
+		if (!is_array($tz)) {
+			return 0;
+		}
+
+		return self::getBias($tz, self::IsDstAtUtc($utctime, $tz));
+	}
+
+	/**
+	 * Returns true if daylight saving time is in effect at a local time
+	 * (wall clock) in the given timezone.
+	 *
+	 * The switch to daylight time is given in local standard time and the
+	 * switch back in local daylight time (MS-OXOCAL 2.2.1.41.1), which is how
+	 * a wall clock shows them.
+	 *
+	 * @param int   $localtime
+	 * @param array $tz
+	 *
+	 * @return bool
+	 */
+	public static function IsDst($localtime, $tz) {
+		if (!is_array($tz) || !self::hasDst($tz)) {
+			return false;
+		}
+
+		$year = (int) gmdate("Y", $localtime);
+
+		return self::isBetweenTransitions(
+			$localtime,
+			self::getTransitionTime($year, $tz, "dststart"),
+			self::getTransitionTime($year, $tz, "dstend")
+		);
+	}
+
+	/**
+	 * Returns true if daylight saving time is in effect at a UTC time in the
+	 * given timezone.
+	 *
+	 * @param int   $utctime
+	 * @param array $tz
+	 *
+	 * @return bool
+	 */
+	public static function IsDstAtUtc($utctime, $tz) {
+		if (!is_array($tz) || !self::hasDst($tz)) {
+			return false;
+		}
+
+		$year = (int) gmdate("Y", $utctime - self::getBias($tz, false) * 60);
+
+		return self::isBetweenTransitions(
+			$utctime,
+			self::getTransitionTime($year, $tz, "dststart") + self::getBias($tz, false) * 60,
+			self::getTransitionTime($year, $tz, "dstend") + self::getBias($tz, true) * 60
+		);
+	}
+
+	/**
+	 * Returns true if two timezone arrays describe the same offsets and
+	 * daylight saving time transitions.
+	 *
+	 * @param array $tz1
+	 * @param array $tz2
+	 *
+	 * @return bool
+	 */
+	public static function TzEquals($tz1, $tz2) {
+		if (!is_array($tz1) || !is_array($tz2) || !isset($tz1["bias"], $tz2["bias"])) {
+			return false;
+		}
+		if ($tz1["bias"] != $tz2["bias"] || ($tz1["stdbias"] ?? 0) != ($tz2["stdbias"] ?? 0)) {
+			return false;
+		}
+		$hasDst = self::hasDst($tz1);
+		if ($hasDst !== self::hasDst($tz2)) {
+			return false;
+		}
+		if (!$hasDst) {
+			return true;
+		}
+		if ($tz1["dstbias"] != $tz2["dstbias"]) {
+			return false;
+		}
+		foreach (["dststart", "dstend"] as $transition) {
+			foreach (["month", "day", "week", "hour", "minute", "second"] as $field) {
+				if (($tz1[$transition . $field] ?? 0) != ($tz2[$transition . $field] ?? 0)) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Returns true if the effective rule of a PidLidAppointmentTimeZoneDefinition*
+	 * blob describes the timezone array.
+	 *
+	 * @param mixed $tzdef
+	 * @param array $tz
+	 *
+	 * @return bool
+	 */
+	public static function IsTimezoneDefinitionOf($tzdef, $tz) {
+		if (!is_string($tzdef)) {
+			return false;
+		}
+		$rule = getEffectiveTimezoneRule(parseTimezoneDefinition($tzdef));
+
+		return $rule !== null && self::TzEquals($tz, self::getTzFromRule($rule));
+	}
+
+	/**
+	 * Builds a PidLidAppointmentTimeZoneDefinition* blob (TZDEFINITION,
+	 * MS-OXOCAL 2.2.1.41) with a single rule from a timezone array.
+	 *
+	 * @param array  $tz
+	 * @param string $keyname name of the timezone, e.g. "W. Europe Standard Time"
+	 * @param int    $flags   TZRULE_FLAG_* of the rule
+	 *
+	 * @return string
+	 */
+	public static function GetTimezoneDefinitionFromTz($tz, $keyname, $flags = TZRULE_FLAG_EFFECTIVE_TZREG) {
+		$keyname = iconv('UTF-8', 'UTF-16LE', $keyname);
+		$cchKeyName = intdiv(strlen($keyname), 2);
+		$hasDst = self::hasDst($tz);
+		$systemtime = static fn (string $transition): string => $hasDst ?
+			pack(
+				"vvvvvvvv",
+				0,
+				$tz[$transition . "month"],
+				$tz[$transition . "day"],
+				$tz[$transition . "week"],
+				$tz[$transition . "hour"],
+				$tz[$transition . "minute"],
+				$tz[$transition . "second"] ?? 0,
+				$tz[$transition . "millis"] ?? 0
+			) :
+			str_repeat("\0", 16);
+
+		return pack("CCvvv", 2, 1, 6 + 2 * $cchKeyName, TZDEFINITION_FLAG_VALID_KEYNAME, $cchKeyName) . $keyname .
+			pack("v", 1) .
+			pack("CCvvv", 2, 1, 0x003E, $flags, 1601) . str_repeat("\0", 14) .
+			pack("lll", $tz["bias"], $tz["stdbias"] ?? 0, $tz["dstbias"] ?? 0) .
+			$systemtime("dstend") . $systemtime("dststart");
+	}
+
+	/**
+	 * Sets the TZRULE flags of the effective rule of a timezone definition
+	 * and clears them on all other rules, as MS-OXOCAL 2.2.1.41.2 requires.
+	 * PidLidAppointmentTimeZoneDefinitionRecur needs
+	 * TZRULE_FLAG_EFFECTIVE_TZREG | TZRULE_FLAG_RECUR_CURRENT_TZREG.
+	 *
+	 * @param string $tzdef
+	 * @param int    $flags
+	 *
+	 * @return false|string false if the definition has no effective rule
+	 */
+	public static function SetTimezoneDefinitionFlags($tzdef, $flags) {
+		$parsed = parseTimezoneDefinition($tzdef);
+		if (empty($parsed) || getEffectiveTimezoneRule($parsed) === null) {
+			return false;
+		}
+		// the rules follow the key name, as parseTimezoneDefinition() reads them
+		$offset = 8 + strlen($parsed['keyname']) + 2;
+		foreach ($parsed['rules'] as $rule) {
+			$ruleFlags = ($rule['tzruleflags'] & TZRULE_FLAG_EFFECTIVE_TZREG) ? $flags : 0;
+			$tzdef = substr_replace($tzdef, pack("v", $ruleFlags), $offset + 4, 2);
+			$offset += 66;
+		}
+
+		return $tzdef;
+	}
+
+	/**
+	 * Returns a PidLidAppointmentTimeZoneDefinition* blob for a timezone array.
+	 *
+	 * The definition of a known timezone with the same rules is preferred, the
+	 * server's timezone first. Otherwise the definition is built from the
+	 * timezone array.
+	 *
+	 * @param array $tz
+	 *
+	 * @return string
+	 */
+	public static function GetTimezoneDefinitionForTz($tz) {
+		$candidates = [date_default_timezone_get()];
+		$keyname = "";
+		foreach (self::$tzonesoffsets as $tzname => $offset) {
+			if (!self::TzEquals($tz, self::getTzFromOffset($offset))) {
+				continue;
+			}
+			if ($keyname === "") {
+				$keyname = $tzname;
+			}
+			if (isset(self::$phptimezones[$tzname])) {
+				$candidates = array_merge($candidates, self::$phptimezones[$tzname]);
+			}
+		}
+		$tzdef = self::findTimezoneDefinition($tz, array_unique($candidates));
+		if ($tzdef !== null) {
+			return $tzdef;
+		}
+
+		// any other timezone which has the same offsets in winter and summer
+		$year = (int) gmdate("Y");
+		$times = [gmmktime(0, 0, 0, 1, 15, $year), gmmktime(0, 0, 0, 7, 15, $year)];
+		$candidates = [];
+		foreach (DateTimeZone::listIdentifiers() as $phptimezone) {
+			$zone = new DateTimeZone($phptimezone);
+			foreach ($times as $time) {
+				if ($zone->getOffset(new DateTime('@' . $time)) !== -60 * self::GetBiasAtUtc($time, $tz)) {
+					continue 2;
+				}
+			}
+			$candidates[] = $phptimezone;
+		}
+		$tzdef = self::findTimezoneDefinition($tz, $candidates);
+		if ($tzdef !== null) {
+			return $tzdef;
+		}
+
+		self::log(self::LOG_DEBUG, sprintf("TimezoneUtil::GetTimezoneDefinitionForTz(): no known timezone matches, building '%s'", $keyname ?: "Customized Time Zone"));
+
+		return self::GetTimezoneDefinitionFromTz($tz, $keyname ?: "Customized Time Zone");
+	}
+
+	/**
+	 * The definition of the first of the php timezones whose effective rule
+	 * equals $tz.
+	 */
+	private static function findTimezoneDefinition(array $tz, array $phptimezones): ?string {
+		foreach ($phptimezones as $phptimezone) {
+			// many of the names are aliases unknown to mapi_ianatz_to_tzdef()
+			try {
+				$tzdef = mapi_ianatz_to_tzdef($phptimezone);
+			}
+			catch (Exception) {
+				continue;
+			}
+			if (self::IsTimezoneDefinitionOf($tzdef, $tz)) {
+				return $tzdef;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Moves the start of an all-day event, which is midnight in the timezone
+	 * $fromTzdef, to midnight of the same day in the timezone $toTzdef.
+	 *
+	 * @param int    $start     UTC timestamp
+	 * @param string $fromTzdef PidLidAppointmentTimeZoneDefinition* blob
+	 * @param string $toTzdef   PidLidAppointmentTimeZoneDefinition* blob
+	 *
+	 * @return null|int null if a definition has no effective rule
+	 */
+	public static function ConvertAllDayStart($start, $fromTzdef, $toTzdef) {
+		$fromRule = getEffectiveTimezoneRule(parseTimezoneDefinition($fromTzdef));
+		$toRule = getEffectiveTimezoneRule(parseTimezoneDefinition($toTzdef));
+		if ($fromRule === null || $toRule === null) {
+			return null;
+		}
+
+		// the wall clock time in $fromTzdef is the same in $toTzdef
+		return self::GetUtcTimeByTz(self::GetLocalTimeByTz($start, self::getTzFromRule($fromRule)), self::getTzFromRule($toRule));
+	}
+
+	private static function hasDst(array $tz): bool {
+		return !empty($tz["dstbias"]) && !empty($tz["dststartmonth"]) && !empty($tz["dstendmonth"]);
+	}
+
+	private static function getBias(array $tz, bool $dst): int {
+		return $tz["bias"] + ($dst ? $tz["dstbias"] : ($tz["stdbias"] ?? 0));
+	}
+
+	/**
+	 * Daylight saving time lasts from $start (inclusive) to $end (exclusive),
+	 * across the turn of the year on the southern hemisphere.
+	 */
+	private static function isBetweenTransitions(int $time, int $start, int $end): bool {
+		if ($start < $end) {
+			return $time >= $start && $time < $end;
+		}
+
+		return !($time >= $end && $time < $start);
+	}
+
+	/**
+	 * Wall clock time of a transition ("dststart" or "dstend") in $year, as
+	 * a timestamp. The transition happens on the n-th (*week, 1-5 where 5 is
+	 * the last) weekday (*day) of the month.
+	 */
+	private static function getTransitionTime(int $year, array $tz, string $transition): int {
+		$month = (int) $tz[$transition . "month"];
+		$firstOfMonth = gmmktime(0, 0, 0, $month, 1, $year);
+		$day = 1 + (((int) $tz[$transition . "day"] - (int) gmdate("w", $firstOfMonth) + 7) % 7) +
+			7 * (max(1, (int) $tz[$transition . "week"]) - 1);
+		$daysInMonth = (int) gmdate("t", $firstOfMonth);
+		while ($day > $daysInMonth) {
+			$day -= 7;
+		}
+
+		return gmmktime((int) $tz[$transition . "hour"], (int) $tz[$transition . "minute"], (int) ($tz[$transition . "second"] ?? 0), $month, $day, $year);
+	}
+
+	/**
+	 * Timezone array of an entry of $tzonesoffsets.
+	 */
+	private static function getTzFromOffset(array $offset): array {
+		return [
+			"bias" => $offset[0],
+			"stdbias" => $offset[1],
+			"dstbias" => $offset[2],
+			"dstendyear" => $offset[3],
+			"dstendmonth" => $offset[4],
+			"dstendday" => $offset[5],
+			"dstendweek" => $offset[6],
+			"dstendhour" => $offset[7],
+			"dstendminute" => $offset[8],
+			"dstendsecond" => $offset[9],
+			"dstendmillis" => $offset[10],
+			"dststartyear" => $offset[11],
+			"dststartmonth" => $offset[12],
+			"dststartday" => $offset[13],
+			"dststartweek" => $offset[14],
+			"dststarthour" => $offset[15],
+			"dststartminute" => $offset[16],
+			"dststartsecond" => $offset[17],
+			"dststartmillis" => $offset[18],
+		];
 	}
 }
