@@ -157,6 +157,20 @@ class BaseExceptionTest extends TestCase {
 		$this->assertTrue($caught);
 	}
 
+	public function testSetDisplayMessageWithoutErrorCode(): void {
+		$exception = new BaseException('Test', 0);
+		$exception->setDisplayMessage('Search failed');
+
+		$this->assertSame('Search failed', $exception->getDisplayMessage());
+	}
+
+	public function testSetDisplayMessageAppendsErrorText(): void {
+		$exception = new BaseException('Test', MAPI_E_NO_ACCESS);
+		$exception->setDisplayMessage('Search failed');
+
+		$this->assertSame('Search failed (' . mapi_strerror(MAPI_E_NO_ACCESS) . ')', $exception->getDisplayMessage());
+	}
+
 	public function testChainedExceptions(): void {
 		$first = new Exception('First error');
 		$second = new BaseException('Second error', 0, $first);
