@@ -649,11 +649,12 @@ class Recurrence extends BaseRecurrence {
 	 * Returns the translated frequency of a yearly recurrence, e.g. "every 2 years".
 	 */
 	private function getI18nFreqYearly(int $interval): string {
-		return $interval <= 12 ?
+		// the period of a yearly recurrence is in years
+		return $interval <= 1 ?
 			pgettext('recurrence', 'every year') :
 			self::format(
-				npgettext('recurrence', 'every {0} year', 'every {0} years', intdiv($interval, 12)),
-				(string) intdiv($interval, 12)
+				npgettext('recurrence', 'every {0} year', 'every {0} years', $interval),
+				(string) $interval
 			);
 	}
 
