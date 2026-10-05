@@ -1781,10 +1781,7 @@ abstract class BaseRecurrence {
 		// From here on, the dates of the occurrences are calculated in local time, so the days we're looking
 		// at are calculated from the local time dates of $start and $end
 
-		if (isset($this->recur['regen'], $this->action['datecompleted']) && $this->recur['regen']) {
-			$daystart = $this->dayStartOf($this->action['datecompleted']);
-		}
-		elseif (isset($this->recur["start"])) {
+		if (isset($this->recur["start"])) {
 			$daystart = $this->dayStartOf($this->recur["start"]); // start on first day of occurrence
 		}
 		else {
