@@ -6,6 +6,9 @@
  * SPDX-FileCopyrightText: Copyright 2020-2025 grommunio GmbH
  */
 
+// Consumers that autoload this class do not run bootstrap.php
+require_once __DIR__ . '/gettext.php';
+
 /**
  * Recurrence.
  */
