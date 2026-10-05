@@ -29,4 +29,5 @@ require_once UMAPI_PATH . '/class.meetingrequest.php';
 require_once UMAPI_PATH . '/class.taskrecurrence.php';
 require_once UMAPI_PATH . '/class.taskrequest.php';
 require_once UMAPI_PATH . '/class.freebusy.php';
+require_once UMAPI_PATH . '/class.timezoneutil.php';
 require_once UMAPI_PATH . '/class.keycloak.php';
