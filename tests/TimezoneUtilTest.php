@@ -280,6 +280,79 @@ class TimezoneUtilTest extends TestCase {
 		$this->assertNull(TimezoneUtil::ConvertAllDayStart(0, $europe, 'garbage'));
 	}
 
+	/**
+	 * The name of a timezone array as an ActiveSync device gets it.
+	 */
+	private static function tzname(array $tz): string {
+		return $tz['tzname'];
+	}
+
+	public function testGetFullTZ(): void {
+		// the stubbed mapi_ianatz_to_tzdef() knows no timezones, so the php timezone database is used
+		$vienna = TimezoneUtil::GetFullTZ('Europe/Vienna');
+		$this->assertTrue(TimezoneUtil::TzEquals(self::tz(self::TZDEF_W_EUROPE), $vienna));
+		$this->assertSame(substr(iconv('UTF-8', 'UTF-16', '(GMT+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna'), 2, -1), self::tzname($vienna));
+		$this->assertTrue(TimezoneUtil::TzEquals(self::tz(self::TZDEF_EASTERN), TimezoneUtil::GetFullTZ('America/New_York')));
+		$this->assertTrue(TimezoneUtil::TzEquals(self::tz(self::TZDEF_AUS_EASTERN), TimezoneUtil::GetFullTZ('Australia/Sydney')));
+
+		// timezones which dropped daylight saving time
+		foreach (['Europe/Moscow' => -180, 'Europe/Istanbul' => -180, 'America/Mexico_City' => 360, 'America/Sao_Paulo' => 180, 'Asia/Tehran' => -210] as $phptimezone => $bias) {
+			$tz = TimezoneUtil::GetFullTZ($phptimezone);
+			$this->assertSame($bias, $tz['bias'], $phptimezone);
+			$this->assertSame(0, $tz['dststartmonth'], $phptimezone);
+			$this->assertFalse(TimezoneUtil::IsDstAtUtc(self::utc('2026-07-01 12:00:00'), $tz), $phptimezone);
+		}
+
+		$default = date_default_timezone_get();
+		date_default_timezone_set('Asia/Tokyo');
+
+		try {
+			$this->assertSame(-540, TimezoneUtil::GetFullTZ()['bias']);
+		}
+		finally {
+			date_default_timezone_set($default);
+		}
+	}
+
+	public function testGetFullTZFromTZName(): void {
+		$europe = self::tz(self::TZDEF_W_EUROPE);
+		$this->assertTrue(TimezoneUtil::TzEquals($europe, TimezoneUtil::GetFullTZFromTZName('W. Europe Standard Time')));
+		// older names had their dots removed
+		$this->assertTrue(TimezoneUtil::TzEquals($europe, TimezoneUtil::GetFullTZFromTZName('W Europe Standard Time')));
+		$this->assertTrue(TimezoneUtil::TzEquals(self::tz(self::TZDEF_EASTERN), TimezoneUtil::GetFullTZFromTZName('Eastern Standard Time')));
+
+		$london = TimezoneUtil::GetFullTZFromTZName('No Such Standard Time');
+		$this->assertTrue(TimezoneUtil::TzEquals(TimezoneUtil::GetFullTZ('Europe/London'), $london));
+	}
+
+	public function testGetTZNameFromWinTZ(): void {
+		$this->assertSame('GMT Standard Time', TimezoneUtil::GetTZNameFromWinTZ());
+		$this->assertSame('W. Europe Standard Time', TimezoneUtil::GetTZNameFromWinTZ('(GMT+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna'));
+		$this->assertSame('W. Europe Standard Time', TimezoneUtil::GetTZNameFromWinTZ('W. Europe Standard Time'));
+		$this->assertSame('Eastern Standard Time', TimezoneUtil::GetTZNameFromWinTZ('(UTC-05:00) Eastern Time (US & Canada)'));
+		// zones renamed or changed since
+		$this->assertSame('Afghanistan Standard Time', TimezoneUtil::GetTZNameFromWinTZ('(GMT+04:30) Kabul'));
+		$this->assertSame('Venezuela Standard Time', TimezoneUtil::GetTZNameFromWinTZ('(GMT-04:30) Caracas'));
+		$this->assertSame('UTC-11', TimezoneUtil::GetTZNameFromWinTZ('(GMT-11:00) Midway Island, Samoa'));
+		// an unknown description gives a timezone with its offset
+		$tz = TimezoneUtil::GetFullTZFromTZName(TimezoneUtil::GetTZNameFromWinTZ('(UTC+09:00) Somewhere'));
+		$this->assertSame(-540, $tz['bias']);
+		$this->assertSame(-60, TimezoneUtil::GetFullTZFromTZName(TimezoneUtil::GetTZNameFromWinTZ('(GMT +01:00)'))['bias']);
+		$this->assertSame('W. Europe Standard Time', TimezoneUtil::GetTZNameFromWinTZ('Europe/Vienna'));
+		$this->assertSame('UTC-11', TimezoneUtil::GetTZNameFromWinTZ('UTC-11'));
+		$this->assertSame('GMT Standard Time', TimezoneUtil::GetTZNameFromWinTZ('something'));
+	}
+
+	public function testFillTZNames(): void {
+		$tz = self::tz(self::TZDEF_EASTERN);
+		$this->assertSame(substr(iconv('UTF-8', 'UTF-16', '(GMT-05:00) Eastern Time (US and Canada)'), 2, -1), self::tzname(TimezoneUtil::FillTZNames($tz)));
+
+		$unknown = $tz;
+		$unknown['bias'] = 17;
+		$this->assertSame(substr(iconv('UTF-8', 'UTF-16', 'Customized Time Zone'), 2, -1), self::tzname(TimezoneUtil::FillTZNames($unknown)));
+		$this->assertSame(['dstbias' => 0], TimezoneUtil::FillTZNames(['dstbias' => 0]));
+	}
+
 	public function testLogger(): void {
 		$messages = [];
 		TimezoneUtil::SetLogger(static function (string $level, string $message) use (&$messages): void {
