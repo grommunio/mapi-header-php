@@ -88,7 +88,8 @@ class BaseException extends Exception {
 	 * to show it to user.
 	 */
 	public function setDisplayMessage(string $message): void {
-		$this->displayMessage = $message . " (" . mapi_strerror($this->getCode()) . ")";
+		$code = $this->getCode();
+		$this->displayMessage = $code === 0 ? $message : $message . " (" . mapi_strerror($code) . ")";
 	}
 
 	/**
