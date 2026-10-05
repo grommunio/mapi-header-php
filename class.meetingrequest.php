@@ -1992,10 +1992,12 @@ class Meetingrequest {
 				if ($isException) {
 					$props[$this->proptags['is_exception']] = $messageprops[$this->proptags['is_exception']];
 				}
+				// The series may be gone from the calendar (or not be there yet),
+				// the request carries the recurrence then.
 				$calendaritems = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder);
-
-				$calendaritem = mapi_msgstore_openentry($store, $calendaritems[0]);
-				$recurr = new Recurrence($store, $calendaritem);
+				$recurr = !empty($calendaritems) ?
+					new Recurrence($store, mapi_msgstore_openentry($store, $calendaritems[0])) :
+					new Recurrence($store, $this->message);
 			}
 		}
 
@@ -2057,11 +2059,9 @@ class Meetingrequest {
 		}
 
 		// Set GlobalId AND CleanGlobalId, if exception then also set basedate into GlobalId(0x3).
-		$props[$this->proptags['goid']] = $this->setBasedateInGlobalID(
-			$messageprops[$this->proptags['goid2']],
-			$basedate,
-			isset($recurr) && $recurr instanceof BaseRecurrence ? $recurr : null
-		);
+		// $basedate is the local day of the occurrence already (from the client or
+		// from the GlobalId of the request), so it must not be converted from UTC.
+		$props[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedate);
 		$props[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
 		$props[$this->proptags['updatecounter']] = $messageprops[$this->proptags['updatecounter']] ?? 0;
 		// When the answer was given. The organizer orders responses by it, and it
@@ -2362,7 +2362,9 @@ class Meetingrequest {
 	 * Function which sets basedate in globalID of changed occurrence which is to be sent.
 	 *
 	 * @param string              $goid       globalID
-	 * @param false|int           $basedate   of changed occurrence (UTC when $recurrence is provided)
+	 * @param false|int           $basedate   of changed occurrence: a UTC time on the original
+	 *                                        occurrence when $recurrence is provided, else its
+	 *                                        local day as a UTC timestamp (a recurrence basedate)
 	 * @param null|BaseRecurrence $recurrence recurrence helper for timezone conversion
 	 *
 	 * @return false|string globalID with basedate in it
@@ -2681,16 +2683,16 @@ class Meetingrequest {
 
 				if (!compareEntryIds($storeProps[PR_ENTRYID], $defaultStoreProps[PR_ENTRYID])) {
 					// get delegate information
-					$addrInfo = $this->getOwnerAddress($defaultStore, false);
+					$addrInfo = $this->getOwnerAddress($defaultStore, false) ?: [];
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
 
 					// get delegator information
-					$addrInfo = $this->getOwnerAddress($this->store, false);
+					$addrInfo = $this->getOwnerAddress($this->store, false) ?: [];
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
 				}
 				else {
 					// get organizer information
-					$addrInfo = $this->getOwnerAddress($this->store);
+					$addrInfo = $this->getOwnerAddress($this->store) ?: [];
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
 					$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
 				}
@@ -3265,8 +3267,8 @@ class Meetingrequest {
 	 */
 	public function generateRecurDates(object $recurObject, array $messageprops, array &$newmessageprops): void {
 		if ($messageprops[$this->proptags['startdate']] && $messageprops[$this->proptags['duedate']]) {
-			$startDate = date('Y:n:j:G:i:s', $recurObject->fromGMT($recurObject->tz, $messageprops[$this->proptags['startdate']]));
-			$endDate = date('Y:n:j:G:i:s', $recurObject->fromGMT($recurObject->tz, $messageprops[$this->proptags['duedate']]));
+			$startDate = gmdate('Y:n:j:G:i:s', $recurObject->fromGMT($recurObject->tz, $messageprops[$this->proptags['startdate']]));
+			$endDate = gmdate('Y:n:j:G:i:s', $recurObject->fromGMT($recurObject->tz, $messageprops[$this->proptags['duedate']]));
 
 			$startDate = explode(':', $startDate);
 			$endDate = explode(':', $endDate);
@@ -3414,9 +3416,10 @@ class Meetingrequest {
 				$this->proptags['updatecounter'],
 			]);
 
-			$updateCounter = (isset($calendarItemProps[$this->proptags['updatecounter']]) && $props[$this->proptags['updatecounter']] < $calendarItemProps[$this->proptags['updatecounter']]);
+			// A request without these properties counts as the oldest one
+			$updateCounter = (isset($calendarItemProps[$this->proptags['updatecounter']]) && ($props[$this->proptags['updatecounter']] ?? 0) < $calendarItemProps[$this->proptags['updatecounter']]);
 
-			$criticalChange = (isset($calendarItemProps[$this->proptags['owner_critical_change']]) && $props[$this->proptags['owner_critical_change']] < $calendarItemProps[$this->proptags['owner_critical_change']]);
+			$criticalChange = (isset($calendarItemProps[$this->proptags['owner_critical_change']]) && ($props[$this->proptags['owner_critical_change']] ?? 0) < $calendarItemProps[$this->proptags['owner_critical_change']]);
 
 			if ($updateCounter || $criticalChange) {
 				// meeting request is out of date, set properties to indicate this

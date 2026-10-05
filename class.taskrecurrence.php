@@ -86,7 +86,14 @@ class TaskRecurrence extends BaseRecurrence {
 
 		// Update $this->recur with proper startrecurrdate and endrecurrdate updated after saving recurrence
 		$msgProps = mapi_getprops($this->message, [$this->proptags['recurring_data']]);
+		// saveRecurrence() writes nothing for an invalid recurrence
+		if (!isset($msgProps[$this->proptags['recurring_data']])) {
+			return false;
+		}
 		$recurring_data = $this->parseRecurrence($msgProps[$this->proptags['recurring_data']]);
+		if ($recurring_data === null) {
+			return false;
+		}
 		foreach ($recurring_data as $key => $value) {
 			$this->recur[$key] = $value;
 		}
@@ -188,6 +195,9 @@ class TaskRecurrence extends BaseRecurrence {
 	 * @return array|false|null startdate/enddate of next occurrence
 	 */
 	public function getNextOccurrence(): mixed {
+		if ($this->recur && !empty($this->recur['regen']) && isset($this->action['date_completed'])) {
+			return $this->getRegeneratedOccurrence((int) $this->action['date_completed']);
+		}
 		if ($this->recur) {
 			// @TODO: fix start of range
 			$start = $this->messageprops[$this->proptags["duedate"]] ?? $this->action['start'];
@@ -204,6 +214,51 @@ class TaskRecurrence extends BaseRecurrence {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Returns the next occurrence of a regenerating task. Like Outlook, the
+	 * task is due the interval of the recurrence after the day it was
+	 * completed, and starts as long before as the completed one did.
+	 *
+	 * @param int $completed time the task was completed
+	 *
+	 * @return array|false the start and due date of the next occurrence, false if the recurrence ended
+	 */
+	private function getRegeneratedOccurrence(int $completed): array|false {
+		// the completion is an instant, the dates of a task are local days stored as UTC midnight
+		$completedDay = gmmktime(0, 0, 0, (int) date('n', $completed), (int) date('j', $completed), (int) date('Y', $completed));
+		$everyn = max(1, (int) ($this->recur['everyn'] ?? 1));
+		$due = match ((int) $this->recur['type']) {
+			// the interval of a daily recurrence is in minutes
+			10 => $completedDay + max(1, intdiv($everyn, 1440)) * 86400,
+			11 => $completedDay + $everyn * 7 * 86400,
+			12 => self::addMonths($completedDay, $everyn),
+			// the interval of a yearly recurrence is in years
+			13 => self::addMonths($completedDay, $everyn * 12),
+			default => false,
+		};
+		if ($due === false || ($this->recur['term'] != 0x23 && $due > $this->dayStartOf((int) $this->recur['end']))) {
+			return false;
+		}
+
+		$start = $due;
+		if (isset($this->messageprops[$this->proptags['startdate']], $this->messageprops[$this->proptags['duedate']])) {
+			$start = $due - max(0, $this->messageprops[$this->proptags['duedate']] - $this->messageprops[$this->proptags['startdate']]);
+		}
+
+		return [$this->proptags['startdate'] => $start, $this->proptags['duedate'] => $due];
+	}
+
+	/**
+	 * Adds months to a day, the day of month is limited to the last day of the target month.
+	 */
+	private static function addMonths(int $day, int $months): int {
+		$year = (int) gmdate('Y', $day);
+		$month = (int) gmdate('n', $day) + $months;
+		$lastDay = (int) gmdate('t', gmmktime(0, 0, 0, $month, 1, $year));
+
+		return gmmktime(0, 0, 0, $month, min((int) gmdate('j', $day), $lastDay), $year);
 	}
 
 	/**
@@ -244,7 +299,7 @@ class TaskRecurrence extends BaseRecurrence {
 			$taskItemProps[$this->proptags["reminder"]] = false;
 			$taskItemProps[$this->proptags["date_completed"]] = $this->action["date_completed"];
 
-			unset($this->action[$this->proptags['date_completed']]);
+			unset($this->action['date_completed']);
 		}
 
 		// Recurrence ends for this item
@@ -284,8 +339,9 @@ class TaskRecurrence extends BaseRecurrence {
 		mapi_savechanges($newMessage);
 
 		// Update body of original message
-		$msgbody = mapi_openproperty($this->message, PR_BODY);
-		$msgbody = trim($msgbody, "\0");
+		// A task without a body has no PR_BODY to open
+		$msgbody = readMapiProp($this->message, PR_BODY, mapi_getprops($this->message, [PR_BODY])) ?? '';
+		$msgbody = trim((string) $msgbody, "\0");
 		$separator = "------------\r\n";
 
 		if (!empty($msgbody) && strrpos($msgbody, $separator) === false) {

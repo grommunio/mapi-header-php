@@ -44,6 +44,11 @@ class FreeBusy {
 		// Get 'LocalFreeBusy' message from FreeBusy Store
 		$root = mapi_msgstore_openentry($store);
 		$storeProps = mapi_getprops($root, [PR_FREEBUSY_ENTRYIDS]);
+		if (!isset($storeProps[PR_FREEBUSY_ENTRYIDS][self::DELEGATE_PROPERTIES], $storeProps[PR_FREEBUSY_ENTRYIDS][self::FREEBUSYDATA_IPM_SUBTREE])) {
+			error_log("getLocalFreeBusyMessage: store has no local freebusy message");
+
+			return false;
+		}
 		$localFreeBusyEntryids = $storeProps[PR_FREEBUSY_ENTRYIDS];
 
 		try {
@@ -105,6 +110,11 @@ class FreeBusy {
 		// Get 'LocalFreeBusy' message from FreeBusy Store
 		$root = mapi_msgstore_openentry($store);
 		$storeProps = mapi_getprops($root, [PR_FREEBUSY_ENTRYIDS]);
+		if (empty($storeProps[PR_FREEBUSY_ENTRYIDS][self::FREEBUSYDATA_IPM_SUBTREE])) {
+			error_log("getLocalFreeBusyFolder: store has no freebusy data folder");
+
+			return false;
+		}
 
 		return mapi_msgstore_openentry($store, $storeProps[PR_FREEBUSY_ENTRYIDS][self::FREEBUSYDATA_IPM_SUBTREE]);
 	}

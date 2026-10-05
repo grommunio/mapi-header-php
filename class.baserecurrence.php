@@ -48,7 +48,7 @@ abstract class BaseRecurrence {
 	private array $daysInMonthCache = [];
 
 	/**
-	 * @var array Cache for DST boundaries keyed by tm_year.
+	 * @var array Cache for DST boundaries keyed by tm_year and the DST rules.
 	 */
 	private array $dstBoundaryCache = [];
 
@@ -668,6 +668,11 @@ abstract class BaseRecurrence {
 					return;
 				}
 
+				// The interval of "every N days" divides the start below
+				if ($this->recur["subtype"] != rptWeek && (int) $this->recur["everyn"] == 0) {
+					return;
+				}
+
 				if ($this->recur["subtype"] == rptWeek) {
 					// Daily every workday
 					$rdata .= pack("VVVV", 6 * 24 * 60, 1, 0, 0x3E);
@@ -681,11 +686,11 @@ abstract class BaseRecurrence {
 				break;
 
 			case IDC_RCEV_PAT_ORB_WEEKLY:
-				if (!isset($this->recur["everyn"]) || $this->recur["everyn"] > 99 || (int) $this->recur["everyn"] < 0) {
+				if (!isset($this->recur["everyn"]) || $this->recur["everyn"] > 99 || (int) $this->recur["everyn"] <= 0) {
 					return;
 				}
 
-				if (!$this->recur["regen"] && !isset($this->recur["weekdays"])) {
+				if (!$this->recur["regen"] && empty($this->recur["weekdays"])) {
 					return;
 				}
 
@@ -759,11 +764,14 @@ abstract class BaseRecurrence {
 
 				if ($rtype == IDC_RCEV_PAT_ORB_MONTHLY) {
 					$everyn = (int) $this->recur["everyn"];
-					if ($everyn > 99 || $everyn < 0) {
+					if ($everyn > 99 || $everyn <= 0) {
 						return;
 					}
 				}
 				else {
+					if ((int) $this->recur["everyn"] <= 0) {
+						return;
+					}
 					$everyn = ((int) $this->recur["everyn"]) * 12;
 				}
 
@@ -1472,7 +1480,8 @@ abstract class BaseRecurrence {
 	 * @return float|int the converted date in minutes
 	 */
 	public function unixDataToRecurData(int $date): float|int {
-		return ($date / 60) + 194074560;
+		// whole minutes; a float with seconds in it is deprecated as operand of %
+		return intdiv($date, 60) + 194074560;
 	}
 
 	/**
@@ -1495,17 +1504,28 @@ abstract class BaseRecurrence {
 	 *
 	 * @author Steve Hardy
 	 *
-	 * @return array GMT Time
+	 * @return array GMT Time, with the keys of localtime($time, true)
 	 */
 	public function gmtime(int $time): array {
 		if (isset($this->gmtimeCache[$time])) {
 			return $this->gmtimeCache[$time];
 		}
 
-		$TZOffset = $this->GetTZOffset($time);
-		$t_time = $time - $TZOffset * 60; # Counter adjust for localtime()
+		// Shifting the timestamp by the server offset for localtime() is
+		// wrong around the DST changes of the server timezone.
+		[$sec, $min, $hour, $mday, $mon, $year, $wday, $yday] = array_map('intval', explode(' ', gmdate('s i G j n Y w z', $time)));
 
-		return $this->gmtimeCache[$time] = localtime($t_time, 1);
+		return $this->gmtimeCache[$time] = [
+			'tm_sec' => $sec,
+			'tm_min' => $min,
+			'tm_hour' => $hour,
+			'tm_mday' => $mday,
+			'tm_mon' => $mon - 1,
+			'tm_year' => $year - 1900,
+			'tm_wday' => $wday,
+			'tm_yday' => $yday,
+			'tm_isdst' => 0,
+		];
 	}
 
 	public function isLeapYear(float|string $year): bool {
@@ -1532,19 +1552,22 @@ abstract class BaseRecurrence {
 	/**
 	 * Function to get a date by Year Nr, Month Nr, Week Nr, Day Nr, and hour.
 	 *
+	 * @param int $year  years since 1900
+	 * @param int $month month (1..12)
+	 * @param int $week  occurrence of the weekday in the month (1..4, 5 = last)
+	 * @param int $day   weekday (0 = Sunday .. 6 = Saturday)
+	 * @param int $hour  hour of the day
+	 *
 	 * @return int the timestamp of the given date, timezone-independent
 	 */
 	public function getDateByYearMonthWeekDayHour(int $year, int $month, int $week, int $day, int $hour): int {
 		// get first day of month
-		$date = gmmktime(0, 0, 0, $month, 0, $year + 1900);
+		$date = gmmktime(0, 0, 0, $month, 1, $year + 1900);
 
-		// get wday info
+		// go to the first $day of the month, then to the correct week nr
 		$gmdate = $this->gmtime($date);
-
-		$date -= $gmdate["tm_wday"] * 24 * 60 * 60; // back up to start of week
-
-		$date += $week * 7 * 24 * 60 * 60; // go to correct week nr
-		$date += $day * 24 * 60 * 60;
+		$date += (($day - $gmdate["tm_wday"] + 7) % 7) * 24 * 60 * 60;
+		$date += ($week - 1) * 7 * 24 * 60 * 60;
 		$date += $hour * 60 * 60;
 
 		$gmdate = $this->gmtime($date);
@@ -1572,13 +1595,19 @@ abstract class BaseRecurrence {
 		$gmdate = $this->gmtime($date);
 		$year = $gmdate["tm_year"];
 
-		if (!isset($this->dstBoundaryCache[$year])) {
-			$this->dstBoundaryCache[$year] = [
-				$this->getDateByYearMonthWeekDayHour($year, $tz["dststartmonth"], $tz["dststartweek"], 0, $tz["dststarthour"]),
-				$this->getDateByYearMonthWeekDayHour($year, $tz["dstendmonth"], $tz["dstendweek"], 0, $tz["dstendhour"]),
+		// The timezone of the object may change (setRecurrence()), and getTimezone()
+		// may be asked for another one, so the rules are part of the key
+		$key = $year . ':' . implode(',', [
+			$tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"],
+			$tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"],
+		]);
+		if (!isset($this->dstBoundaryCache[$key])) {
+			$this->dstBoundaryCache[$key] = [
+				$this->getDateByYearMonthWeekDayHour($year, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"]),
+				$this->getDateByYearMonthWeekDayHour($year, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"]),
 			];
 		}
-		[$dststart, $dstend] = $this->dstBoundaryCache[$year];
+		[$dststart, $dstend] = $this->dstBoundaryCache[$key];
 
 		$dst = false;
 		if ($dststart <= $dstend) {
@@ -1611,11 +1640,37 @@ abstract class BaseRecurrence {
 			return null;
 		}
 
-		return unpack("ltimezone/lunk/ltimezonedst/lunk/ldstendmonth/vdstendweek/vdstendhour/lunk/lunk/vunk/ldststartmonth/vdststartweek/vdststarthour/lunk/vunk", (string) $data);
+		// lBias, lStandardBias, lDaylightBias, wStandardYear, stStandardDate, wDaylightYear,
+		// stDaylightDate; a SYSTEMTIME is wYear, wMonth, wDayOfWeek, wDay, wHour, wMinute,
+		// wSecond, wMilliseconds, where wDay is the occurrence of wDayOfWeek in the month
+		return unpack("ltimezone/lunk/ltimezonedst/vunk/vunk/vdstendmonth/vdstendday/vdstendweek/vdstendhour/vdstendminute/vdstendsecond/vdstendmillis/vunk/vunk/vdststartmonth/vdststartday/vdststartweek/vdststarthour/vdststartminute/vdststartsecond/vdststartmillis", (string) $data);
 	}
 
 	public function getTimezoneData(mixed $tz): false|string {
-		return pack("lllllvvllvlvvlv", $tz["timezone"], 0, $tz["timezonedst"], 0, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendhour"], 0, 0, 0, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststarthour"], 0, 0);
+		return pack(
+			"lllvvvvvvvvvvvvvvvvvv",
+			$tz["timezone"],
+			0,
+			$tz["timezonedst"],
+			0,
+			0,
+			$tz["dstendmonth"],
+			$tz["dstendday"] ?? 0,
+			$tz["dstendweek"],
+			$tz["dstendhour"],
+			$tz["dstendminute"] ?? 0,
+			$tz["dstendsecond"] ?? 0,
+			$tz["dstendmillis"] ?? 0,
+			0,
+			0,
+			$tz["dststartmonth"],
+			$tz["dststartday"] ?? 0,
+			$tz["dststartweek"],
+			$tz["dststarthour"],
+			$tz["dststartminute"] ?? 0,
+			$tz["dststartsecond"] ?? 0,
+			$tz["dststartmillis"] ?? 0
+		);
 	}
 
 	/**
@@ -1698,7 +1753,7 @@ abstract class BaseRecurrence {
 			// Loop through all changed exceptions
 			foreach ($this->recur["changed_occurrences"] as $exception) {
 				// Check reminder set
-				if (!isset($exception["reminder"]) || $exception["reminder"] === false) {
+				if (empty($exception["reminder_set"])) {
 					continue;
 				}
 
@@ -1726,10 +1781,7 @@ abstract class BaseRecurrence {
 		// From here on, the dates of the occurrences are calculated in local time, so the days we're looking
 		// at are calculated from the local time dates of $start and $end
 
-		if (isset($this->recur['regen'], $this->action['datecompleted']) && $this->recur['regen']) {
-			$daystart = $this->dayStartOf($this->action['datecompleted']);
-		}
-		elseif (isset($this->recur["start"])) {
+		if (isset($this->recur["start"])) {
 			$daystart = $this->dayStartOf($this->recur["start"]); // start on first day of occurrence
 		}
 		else {
@@ -1891,15 +1943,11 @@ abstract class BaseRecurrence {
 				break;
 
 			case IDC_RCEV_PAT_ORB_YEARLY:
-				if ($this->recur["everyn"] <= 0) {
-					$this->recur["everyn"] = 12;
-				}
-				// everyn saves a perior in years, but it must be calculated in months.
-				else {
-					$this->recur["everyn"] *= 12;
-				}
+				// everyn is the period in years, but it is calculated in months.
+				// Keep that out of $this->recur, which saveRecurrence() writes back.
+				$everyn = $this->recur["everyn"] <= 0 ? 12 : $this->recur["everyn"] * 12;
 
-				for ($now = $this->yearStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $this->recur["everyn"]) * 24 * 60 * 60) {
+				for ($now = $this->yearStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $everyn) * 24 * 60 * 60) {
 					if (isset($this->recur["monthday"]) && !$this->recur['regen']) { // same as monthly, but in a specific month
 						// recur["month"] is in minutes since the beginning of the year
 						$month = $this->monthOfYear($this->recur["month"]); // $month is now month of year [0..11]
@@ -1991,7 +2039,7 @@ abstract class BaseRecurrence {
 
 		$days = 0;
 		for ($i = 0; $i < $months; ++$i) {
-			$days += date("t", $date + $days * 24 * 60 * 60);
+			$days += (int) gmdate("t", $date + $days * 24 * 60 * 60);
 		}
 
 		return $this->daysInMonthCache[$key] = $days;

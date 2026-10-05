@@ -145,17 +145,27 @@ class Recurrence extends BaseRecurrence {
 
 		if (!$delete) {
 			$changed_item = [];
-			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date
-			foreach (["subject", "location", "label", "reminder", "reminder_minutes", "alldayevent", "busystatus"] as $propname) {
+			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date.
+			// The changed ones go into the recurrence blob under the names parseRecurrence() uses.
+			$changedNames = [
+				"subject" => "subject",
+				"location" => "location",
+				"label" => "label",
+				"reminder" => "reminder_set",
+				"reminder_minutes" => "remind_before",
+				"alldayevent" => "alldayevent",
+				"busystatus" => "busystatus",
+			];
+			foreach ($changedNames as $propname => $changedname) {
 				if (isset($this->messageprops[$this->proptags[$propname]])) {
 					$props[$this->proptags[$propname]] = $this->messageprops[$this->proptags[$propname]];
 					if (isset($exception_props[$this->proptags[$propname]]) &&
 						$this->messageprops[$this->proptags[$propname]] != $exception_props[$this->proptags[$propname]]) {
-						$changed_item[$propname] = $exception_props[$this->proptags[$propname]];
+						$changed_item[$changedname] = $exception_props[$this->proptags[$propname]];
 					}
 				}
 				elseif (isset($exception_props[$this->proptags[$propname]])) {
-					$changed_item[$propname] = $exception_props[$this->proptags[$propname]];
+					$changed_item[$changedname] = $exception_props[$this->proptags[$propname]];
 				}
 			}
 
@@ -198,6 +208,8 @@ class Recurrence extends BaseRecurrence {
 			// Delete the occurrence by placing it in the deleted occurrences list
 			$this->recur["deleted_occurrences"][] = $baseday;
 		}
+		// The isException() above built the index without the new exception
+		$this->invalidateExceptionIndex();
 
 		// Turn on hideattachments, because the attachments in this item are the exceptions
 		mapi_setprops($this->message, [$this->proptags["hideattachments"] => true]);
@@ -311,6 +323,8 @@ class Recurrence extends BaseRecurrence {
 
 			mapi_savechanges($attach);
 		}
+		// $extomodify changed after the index was invalidated above
+		$this->invalidateExceptionIndex();
 
 		// Save recurrence data to message
 		$this->saveRecurrence();
@@ -635,11 +649,12 @@ class Recurrence extends BaseRecurrence {
 	 * Returns the translated frequency of a yearly recurrence, e.g. "every 2 years".
 	 */
 	private function getI18nFreqYearly(int $interval): string {
-		return $interval <= 12 ?
+		// the period of a yearly recurrence is in years
+		return $interval <= 1 ?
 			pgettext('recurrence', 'every year') :
 			self::format(
-				npgettext('recurrence', 'every {0} year', 'every {0} years', intdiv($interval, 12)),
-				(string) intdiv($interval, 12)
+				npgettext('recurrence', 'every {0} year', 'every {0} years', $interval),
+				(string) $interval
 			);
 	}
 

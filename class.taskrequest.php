@@ -243,9 +243,12 @@ class TaskRequest {
 				return false;
 			}
 
-			$task = mapi_folder_createmessage($taskFolder);
-
 			$sub = $this->getEmbeddedTask();
+			if ($sub === false) {
+				return false;
+			}
+
+			$task = mapi_folder_createmessage($taskFolder);
 
 			try {
 				mapi_copyto($sub, [], [$this->props['categories']], $task);
@@ -356,6 +359,9 @@ class TaskRequest {
 
 		// Get the embedded task information.
 		$sub = $this->getEmbeddedTask();
+		if ($sub === false) {
+			return true;
+		}
 		// OL saves the task related properties in the embedded message
 		$subProps = mapi_getprops($sub, [$this->props["taskupdates"]]);
 
@@ -1015,7 +1021,6 @@ class TaskRequest {
 	 * @return bool|resource embedded task if found else false
 	 */
 	public function getEmbeddedTask(): mixed {
-		$task = false;
 		$goid = mapi_getprops($this->message, [$this->props["task_goid"]]);
 		$attachmentTable = mapi_message_getattachmenttable($this->message);
 		$restriction = [RES_PROPERTY,
@@ -1026,7 +1031,7 @@ class TaskRequest {
 		$rows = mapi_table_queryallrows($attachmentTable, [PR_ATTACH_NUM], $restriction);
 
 		if (empty($rows)) {
-			return $task;
+			return false;
 		}
 
 		foreach ($rows as $row) {
@@ -1039,15 +1044,17 @@ class TaskRequest {
 			}
 
 			$taskGoid = mapi_getprops($task, [$this->props["task_goid"]]);
-			if ($goid[$this->props["task_goid"]] === $taskGoid[$this->props["task_goid"]]) {
+			if (($goid[$this->props["task_goid"]] ?? null) === ($taskGoid[$this->props["task_goid"]] ?? null)) {
 				mapi_setprops($attach, [PR_ATTACHMENT_HIDDEN => true]);
 				mapi_savechanges($attach);
 				mapi_savechanges($this->message);
-				break;
+
+				return $task;
 			}
 		}
 
-		return $task;
+		// Without a match only a single embedded message is clearly the task
+		return count($rows) == 1 && isset($task) ? $task : false;
 	}
 
 	/**
@@ -1068,12 +1075,14 @@ class TaskRequest {
 
 		if ($this->isTaskRequest()) {
 			$task = $this->getAssociatedTask(false);
-			mapi_setprops($task, [
-				$this->props["tasklastuser"] => $username,
-				$this->props["tasklastdelegate"] => $delegate,
-				$this->props['task_assigned_time'] => time(),
-			]);
-			mapi_savechanges($task);
+			if ($task !== false) {
+				mapi_setprops($task, [
+					$this->props["tasklastuser"] => $username,
+					$this->props["tasklastdelegate"] => $delegate,
+					$this->props['task_assigned_time'] => time(),
+				]);
+				mapi_savechanges($task);
+			}
 		}
 		mapi_setprops($this->message, [
 			$this->props["tasklastuser"] => $username,
