@@ -395,6 +395,33 @@ function relOpToString(int $relOp): string {
 }
 
 /**
+ * Converts content restriction flags into a human readable string.
+ */
+function fuzzyLevelToString(mixed $fuzzyLevel): string {
+	if (($fuzzyLevel & FL_SUBSTRING) == FL_SUBSTRING) {
+		$levels = "FL_SUBSTRING";
+	}
+	elseif (($fuzzyLevel & FL_PREFIX) == FL_PREFIX) {
+		$levels = "FL_PREFIX";
+	}
+	else {
+		$levels = "FL_FULLSTRING";
+	}
+
+	if (($fuzzyLevel & FL_IGNORECASE) == FL_IGNORECASE) {
+		$levels .= " | FL_IGNORECASE";
+	}
+	if (($fuzzyLevel & FL_IGNORENONSPACE) == FL_IGNORENONSPACE) {
+		$levels .= " | FL_IGNORENONSPACE";
+	}
+	if (($fuzzyLevel & FL_LOOSE) == FL_LOOSE) {
+		$levels .= " | FL_LOOSE";
+	}
+
+	return $levels;
+}
+
+/**
  * Converts all constants of restriction into a human readable strings.
  */
 function simplifyRestriction(mixed $restriction): mixed {
@@ -402,22 +429,12 @@ function simplifyRestriction(mixed $restriction): mixed {
 		return $restriction;
 	}
 
-	switch ($restriction[0]) {
-		case RES_AND:
-			$restriction[0] = "RES_AND";
-			if (isset($restriction[1][0]) && is_array($restriction[1][0])) {
-				foreach ($restriction[1] as &$res) {
-					$res = simplifyRestriction($res);
-				}
-				unset($res);
-			}
-			elseif (isset($restriction[1]) && $restriction[1]) {
-				$restriction[1] = simplifyRestriction($restriction[1]);
-			}
-			break;
+	$type = $restriction[0];
 
+	switch ($type) {
+		case RES_AND:
 		case RES_OR:
-			$restriction[0] = "RES_OR";
+			$restriction[0] = $type == RES_AND ? "RES_AND" : "RES_OR";
 			if (isset($restriction[1][0]) && is_array($restriction[1][0])) {
 				foreach ($restriction[1] as &$res) {
 					$res = simplifyRestriction($res);
@@ -443,10 +460,10 @@ function simplifyRestriction(mixed $restriction): mixed {
 				$propTag = $prop[ULPROPTAG];
 				$propValue = $prop[VALUE];
 
-				unset($prop);
-
-				$prop["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
-				$prop["VALUE"] = is_array($propValue) ? $propValue[$propTag] : $propValue;
+				$prop = [
+					"ULPROPTAG" => prop2Str($propTag),
+					"VALUE" => is_array($propValue) ? $propValue[$propTag] : $propValue,
+				];
 			}
 			unset($prop, $restriction[1]);
 
@@ -463,7 +480,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 			unset($restriction[1]);
 
 			$restriction[1]["RELOP"] = relOpToString($relOp);
-			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
+			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			$restriction[1]["VALUE"] = is_array($propValue) ? $propValue[$propTag] : $propValue;
 			break;
 
@@ -475,35 +492,8 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			unset($restriction[1]);
 
-			// fuzzy level flags
-			$levels = [];
-
-			if (($fuzzyLevel & FL_SUBSTRING) == FL_SUBSTRING) {
-				$levels[] = "FL_SUBSTRING";
-			}
-			elseif (($fuzzyLevel & FL_PREFIX) == FL_PREFIX) {
-				$levels[] = "FL_PREFIX";
-			}
-			else {
-				$levels[] = "FL_FULLSTRING";
-			}
-
-			if (($fuzzyLevel & FL_IGNORECASE) == FL_IGNORECASE) {
-				$levels[] = "FL_IGNORECASE";
-			}
-
-			if (($fuzzyLevel & FL_IGNORENONSPACE) == FL_IGNORENONSPACE) {
-				$levels[] = "FL_IGNORENONSPACE";
-			}
-
-			if (($fuzzyLevel & FL_LOOSE) == FL_LOOSE) {
-				$levels[] = "FL_LOOSE";
-			}
-
-			$fuzzyLevelFlags = implode(" | ", $levels);
-
-			$restriction[1]["FUZZYLEVEL"] = $fuzzyLevelFlags;
-			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
+			$restriction[1]["FUZZYLEVEL"] = fuzzyLevelToString($fuzzyLevel);
+			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			$restriction[1]["VALUE"] = is_array($propValue) ? $propValue[$propTag] : $propValue;
 			break;
 
@@ -513,8 +503,8 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			unset($restriction[1]);
 
-			$restriction[1]["ULPROPTAG1"] = is_string($propTag1) ? $propTag1 : prop2Str($propTag1);
-			$restriction[1]["ULPROPTAG2"] = is_string($propTag2) ? $propTag2 : prop2Str($propTag2);
+			$restriction[1]["ULPROPTAG1"] = prop2Str($propTag1);
+			$restriction[1]["ULPROPTAG2"] = prop2Str($propTag2);
 			break;
 
 		case RES_BITMASK:
@@ -534,7 +524,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 				$maskTypeFlags = "BMR_NEZ";
 			}
 
-			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
+			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			$restriction[1]["ULTYPE"] = $maskTypeFlags;
 			$restriction[1]["ULMASK"] = $maskValue;
 			break;
@@ -547,7 +537,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			unset($restriction[1]);
 
-			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
+			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			$restriction[1]["RELOP"] = relOpToString($relOp);
 			$restriction[1]["CB"] = $propValue;
 			break;
@@ -557,7 +547,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			unset($restriction[1]);
 
-			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
+			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			break;
 
 		case RES_SUBRESTRICTION:
@@ -566,7 +556,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			unset($restriction[1]);
 
-			$restriction[1]["ULPROPTAG"] = is_string($propTag) ? $propTag : prop2Str($propTag);
+			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			$restriction[1]["RESTRICTION"] = $res;
 			break;
 	}
