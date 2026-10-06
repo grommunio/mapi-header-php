@@ -199,127 +199,17 @@ abstract class BaseRecurrence {
 		$ret["subtype"] = $data["rtype2"];
 		$rdata = substr($rdata, 10);
 
-		switch ($data["rtype"]) {
-			case IDC_RCEV_PAT_ORB_DAILY:
-				if (strlen($rdata) < 12) {
-					return $ret;
-				}
-
-				$data = unpack("Vunknown/Veveryn/Vregen", $rdata);
-				if ($data["everyn"] > 1438560) { // minutes for 999 days
-					return $ret;
-				}
-				$ret["everyn"] = $data["everyn"];
-				$ret["regen"] = $data["regen"];
-
-				switch ($ret["subtype"]) {
-					case rptDay:
-						$rdata = substr($rdata, 12);
-						break;
-
-					case rptWeek:
-						$rdata = substr($rdata, 16);
-						break;
-				}
-
-				break;
-
-			case IDC_RCEV_PAT_ORB_WEEKLY:
-				if (strlen($rdata) < 16) {
-					return $ret;
-				}
-
-				$data = unpack("Vconst1/Veveryn/Vregen", $rdata);
-				if ($data["everyn"] > 99) {
-					return $ret;
-				}
-
-				$rdata = substr($rdata, 12);
-
-				$ret["everyn"] = $data["everyn"];
-				$ret["regen"] = $data["regen"];
-				$ret["weekdays"] = 0;
-
-				if ($data["regen"] == 0) {
-					$data = unpack("Vweekdays", $rdata);
-					$rdata = substr($rdata, 4);
-
-					$ret["weekdays"] = $data["weekdays"];
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_MONTHLY:
-				if (strlen($rdata) < 16) {
-					return $ret;
-				}
-
-				$data = unpack("Vconst1/Veveryn/Vregen/Vmonthday", $rdata);
-				if ($data["everyn"] > 99) {
-					return $ret;
-				}
-
-				$ret["everyn"] = $data["everyn"];
-				$ret["regen"] = $data["regen"];
-
-				if ($ret["subtype"] == rptMonthNth) {
-					$ret["weekdays"] = $data["monthday"];
-				}
-				else {
-					$ret["monthday"] = $data["monthday"];
-				}
-
-				$rdata = substr($rdata, 16);
-				if ($ret["subtype"] == rptMonthNth) {
-					$data = unpack("Vnday", $rdata);
-					// Sanity check for valid values (and opportunistically try to fix)
-					if ($data["nday"] == 0xFFFFFFFF || $data["nday"] == -1) {
-						$data["nday"] = 5;
-					}
-					elseif ($data["nday"] < 0 || $data["nday"] > 5) {
-						$data["nday"] = 0;
-					}
-					$ret["nday"] = $data["nday"];
-					$rdata = substr($rdata, 4);
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_YEARLY:
-				if (strlen($rdata) < 16) {
-					return $ret;
-				}
-
-				$data = unpack("Vmonth/Veveryn/Vregen/Vmonthday", $rdata);
-				// recurring yearly tasks and events have a period in months multiple by 12
-				if ($data["everyn"] % 12 != 0) {
-					return $ret;
-				}
-
-				$ret["month"] = $data["month"];
-				$ret["everyn"] = $data["everyn"] / 12;
-				$ret["regen"] = $data["regen"];
-
-				if ($ret["subtype"] == rptMonthNth) {
-					$ret["weekdays"] = $data["monthday"];
-				}
-				else {
-					$ret["monthday"] = $data["monthday"];
-				}
-
-				$rdata = substr($rdata, 16);
-
-				if ($ret["subtype"] == rptMonthNth) {
-					$data = unpack("Vnday", $rdata);
-					// Sanity check for valid values (and opportunistically try to fix)
-					if ($data["nday"] == 0xFFFFFFFF || $data["nday"] == -1) {
-						$data["nday"] = 5;
-					}
-					elseif ($data["nday"] < 0 || $data["nday"] > 5) {
-						$data["nday"] = 0;
-					}
-					$ret["nday"] = $data["nday"];
-					$rdata = substr($rdata, 4);
-				}
-				break;
+		$valid = match ($data["rtype"]) {
+			IDC_RCEV_PAT_ORB_DAILY => $this->parseDailyPattern($rdata, $ret),
+			IDC_RCEV_PAT_ORB_WEEKLY => $this->parseWeeklyPattern($rdata, $ret),
+			default => $this->parseMonthlyPattern(
+				$rdata,
+				$ret,
+				$data["rtype"] == IDC_RCEV_PAT_ORB_YEARLY
+			),
+		};
+		if (!$valid) {
+			return $ret;
 		}
 
 		if (strlen($rdata) < 16) {
@@ -618,6 +508,99 @@ abstract class BaseRecurrence {
 		$ret["changed_occurrences"] = $exc_changed_details;
 
 		return $ret;
+	}
+
+	private function parseDailyPattern(string &$rdata, array &$ret): bool {
+		if (strlen($rdata) < 12) {
+			return false;
+		}
+
+		$data = unpack("Vunknown/Veveryn/Vregen", $rdata);
+		if ($data["everyn"] > 1438560) { // minutes for 999 days
+			return false;
+		}
+		$ret["everyn"] = $data["everyn"];
+		$ret["regen"] = $data["regen"];
+
+		switch ($ret["subtype"]) {
+			case rptDay:
+				$rdata = substr($rdata, 12);
+				break;
+
+			case rptWeek:
+				$rdata = substr($rdata, 16);
+				break;
+		}
+
+		return true;
+	}
+
+	private function parseWeeklyPattern(string &$rdata, array &$ret): bool {
+		if (strlen($rdata) < 16) {
+			return false;
+		}
+
+		$data = unpack("Vconst1/Veveryn/Vregen", $rdata);
+		if ($data["everyn"] > 99) {
+			return false;
+		}
+
+		$rdata = substr($rdata, 12);
+		$ret["everyn"] = $data["everyn"];
+		$ret["regen"] = $data["regen"];
+		$ret["weekdays"] = 0;
+
+		if ($data["regen"] == 0) {
+			$data = unpack("Vweekdays", $rdata);
+			$rdata = substr($rdata, 4);
+			$ret["weekdays"] = $data["weekdays"];
+		}
+
+		return true;
+	}
+
+	private function parseMonthlyPattern(string &$rdata, array &$ret, bool $yearly): bool {
+		if (strlen($rdata) < 16) {
+			return false;
+		}
+
+		$data = unpack("Vmonth/Veveryn/Vregen/Vmonthday", $rdata);
+		if ($yearly) {
+			// Yearly periods are stored as multiples of twelve months.
+			if ($data["everyn"] % 12 != 0) {
+				return false;
+			}
+			$ret["month"] = $data["month"];
+			$ret["everyn"] = $data["everyn"] / 12;
+		}
+		else {
+			if ($data["everyn"] > 99) {
+				return false;
+			}
+			$ret["everyn"] = $data["everyn"];
+		}
+		$ret["regen"] = $data["regen"];
+		$rdata = substr($rdata, 16);
+
+		if ($ret["subtype"] != rptMonthNth) {
+			$ret["monthday"] = $data["monthday"];
+
+			return true;
+		}
+
+		$ret["weekdays"] = $data["monthday"];
+		$data = unpack("Vnday", $rdata);
+		// Accept the legacy last-week marker and clamp invalid week numbers.
+		if ($data["nday"] == 0xFFFFFFFF || $data["nday"] == -1) {
+			$data["nday"] = 5;
+		}
+		elseif ($data["nday"] < 0 || $data["nday"] > 5) {
+			$data["nday"] = 0;
+		}
+		$ret["nday"] = $data["nday"];
+		$rdata = substr($rdata, 4);
+
+		return true;
 	}
 
 	/**
