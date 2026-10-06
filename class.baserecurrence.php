@@ -212,68 +212,10 @@ abstract class BaseRecurrence {
 			return $ret;
 		}
 
-		if (strlen($rdata) < 16) {
+		$exc_base_dates = $this->parseRecurrenceRange($rdata, $ret);
+		if ($exc_base_dates === null) {
 			return $ret;
 		}
-
-		$data = unpack("Vterm/Vnumoccur/Vconst2/Vnumexcept", $rdata);
-		$rdata = substr($rdata, 16);
-		if (!in_array($data["term"], [IDC_RCEV_PAT_ERB_END, IDC_RCEV_PAT_ERB_AFTERNOCCUR, IDC_RCEV_PAT_ERB_NOEND, 0xFFFFFFFF], true)) {
-			return $ret;
-		}
-
-		$ret["term"] = (int) $data["term"] > 0x2000 ? (int) $data["term"] - 0x2000 : $data["term"];
-		$ret["numoccur"] = $data["numoccur"];
-		$ret["first_dow"] = $data["const2"];
-		$ret["numexcept"] = $data["numexcept"];
-
-		// exc_base_dates are *all* the base dates that have been either deleted or modified
-		$exc_base_dates = [];
-		for ($i = 0; $i < $ret["numexcept"]; ++$i) {
-			if (strlen($rdata) < 4) {
-				// We shouldn't arrive here, because that implies
-				// numexcept does not match the amount of data
-				// which is available for the exceptions.
-				return $ret;
-			}
-			$data = unpack("Vbasedate", $rdata);
-			$rdata = substr($rdata, 4);
-			$exc_base_dates[] = $this->recurDataToUnixData($data["basedate"]);
-		}
-
-		if (strlen($rdata) < 4) {
-			return $ret;
-		}
-
-		$data = unpack("Vnumexceptmod", $rdata);
-		$rdata = substr($rdata, 4);
-
-		$ret["numexceptmod"] = $data["numexceptmod"];
-
-		// exc_changed are the base dates of *modified* occurrences. exactly what is modified
-		// is in the attachments *and* in the data further down this function.
-		$exc_changed = [];
-		for ($i = 0; $i < $ret["numexceptmod"]; ++$i) {
-			if (strlen($rdata) < 4) {
-				// We shouldn't arrive here, because that implies
-				// numexceptmod does not match the amount of data
-				// which is available for the exceptions.
-				return $ret;
-			}
-			$data = unpack("Vstartdate", $rdata);
-			$rdata = substr($rdata, 4);
-			$exc_changed[] = $this->recurDataToUnixData($data["startdate"]);
-		}
-
-		if (strlen($rdata) < 8) {
-			return $ret;
-		}
-
-		$data = unpack("Vstart/Vend", $rdata);
-		$rdata = substr($rdata, 8);
-
-		$ret["start"] = $this->recurDataToUnixData($data["start"]);
-		$ret["end"] = $this->recurDataToUnixData($data["end"]);
 
 		// this is where task recurrence stop
 		if (strlen($rdata) < 16) {
@@ -293,154 +235,16 @@ abstract class BaseRecurrence {
 		$nexceptions = $data["number"];
 		$exc_changed_details = [];
 
-		// Parse n modified exceptions
 		for ($i = 0; $i < $nexceptions; ++$i) {
-			$item = [];
-
-			// Get exception startdate, enddate and basedate (the date at which the occurrence would have started)
-			$data = unpack("Vstartdate/Venddate/Vbasedate", $rdata);
-			$rdata = substr($rdata, 12);
-
-			// Convert recurtimestamp to unix timestamp
-			$startdate = $this->recurDataToUnixData($data["startdate"]);
-			$enddate = $this->recurDataToUnixData($data["enddate"]);
-			$basedate = $this->recurDataToUnixData($data["basedate"]);
-
-			// Set the right properties
-			$item["basedate"] = $this->dayStartOf($basedate);
-			$item["start"] = $startdate;
-			$item["end"] = $enddate;
-
-			$data = unpack("vbitmask", $rdata);
-			$rdata = substr($rdata, 2);
-			$item["bitmask"] = $data["bitmask"]; // save bitmask for extended exceptions
-
-			// Bitmask to verify what properties are changed
-			$bitmask = $data["bitmask"];
-
-			// ARO_SUBJECT: 0x0001
-			// Look for field: SubjectLength (2b), SubjectLength2 (2b) and Subject
-			if ($bitmask & (1 << 0)) {
-				$data = unpack("vnull_length/vlength", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$length = $data["length"];
-				$item["subject"] = ""; // Normalized subject
-				for ($j = 0; $j < $length && strlen($rdata); ++$j) {
-					$data = unpack("Cchar", $rdata);
-					$rdata = substr($rdata, 1);
-
-					$item["subject"] .= chr($data["char"]);
-				}
-			}
-
-			// ARO_MEETINGTYPE: 0x0002
-			if ($bitmask & (1 << 1)) {
-				$rdata = substr($rdata, 4);
-				// Attendees modified: no data here (only in attachment)
-			}
-
-			// ARO_REMINDERDELTA: 0x0004
-			// Look for field: ReminderDelta (4b)
-			if ($bitmask & (1 << 2)) {
-				$data = unpack("Vremind_before", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["remind_before"] = $data["remind_before"];
-			}
-
-			// ARO_REMINDER: 0x0008
-			// Look field: ReminderSet (4b)
-			if ($bitmask & (1 << 3)) {
-				$data = unpack("Vreminder_set", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["reminder_set"] = $data["reminder_set"];
-			}
-
-			// ARO_LOCATION: 0x0010
-			// Look for fields: LocationLength (2b), LocationLength2 (2b) and Location
-			// Similar to ARO_SUBJECT above.
-			if ($bitmask & (1 << 4)) {
-				$data = unpack("vnull_length/vlength", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["location"] = "";
-
-				$length = $data["length"];
-				$data = substr($rdata, 0, $length);
-				$rdata = substr($rdata, $length);
-
-				$item["location"] .= $data;
-			}
-
-			// ARO_BUSYSTATUS: 0x0020
-			// Look for field: BusyStatus (4b)
-			if ($bitmask & (1 << 5)) {
-				$data = unpack("Vbusystatus", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["busystatus"] = $data["busystatus"];
-			}
-
-			// ARO_ATTACHMENT: 0x0040
-			if ($bitmask & (1 << 6)) {
-				// no data: RESERVED
-				$rdata = substr($rdata, 4);
-			}
-
-			// ARO_SUBTYPE: 0x0080
-			// Look for field: SubType (4b). Determines whether it is an allday event.
-			if ($bitmask & (1 << 7)) {
-				$data = unpack("Vallday", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["alldayevent"] = $data["allday"];
-			}
-
-			// ARO_APPTCOLOR: 0x0100
-			// Look for field: AppointmentColor (4b)
-			if ($bitmask & (1 << 8)) {
-				$data = unpack("Vlabel", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["label"] = $data["label"];
-			}
-
-			// ARO_EXCEPTIONAL_BODY: 0x0200
-			if ($bitmask & (1 << 9)) {
-				// Notes or Attachments modified: no data here (only in attachment)
-			}
-
-			$exc_changed_details[] = $item;
+			$exc_changed_details[] = $this->parseRecurrenceException($rdata);
 		}
 
-		/**
-		 * We now have $exc_changed, $exc_base_dates and $exc_changed_details
-		 * We will ignore $exc_changed, as this information is available in $exc_changed_details
-		 * also. If an item is in $exc_base_dates and NOT in $exc_changed_details, then the item
-		 * has been deleted.
-		 */
-
-		// Find deleted occurrences
-		$deleted_occurrences = [];
-
-		foreach ($exc_base_dates as $base_date) {
-			$found = false;
-
-			foreach ($exc_changed_details as $details) {
-				if ($details["basedate"] == $base_date) {
-					$found = true;
-					break;
-				}
-			}
-			if (!$found) {
-				// item was not in exc_changed_details, so it must be deleted
-				$deleted_occurrences[] = $base_date;
-			}
-		}
-
-		$ret["deleted_occurrences"] = $deleted_occurrences;
+		// Base dates without a modified exception represent deletions.
+		$changed_dates = array_column($exc_changed_details, "basedate");
+		$ret["deleted_occurrences"] = array_values(array_filter(
+			$exc_base_dates,
+			static fn ($date) => !in_array($date, $changed_dates)
+		));
 		$ret["changed_occurrences"] = $exc_changed_details;
 
 		// enough data for normal exception (no extended data)
@@ -452,56 +256,11 @@ abstract class BaseRecurrence {
 		$rdata = substr($rdata, 4 + $data["reservedsize"]);
 
 		for ($i = 0; $i < $nexceptions; ++$i) {
-			// subject and location in ucs-2 to utf-8
-			if ($writerversion >= 0x3009) {
-				$data = unpack("Vsize/Vvalue", $rdata); // size includes sizeof(value)==4
-				$rdata = substr($rdata, 4 + $data["size"]);
-			}
-
-			$data = unpack("Vreservedsize", $rdata);
-			$rdata = substr($rdata, 4 + $data["reservedsize"]);
-
-			// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
-			if ($exc_changed_details[$i]["bitmask"] & 0x11) {
-				$data = unpack("Vstart/Vend/Vorig", $rdata);
-				$rdata = substr($rdata, 4 * 3);
-
-				$exc_changed_details[$i]["ex_start_datetime"] = $data["start"];
-				$exc_changed_details[$i]["ex_end_datetime"] = $data["end"];
-				$exc_changed_details[$i]["ex_orig_date"] = $data["orig"];
-			}
-
-			// ARO_SUBJECT
-			if ($exc_changed_details[$i]["bitmask"] & 0x01) {
-				// decode ucs2 string to utf-8
-				$data = unpack("vlength", $rdata);
-				$rdata = substr($rdata, 2);
-				$length = $data["length"];
-				$data = substr($rdata, 0, $length * 2);
-				$rdata = substr($rdata, $length * 2);
-				$subject = iconv("UCS-2LE", "UTF-8", $data);
-				// replace subject with unicode subject
-				$exc_changed_details[$i]["subject"] = $subject;
-			}
-
-			// ARO_LOCATION
-			if ($exc_changed_details[$i]["bitmask"] & 0x10) {
-				// decode ucs2 string to utf-8
-				$data = unpack("vlength", $rdata);
-				$rdata = substr($rdata, 2);
-				$length = $data["length"];
-				$data = substr($rdata, 0, $length * 2);
-				$rdata = substr($rdata, $length * 2);
-				$location = iconv("UCS-2LE", "UTF-8", $data);
-				// replace subject with unicode subject
-				$exc_changed_details[$i]["location"] = $location;
-			}
-
-			// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
-			if ($exc_changed_details[$i]["bitmask"] & 0x11) {
-				$data = unpack("Vreservedsize", $rdata);
-				$rdata = substr($rdata, 4 + $data["reservedsize"]);
-			}
+			$exc_changed_details[$i] = $this->parseExtendedException(
+				$rdata,
+				$exc_changed_details[$i],
+				$writerversion
+			);
 		}
 
 		// update with extended data
@@ -566,7 +325,7 @@ abstract class BaseRecurrence {
 
 		$data = unpack("Vmonth/Veveryn/Vregen/Vmonthday", $rdata);
 		if ($yearly) {
-			// Yearly periods are stored as multiples of twelve months.
+			// recurring yearly tasks and events have a period in months multiple by 12
 			if ($data["everyn"] % 12 != 0) {
 				return false;
 			}
@@ -590,7 +349,7 @@ abstract class BaseRecurrence {
 
 		$ret["weekdays"] = $data["monthday"];
 		$data = unpack("Vnday", $rdata);
-		// Accept the legacy last-week marker and clamp invalid week numbers.
+		// Sanity check for valid values (and opportunistically try to fix)
 		if ($data["nday"] == 0xFFFFFFFF || $data["nday"] == -1) {
 			$data["nday"] = 5;
 		}
@@ -601,6 +360,227 @@ abstract class BaseRecurrence {
 		$rdata = substr($rdata, 4);
 
 		return true;
+	}
+
+	private function parseRecurrenceRange(string &$rdata, array &$ret): ?array {
+		if (strlen($rdata) < 16) {
+			return null;
+		}
+
+		$data = unpack("Vterm/Vnumoccur/Vconst2/Vnumexcept", $rdata);
+		$rdata = substr($rdata, 16);
+		if (!in_array($data["term"], [IDC_RCEV_PAT_ERB_END, IDC_RCEV_PAT_ERB_AFTERNOCCUR, IDC_RCEV_PAT_ERB_NOEND, 0xFFFFFFFF], true)) {
+			return null;
+		}
+
+		$ret["term"] = (int) $data["term"] > 0x2000 ? (int) $data["term"] - 0x2000 : $data["term"];
+		$ret["numoccur"] = $data["numoccur"];
+		$ret["first_dow"] = $data["const2"];
+		$ret["numexcept"] = $data["numexcept"];
+
+		// exc_base_dates are *all* the base dates that have been either deleted or modified
+		$exc_base_dates = $this->parseRecurrenceDates($rdata, $ret["numexcept"]);
+		if ($exc_base_dates === null) {
+			return null;
+		}
+
+		if (strlen($rdata) < 4) {
+			return null;
+		}
+
+		$data = unpack("Vnumexceptmod", $rdata);
+		$rdata = substr($rdata, 4);
+
+		$ret["numexceptmod"] = $data["numexceptmod"];
+
+		// exc_changed are the base dates of *modified* occurrences. exactly what is modified
+		if ($this->parseRecurrenceDates($rdata, $ret["numexceptmod"]) === null) {
+			return null;
+		}
+
+		if (strlen($rdata) < 8) {
+			return null;
+		}
+
+		$data = unpack("Vstart/Vend", $rdata);
+		$rdata = substr($rdata, 8);
+
+		$ret["start"] = $this->recurDataToUnixData($data["start"]);
+		$ret["end"] = $this->recurDataToUnixData($data["end"]);
+
+		return $exc_base_dates;
+	}
+
+	private function parseRecurrenceDates(string &$rdata, int $count): ?array {
+		$dates = [];
+		for ($i = 0; $i < $count; ++$i) {
+			if (strlen($rdata) < 4) {
+				return null;
+			}
+			$data = unpack("Vdate", $rdata);
+			$rdata = substr($rdata, 4);
+			$dates[] = $this->recurDataToUnixData($data["date"]);
+		}
+
+		return $dates;
+	}
+
+	private function parseRecurrenceException(string &$rdata): array {
+		$item = [];
+
+		// The base date identifies the original occurrence.
+		$data = unpack("Vstartdate/Venddate/Vbasedate", $rdata);
+		$rdata = substr($rdata, 12);
+
+		$startdate = $this->recurDataToUnixData($data["startdate"]);
+		$enddate = $this->recurDataToUnixData($data["enddate"]);
+		$basedate = $this->recurDataToUnixData($data["basedate"]);
+
+		$item["basedate"] = $this->dayStartOf($basedate);
+		$item["start"] = $startdate;
+		$item["end"] = $enddate;
+
+		$data = unpack("vbitmask", $rdata);
+		$rdata = substr($rdata, 2);
+		$item["bitmask"] = $data["bitmask"]; // save bitmask for extended exceptions
+
+		$bitmask = $data["bitmask"];
+
+		// ARO_SUBJECT: 0x0001
+		// Look for field: SubjectLength (2b), SubjectLength2 (2b) and Subject
+		if ($bitmask & (1 << 0)) {
+			$data = unpack("vnull_length/vlength", $rdata);
+			$rdata = substr($rdata, 4);
+
+			$length = (int) $data["length"];
+			$item["subject"] = substr($rdata, 0, $length);
+			$rdata = substr($rdata, $length);
+		}
+
+		// ARO_MEETINGTYPE: 0x0002
+		if ($bitmask & (1 << 1)) {
+			$rdata = substr($rdata, 4);
+			// Attendees modified: no data here (only in attachment)
+		}
+
+		// ARO_REMINDERDELTA: 0x0004
+		// Look for field: ReminderDelta (4b)
+		if ($bitmask & (1 << 2)) {
+			$data = unpack("Vremind_before", $rdata);
+			$rdata = substr($rdata, 4);
+
+			$item["remind_before"] = $data["remind_before"];
+		}
+
+		// ARO_REMINDER: 0x0008
+		// Look field: ReminderSet (4b)
+		if ($bitmask & (1 << 3)) {
+			$data = unpack("Vreminder_set", $rdata);
+			$rdata = substr($rdata, 4);
+
+			$item["reminder_set"] = $data["reminder_set"];
+		}
+
+		// ARO_LOCATION: 0x0010
+		// Look for fields: LocationLength (2b), LocationLength2 (2b) and Location
+		// Similar to ARO_SUBJECT above.
+		if ($bitmask & (1 << 4)) {
+			$data = unpack("vnull_length/vlength", $rdata);
+			$rdata = substr($rdata, 4);
+
+			$item["location"] = "";
+
+			$length = $data["length"];
+			$data = substr($rdata, 0, $length);
+			$rdata = substr($rdata, $length);
+
+			$item["location"] .= $data;
+		}
+
+		// ARO_BUSYSTATUS: 0x0020
+		// Look for field: BusyStatus (4b)
+		if ($bitmask & (1 << 5)) {
+			$data = unpack("Vbusystatus", $rdata);
+			$rdata = substr($rdata, 4);
+
+			$item["busystatus"] = $data["busystatus"];
+		}
+
+		// ARO_ATTACHMENT: 0x0040
+		if ($bitmask & (1 << 6)) {
+			// no data: RESERVED
+			$rdata = substr($rdata, 4);
+		}
+
+		// ARO_SUBTYPE: 0x0080
+		// Look for field: SubType (4b). Determines whether it is an allday event.
+		if ($bitmask & (1 << 7)) {
+			$data = unpack("Vallday", $rdata);
+			$rdata = substr($rdata, 4);
+
+			$item["alldayevent"] = $data["allday"];
+		}
+
+		// ARO_APPTCOLOR: 0x0100
+		// Look for field: AppointmentColor (4b)
+		if ($bitmask & (1 << 8)) {
+			$data = unpack("Vlabel", $rdata);
+			$rdata = substr($rdata, 4);
+
+			$item["label"] = $data["label"];
+		}
+
+		return $item;
+	}
+
+	private function parseExtendedException(
+		string &$rdata,
+		array $item,
+		int $writerversion
+	): array {
+		// subject and location in ucs-2 to utf-8
+		if ($writerversion >= 0x3009) {
+			$data = unpack("Vsize/Vvalue", $rdata); // size includes sizeof(value)==4
+			$rdata = substr($rdata, 4 + $data["size"]);
+		}
+
+		$data = unpack("Vreservedsize", $rdata);
+		$rdata = substr($rdata, 4 + $data["reservedsize"]);
+
+		// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
+		if ($item["bitmask"] & 0x11) {
+			$data = unpack("Vstart/Vend/Vorig", $rdata);
+			$rdata = substr($rdata, 4 * 3);
+
+			$item["ex_start_datetime"] = $data["start"];
+			$item["ex_end_datetime"] = $data["end"];
+			$item["ex_orig_date"] = $data["orig"];
+		}
+
+		if ($item["bitmask"] & 0x01) {
+			$item["subject"] = $this->parseExceptionString($rdata);
+		}
+		if ($item["bitmask"] & 0x10) {
+			$item["location"] = $this->parseExceptionString($rdata);
+		}
+
+		// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
+		if ($item["bitmask"] & 0x11) {
+			$data = unpack("Vreservedsize", $rdata);
+			$rdata = substr($rdata, 4 + $data["reservedsize"]);
+		}
+
+		return $item;
+	}
+
+	private function parseExceptionString(string &$rdata): false|string {
+		$data = unpack("vlength", $rdata);
+		$rdata = substr($rdata, 2);
+		$length = $data["length"];
+		$data = substr($rdata, 0, $length * 2);
+		$rdata = substr($rdata, $length * 2);
+
+		return iconv("UCS-2LE", "UTF-8", $data);
 	}
 
 	/**

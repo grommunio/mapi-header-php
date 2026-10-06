@@ -18,8 +18,7 @@ class RecurrenceParserTest extends TestCase {
 
 	protected function setUp(): void {
 		$this->recurrence = (new ReflectionClass(Recurrence::class))->
-			newInstanceWithoutConstructor()
-		;
+			newInstanceWithoutConstructor();
 	}
 
 	private static function header(int $type, int $subtype): string {
@@ -125,5 +124,126 @@ class RecurrenceParserTest extends TestCase {
 				$this->recurrence->parseRecurrence($blob)
 			);
 		}
+	}
+
+	#[DataProvider('exceptionVersionProvider')]
+	public function testExceptionFlags(int $version, bool $extended): void {
+		$fields = [
+			1 => [pack('v2', 5, 4) . "A\0B\xff", 'subject', "A\0B\xff"],
+			2 => [pack('V', 8), null, null],
+			4 => [pack('V', 15), 'remind_before', 15],
+			8 => [pack('V', 1), 'reminder_set', 1],
+			16 => [pack('v2', 5, 4) . "R\0M\xfe", 'location', "R\0M\xfe"],
+			32 => [pack('V', 2), 'busystatus', 2],
+			64 => [pack('V', 1), null, null],
+			128 => [pack('V', 1), 'alldayevent', 1],
+			256 => [pack('V', 7), 'label', 7],
+		];
+		for ($flags = 0; $flags < 1024; ++$flags) {
+			// Move March 31 at 10:00 to April 1 at 10:00.
+			$exception = pack('V3v', 223658520, 223658580, 223657080, $flags);
+			$expected = [
+				'basedate' => 1774915200, 'start' => 1775037600,
+				'end' => 1775041200, 'bitmask' => $flags,
+			];
+			foreach ($fields as $bit => [$bytes, $key, $value]) {
+				if ($flags & $bit) {
+					$exception .= $bytes;
+					if ($key !== null) {
+						$expected[$key] = $value;
+					}
+				}
+			}
+
+			// Keep duplicate deleted dates and consume reserved blocks.
+			$blob = self::header(10, 0) . pack('V3', 0, 1440, 0) .
+				pack('V4', 0x2022, 4, 1, 3) .
+				pack('V3', 223655040, 223656480, 223655040) .
+				pack('V4', 1, 223657920, 223655040, 223668000) .
+				pack('V4v', 0x3006, $version, 600, 660, 1) . $exception;
+			if ($extended) {
+				$blob .= pack('V', 2) . 'rr';
+				if ($version >= 0x3009) {
+					$blob .= pack('V2', 6, 42) . 'xx';
+				}
+				$blob .= pack('V', 2) . 'aa';
+				if ($flags & 0x11) {
+					$blob .= pack('V3', 223658520, 223658580, 223657080);
+					$expected += ['ex_start_datetime' => 223658520,
+						'ex_end_datetime' => 223658580,
+						'ex_orig_date' => 223657080];
+				}
+				if ($flags & 1) {
+					$blob .= pack('v', 3) . "S\0\xe4\0\xa9\x03";
+					$expected['subject'] = 'SäΩ';
+				}
+				if ($flags & 0x10) {
+					$blob .= pack('v', 3) . "L\0\xf6\0\xa9\x03";
+					$expected['location'] = 'LöΩ';
+				}
+				if ($flags & 0x11) {
+					$blob .= pack('V', 2) . 'zz';
+				}
+				$blob .= pack('V', 0);
+			}
+			$parsed = $this->recurrence->parseRecurrence($blob);
+			$this->assertSame(
+				[$expected],
+				$parsed['changed_occurrences'],
+				"Exception flags: {$flags}"
+			);
+			$this->assertSame(
+				[1774828800, 1774828800],
+				$parsed['deleted_occurrences']
+			);
+			$this->assertSame(600, $parsed['startocc']);
+			$this->assertSame(660, $parsed['endocc']);
+		}
+	}
+
+	public static function exceptionVersionProvider(): array {
+		return [
+			'old writer, ANSI only' => [0x3008, false],
+			'new writer, ANSI only' => [0x3009, false],
+			'old writer, Unicode' => [0x3008, true],
+			'new writer, Unicode' => [0x3009, true],
+		];
+	}
+
+	public function testTruncatedRangesKeepDecodedFields(): void {
+		$prefix = self::header(10, 0) . pack('V3', 0, 1440, 0);
+		$expected = ['changed_occurrences' => [], 'deleted_occurrences' => [],
+			'type' => 10, 'subtype' => 0, 'everyn' => 1440, 'regen' => 0];
+		$range = self::range();
+		for ($length = 0; $length < strlen($range); ++$length) {
+			if ($length == 16) {
+				$expected += ['term' => 0x22, 'numoccur' => 4,
+					'first_dow' => 1, 'numexcept' => 0];
+			}
+			if ($length == 20) {
+				$expected['numexceptmod'] = 0;
+			}
+			$this->assertSame($expected, $this->recurrence->parseRecurrence(
+				$prefix . substr($range, 0, $length)
+			));
+		}
+	}
+
+	public function testTruncatedExceptionDateListsKeepTheirCounts(): void {
+		$prefix = self::header(10, 0) . pack('V3', 0, 1440, 0);
+		$range = pack('V5', 0x2022, 4, 1, 2, 223655040);
+		$expected = ['changed_occurrences' => [], 'deleted_occurrences' => [],
+			'type' => 10, 'subtype' => 0, 'everyn' => 1440, 'regen' => 0,
+			'term' => 0x22, 'numoccur' => 4, 'first_dow' => 1, 'numexcept' => 2];
+		$this->assertSame(
+			$expected,
+			$this->recurrence->parseRecurrence($prefix . $range)
+		);
+		$range .= pack('V3', 223656480, 2, 223657920);
+		$expected['numexceptmod'] = 2;
+		$this->assertSame(
+			$expected,
+			$this->recurrence->parseRecurrence($prefix . $range)
+		);
 	}
 }
