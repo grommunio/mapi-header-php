@@ -2074,7 +2074,9 @@ class Meetingrequest {
 				mapi_msgstore_openentry($store ?: $this->store);
 			$entryprops = mapi_getprops($entry, [$prop]);
 
-			return $entryprops[$prop] ?? false;
+			$entryid = $entryprops[$prop] ?? false;
+
+			return is_string($entryid) ? $entryid : false;
 		}
 		catch (MAPIException $e) {
 			// public store doesn't support this method
@@ -2099,7 +2101,7 @@ class Meetingrequest {
 	 */
 	public function openDefaultFolder(int $prop, mixed $store = false): mixed {
 		$entryid = $this->getDefaultFolderEntryID($prop, $store);
-		if ($entryid === false) {
+		if (!is_string($entryid)) {
 			return false;
 		}
 
@@ -2130,8 +2132,9 @@ class Meetingrequest {
 	 */
 	public function getBaseEntryID(int $prop, mixed $store = false): bool|string {
 		$storeprops = mapi_getprops($store ?: $this->store, [$prop]);
+		$entryid = $storeprops[$prop] ?? false;
 
-		return $storeprops[$prop] ?? false;
+		return is_string($entryid) ? $entryid : false;
 	}
 
 	/**
@@ -2145,7 +2148,8 @@ class Meetingrequest {
 	public function openBaseFolder(int $prop, mixed $store = false): mixed {
 		$entryid = $this->getBaseEntryID($prop, $store);
 
-		return $entryid === false ? false : mapi_msgstore_openentry($store ?: $this->store, $entryid);
+		return is_string($entryid) ?
+			mapi_msgstore_openentry($store ?: $this->store, $entryid) : false;
 	}
 
 	/**

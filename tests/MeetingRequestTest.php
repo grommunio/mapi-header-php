@@ -216,4 +216,25 @@ class MeetingRequestTest extends TestCase {
 		$mr->addDelegator($props, $recips);
 		$this->assertCount(2, $recips);
 	}
+
+	public function testFolderOpenRejectsBooleanEntryIds(): void {
+		$mr = new class extends Meetingrequest {
+			public bool|string $entryid = false;
+
+			public function __construct() {}
+
+			public function getBaseEntryID(int $prop, mixed $store = false): bool|string {
+				return $this->entryid;
+			}
+
+			public function getDefaultFolderEntryID(int $prop, mixed $store = false): bool|string {
+				return $this->entryid;
+			}
+		};
+		foreach ([false, true] as $entryid) {
+			$mr->entryid = $entryid;
+			$this->assertFalse($mr->openBaseFolder(PR_IPM_SENTMAIL_ENTRYID));
+			$this->assertFalse($mr->openDefaultFolder(PR_IPM_APPOINTMENT_ENTRYID));
+		}
+	}
 }
