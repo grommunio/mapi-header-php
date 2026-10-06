@@ -1284,122 +1284,7 @@ abstract class BaseRecurrence {
 			$rdata .= pack("VV", (int) $this->recur["startocc"], (int) $this->recur["endocc"]);
 		}
 
-		// Detailed exception data
-
-		$changed_items = $this->recur["changed_occurrences"];
-
-		$rdata .= pack("v", count($changed_items));
-
-		foreach ($changed_items as $changed_item) {
-			// Set start and end time of exception
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"])); // StartDateTime
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"])); // EndDateTime
-			$rdata .= pack("V", $this->unixDataToRecurData(
-				$this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60
-			)); // OriginalStartDate
-
-			// Bitmask
-			$bitmask = 0;
-
-			// Check for changed strings
-			if (isset($changed_item["subject"])) {
-				$bitmask |= 1 << 0;
-			}
-
-			if (isset($changed_item["remind_before"])) {
-				$bitmask |= 1 << 2;
-			}
-
-			if (isset($changed_item["reminder_set"])) {
-				$bitmask |= 1 << 3;
-			}
-
-			if (isset($changed_item["location"])) {
-				$bitmask |= 1 << 4;
-			}
-
-			if (isset($changed_item["busystatus"])) {
-				$bitmask |= 1 << 5;
-			}
-
-			if (isset($changed_item["alldayevent"])) {
-				$bitmask |= 1 << 7;
-			}
-
-			if (isset($changed_item["label"])) {
-				$bitmask |= 1 << 8;
-			}
-
-			$rdata .= pack("v", $bitmask);
-
-			// Set "subject"
-			if (isset($changed_item["subject"])) {
-				// convert utf-8 to non-unicode blob string (us-ascii?)
-				$subject = iconv("UTF-8", "windows-1252//TRANSLIT", $changed_item["subject"]);
-				$length = strlen($subject);
-				$rdata .= pack("vv", $length + 1, $length);
-				$rdata .= pack("a" . $length, $subject);
-			}
-
-			if (isset($changed_item["remind_before"])) {
-				$rdata .= pack("V", $changed_item["remind_before"]);
-			}
-
-			if (isset($changed_item["reminder_set"])) {
-				$rdata .= pack("V", $changed_item["reminder_set"]);
-			}
-
-			if (isset($changed_item["location"])) {
-				$location = iconv("UTF-8", "windows-1252//TRANSLIT", $changed_item["location"]);
-				$length = strlen($location);
-				$rdata .= pack("vv", $length + 1, $length);
-				$rdata .= pack("a" . $length, $location);
-			}
-
-			if (isset($changed_item["busystatus"])) {
-				$rdata .= pack("V", $changed_item["busystatus"]);
-			}
-
-			if (isset($changed_item["alldayevent"])) {
-				$rdata .= pack("V", $changed_item["alldayevent"]);
-			}
-
-			if (isset($changed_item["label"])) {
-				$rdata .= pack("V", $changed_item["label"]);
-			}
-		}
-
-		$rdata .= pack("V", 0);
-
-		// write extended data
-		foreach ($changed_items as $changed_item) {
-			$rdata .= pack("VVV", 4, 0, 0); // ChangeHighlightSize, ChangeHighlightValue, ReservedBlockEE1Size
-			if (isset($changed_item["subject"]) || isset($changed_item["location"])) {
-				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"]));
-				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"]));
-				$rdata .= pack("V", $this->unixDataToRecurData($this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60));
-			}
-
-			if (isset($changed_item["subject"])) {
-				$subject = iconv("UTF-8", "UCS-2LE", $changed_item["subject"]);
-				$length = iconv_strlen($subject, "UCS-2LE");
-				$rdata .= pack("v", $length);
-				$rdata .= pack("a" . $length * 2, $subject);
-			}
-
-			if (isset($changed_item["location"])) {
-				$location = iconv("UTF-8", "UCS-2LE", $changed_item["location"]);
-				$length = iconv_strlen($location, "UCS-2LE");
-				$rdata .= pack("v", $length);
-				$rdata .= pack("a" . $length * 2, $location);
-			}
-
-			if (isset($changed_item["subject"]) || isset($changed_item["location"])) {
-				$rdata .= pack("V", 0);
-			}
-		}
-
-		$rdata .= pack("V", 0); // ReservedBlock2Size
+		$rdata .= $this->serializeRecurrenceExceptions($this->recur["changed_occurrences"]);
 
 		// Set props
 		$propsToSet[$this->proptags["recurring_data"]] = $rdata;
@@ -1419,6 +1304,75 @@ abstract class BaseRecurrence {
 			$propsToSet[$this->proptags["timezone"]] = $timezone;
 		}
 		mapi_setprops($this->message, $propsToSet);
+	}
+
+	private function serializeRecurrenceExceptions(array $items): string {
+		$rdata = pack("v", count($items));
+		foreach ($items as $item) {
+			$rdata .= $this->serializeRecurrenceException($item);
+		}
+		$rdata .= pack("V", 0);
+		foreach ($items as $item) {
+			$rdata .= $this->serializeExtendedException($item);
+		}
+
+		return $rdata . pack("V", 0);
+	}
+
+	private function serializeRecurrenceException(array $item): string {
+		$rdata = $this->serializeExceptionDates($item);
+		$fields = [
+			"subject" => 0x01, "remind_before" => 0x04, "reminder_set" => 0x08,
+			"location" => 0x10, "busystatus" => 0x20,
+			"alldayevent" => 0x80, "label" => 0x100,
+		];
+		$bitmask = 0;
+		$values = "";
+		foreach ($fields as $field => $flag) {
+			if (!isset($item[$field])) {
+				continue;
+			}
+			$bitmask |= $flag;
+			if ($flag & 0x11) {
+				$value = iconv("UTF-8", "windows-1252//TRANSLIT", $item[$field]);
+				$length = strlen($value);
+				$values .= pack("vv", $length + 1, $length) . pack("a" . $length, $value);
+			}
+			else {
+				$values .= pack("V", $item[$field]);
+			}
+		}
+
+		return $rdata . pack("v", $bitmask) . $values;
+	}
+
+	private function serializeExtendedException(array $item): string {
+		// ChangeHighlightSize, ChangeHighlightValue, ReservedBlockEE1Size.
+		$rdata = pack("VVV", 4, 0, 0);
+		if (!isset($item["subject"]) && !isset($item["location"])) {
+			return $rdata;
+		}
+		$rdata .= $this->serializeExceptionDates($item);
+		foreach (["subject", "location"] as $field) {
+			if (isset($item[$field])) {
+				$value = iconv("UTF-8", "UCS-2LE", $item[$field]);
+				$length = iconv_strlen($value, "UCS-2LE");
+				$rdata .= pack("v", $length) . pack("a" . $length * 2, $value);
+			}
+		}
+
+		return $rdata . pack("V", 0);
+	}
+
+	private function serializeExceptionDates(array $item): string {
+		return pack(
+			"VVV",
+			$this->unixDataToRecurData($item["start"]),
+			$this->unixDataToRecurData($item["end"]),
+			$this->unixDataToRecurData(
+				$this->dayStartOf($item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60
+			)
+		);
 	}
 
 	/**
