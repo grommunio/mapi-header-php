@@ -608,8 +608,11 @@ function writeMapiPropStream(mixed $mapiobj, int $proptag, string $data): bool {
 	if ($stream === false) {
 		return false;
 	}
-	mapi_stream_setsize($stream, strlen($data));
-	if (mapi_stream_write($stream, $data) === false) {
+	$length = strlen($data);
+	if (!mapi_stream_setsize($stream, $length)) {
+		return false;
+	}
+	if (mapi_stream_write($stream, $data) !== $length) {
 		return false;
 	}
 
