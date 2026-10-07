@@ -49,6 +49,44 @@ class MeetingRequestTest extends TestCase {
 		$this->assertFalse($this->mr->compareRecipients([PR_ENTRYID => 'abc'], [PR_DISPLAY_NAME => 'Foo']));
 	}
 
+
+	private function invoke(string $method, mixed ...$args): mixed {
+		return (new ReflectionMethod(Meetingrequest::class, $method))->invoke($this->mr, ...$args);
+	}
+
+	public function testForwardNotificationClass(): void {
+		$this->assertTrue($this->mr->isMeetingForwardNotification('IPM.Schedule.Meeting.Notification.Forward'));
+		$this->assertTrue($this->mr->isMeetingForwardNotification('ipm.schedule.meeting.notification.forward'));
+		$this->assertFalse($this->mr->isMeetingForwardNotification('IPM.Schedule.Meeting.Request'));
+		$this->assertFalse($this->mr->isMeetingForwardNotification('IPM.Note'));
+	}
+
+	public function testForwardRecipientRows(): void {
+		$this->mr->proptags = ['forward_recipients' => 1, 'forward_recipient_names' => 2];
+		$rows = $this->invoke('getForwardRecipientRows', [1 => ['a@example.com', ' ', 'b@example.com'], 2 => ['Anna', '', '']]);
+		$this->assertCount(2, $rows);
+		$this->assertSame('Anna', $rows[0][PR_DISPLAY_NAME]);
+		$this->assertSame('a@example.com', $rows[0][PR_SMTP_ADDRESS]);
+		$this->assertSame(MAPI_CC, $rows[0][PR_RECIPIENT_TYPE]);
+		$this->assertSame(recipSendable, $rows[0][PR_RECIPIENT_FLAGS]);
+		$this->assertSame(olRecipientTrackStatusNone, $rows[0][PR_RECIPIENT_TRACKSTATUS]);
+		// a missing name falls back to the address
+		$this->assertSame('b@example.com', $rows[1][PR_DISPLAY_NAME]);
+		$this->assertSame([], $this->invoke('getForwardRecipientRows', []));
+	}
+
+	public function testNewForwardRecipients(): void {
+		$this->mr->proptags = ['forward_recipients' => 1, 'forward_recipient_names' => 2];
+		$existing = [
+			[PR_ENTRYID => 'abc', PR_SMTP_ADDRESS => 'Anna@example.com'],
+			[PR_ENTRYID => 'def', PR_ADDRTYPE => 'SMTP', PR_EMAIL_ADDRESS => 'bert@example.com'],
+		];
+		$forwarded = $this->invoke('getForwardRecipientRows', [1 => ['anna@example.com', 'carl@example.com', 'BERT@example.com', 'Carl@example.com']]);
+		$new = $this->invoke('getNewForwardRecipients', $existing, $forwarded);
+		$this->assertSame(['carl@example.com'], array_column($new, PR_SMTP_ADDRESS));
+		$this->assertSame([], $this->invoke('getNewForwardRecipients', $existing, []));
+	}
+
 	private function recurrence(string $zone): Recurrence {
 		$r = new class extends Recurrence {
 			public function __construct() {}

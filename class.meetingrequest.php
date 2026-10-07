@@ -68,6 +68,9 @@ class Meetingrequest {
 	 *   - Show 'Remove From Calendar' button to user
 	 *   - When userpresses button, call doRemoveFromCalendar(), which removes the item from your
 	 *     calendar and deletes the message
+	 * - Check isMeetingForwardNotification(), if true:
+	 *   - Call processMeetingForwardNotification()
+	 *     This adds the attendees an attendee forwarded the meeting to.
 	 *
 	 * Cancelling a meeting request:
 	 *   - Call doCancelInvitation, which will send cancellation mails to attendees and will remove
@@ -202,6 +205,12 @@ class Meetingrequest {
 		$properties['alldayevent'] = 'PT_BOOLEAN:PSETID_Appointment:' . PidLidAppointmentSubType;
 		$properties['toattendeesstring'] = 'PT_STRING8:PSETID_Appointment:0x823B';
 		$properties['ccattendeesstring'] = 'PT_STRING8:PSETID_Appointment:0x823C';
+		$properties['allattendeesstring'] = 'PT_STRING8:PSETID_Appointment:0x8238';
+		$properties['auxiliary_flags'] = 'PT_LONG:PSETID_Appointment:0x8207';
+		$properties['forward_instance'] = 'PT_BOOLEAN:PSETID_Appointment:0x820A';
+		$properties['tzdefstart'] = 'PT_BINARY:PSETID_Appointment:0x825E';
+		$properties['forward_recipients'] = 'PT_MV_STRING8:PS_PUBLIC_STRINGS:GrommunioForwardRecipients';
+		$properties['forward_recipient_names'] = 'PT_MV_STRING8:PS_PUBLIC_STRINGS:GrommunioForwardRecipientNames';
 
 		$this->proptags = getPropIdsFromStrings($this->store, $properties);
 	}
@@ -260,6 +269,21 @@ class Meetingrequest {
 		}
 
 		return $messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.canceled') === 0;
+	}
+
+	/**
+	 * Returns TRUE if the message pointed to is a meeting forward notification.
+	 *
+	 * @param false|string $messageClass message class to use for checking
+	 *
+	 * @return bool returns true if this is a meeting forward notification else false
+	 */
+	public function isMeetingForwardNotification(false|string $messageClass = false): bool {
+		if ($messageClass === false) {
+			$messageClass = mapi_getprops($this->message, [PR_MESSAGE_CLASS])[PR_MESSAGE_CLASS] ?? false;
+		}
+
+		return $messageClass !== false && stripos($messageClass, 'ipm.schedule.meeting.notification.forward') === 0;
 	}
 
 	/**
@@ -583,6 +607,106 @@ class Meetingrequest {
 
 			mapi_savechanges($calendarItem);
 		}
+	}
+
+	/**
+	 * Process an incoming meeting forward notification (MS-OXOCAL v22.1 §3.1.4.10.2). This adds
+	 * the attendees the meeting was forwarded to as optional attendees of the meeting in
+	 * the organizer's calendar.
+	 *
+	 * @return bool true if attendees were added
+	 */
+	public function processMeetingForwardNotification(): bool {
+		if (!$this->isMeetingForwardNotification()) {
+			return false;
+		}
+
+		$messageprops = mapi_getprops($this->message, [
+			$this->proptags['goid'],
+			$this->proptags['forward_recipients'],
+			$this->proptags['forward_recipient_names'],
+			PR_PARENT_ENTRYID,
+			PR_PROCESSED,
+			PR_RCVD_REPRESENTING_ENTRYID,
+		]);
+
+		if (!empty($messageprops[PR_PROCESSED]) || empty($messageprops[$this->proptags['goid']])) {
+			return false;
+		}
+
+		// the copy in the forwarder's own mailbox is not processed
+		foreach ([PR_IPM_SENTMAIL_ENTRYID, PR_IPM_OUTBOX_ENTRYID] as $folder) {
+			if (compareEntryIds($this->getBaseEntryID($folder), $messageprops[PR_PARENT_ENTRYID] ?? false)) {
+				return false;
+			}
+		}
+
+		$calendarItem = $this->getCorrespondentCalendarItem(true);
+		if ($calendarItem === false) {
+			return false;
+		}
+		$calendarItemProps = mapi_getprops($calendarItem, [$this->proptags['responsestatus'], $this->proptags['recurring']]);
+		if (($calendarItemProps[$this->proptags['responsestatus']] ?? null) !== olResponseOrganized) {
+			return false;
+		}
+
+		$store = $this->resolveDelegateStoreAndCalendar($messageprops)['store'];
+		$this->ensureCalendarWriteAccess($store);
+
+		$basedate = $this->getBasedateFromGlobalID($messageprops[$this->proptags['goid']]);
+		$recurringItem = false;
+		if ($basedate && !empty($calendarItemProps[$this->proptags['recurring']])) {
+			$recurr = new Recurrence($store, $calendarItem);
+			// a deleted occurrence is never brought back
+			if ($recurr->isDeleteException($basedate)) {
+				$this->setProcessed();
+
+				return false;
+			}
+			if (!$recurr->isException($basedate)) {
+				$exception_props = [
+					$this->proptags['startdate'] => $recurr->getOccurrenceStart($basedate),
+					$this->proptags['duedate'] => $recurr->getOccurrenceEnd($basedate),
+				];
+				// fails when the series has no occurrence on that day
+				if (!$recurr->createException($exception_props, $basedate, false, $this->getMessageRecipients($calendarItem))) {
+					$this->setProcessed();
+
+					return false;
+				}
+				mapi_savechanges($calendarItem);
+			}
+
+			$attach = $recurr->getExceptionAttachment($basedate);
+			if (!$attach) {
+				return false;
+			}
+			$recurringItem = $calendarItem;
+			$calendarItem = mapi_attach_openobj($attach, MAPI_MODIFY);
+		}
+
+		$existing = $this->getMessageRecipients($calendarItem);
+		$seriesRecipients = [];
+		// an exception without recipients of its own has those of the series
+		if ($recurringItem !== false && empty($existing)) {
+			$existing = $seriesRecipients = $this->getMessageRecipients($recurringItem);
+		}
+		$added = [];
+		foreach ($this->getNewForwardRecipients($existing, $this->getForwardRecipientRows($messageprops)) as $recip) {
+			$added[] = $this->resolveForwardRecipient($recip);
+		}
+
+		if (!empty($added)) {
+			mapi_message_modifyrecipients($calendarItem, MODRECIP_ADD, array_merge($seriesRecipients, $added));
+			mapi_savechanges($calendarItem);
+			if ($recurringItem !== false) {
+				mapi_savechanges($attach);
+				mapi_savechanges($recurringItem);
+			}
+		}
+		$this->setProcessed();
+
+		return !empty($added);
 	}
 
 	/**
@@ -1614,10 +1738,11 @@ class Meetingrequest {
 		$messageClass = $props[PR_MESSAGE_CLASS] ?? '';
 		$isMeetingMessage = $this->isMeetingRequest($messageClass) ||
 							$this->isMeetingRequestResponse($messageClass) ||
-							$this->isMeetingCancellation($messageClass);
+							$this->isMeetingCancellation($messageClass) ||
+							$this->isMeetingForwardNotification($messageClass);
 
 		$calendarItem = $isMeetingMessage ?
-			$this->getCorrespondentCalendarItem(true) : // Meeting request/response/cancellation mail
+			$this->getCorrespondentCalendarItem(true) : // Meeting request/response/cancellation/forward notification mail
 			$this->message;  // Calendar item
 
 		// Even if we have received request/response for exception/occurrence then also
@@ -3551,7 +3676,7 @@ class Meetingrequest {
 	}
 
 	/**
-	 * Function returns correspondent calendar item attached with the meeting request/response/cancellation.
+	 * Function returns correspondent calendar item attached with the meeting request/response/cancellation/forward notification.
 	 * This will only check for actual MAPIMessages in calendar folder, so if a meeting request is
 	 * for exception then this function will return recurring series for that meeting request
 	 * after that you need to use getExceptionItem function to get exception item that will be
@@ -3570,8 +3695,9 @@ class Meetingrequest {
 			PR_PARENT_ENTRYID
 		]);
 
-		if (!$this->isMeetingRequest($props[PR_MESSAGE_CLASS]) && !$this->isMeetingRequestResponse($props[PR_MESSAGE_CLASS]) && !$this->isMeetingCancellation($props[PR_MESSAGE_CLASS])) {
-			// can work only with meeting requests/responses/cancellations
+		if (!$this->isMeetingRequest($props[PR_MESSAGE_CLASS]) && !$this->isMeetingRequestResponse($props[PR_MESSAGE_CLASS]) &&
+			!$this->isMeetingCancellation($props[PR_MESSAGE_CLASS]) && !$this->isMeetingForwardNotification($props[PR_MESSAGE_CLASS])) {
+			// can work only with meeting requests/responses/cancellations/forward notifications
 			return false;
 		}
 
@@ -4084,6 +4210,117 @@ class Meetingrequest {
 
 		return $this->compareABEntryIDs($representing, $userProps[PR_MAILBOX_OWNER_ENTRYID]) ?
 			false : $representing;
+	}
+
+	/**
+	 * The address book entry of a local user.
+	 *
+	 * @param string $smtp SMTP address of the user
+	 *
+	 * @return array|false resolved address book row, false for an unknown or external address
+	 */
+	private function resolveAddress(string $smtp): array|false {
+		if (!$this->session || $smtp === '') {
+			return false;
+		}
+
+		try {
+			$rows = mapi_ab_resolvename(mapi_openaddressbook($this->session), [[PR_DISPLAY_NAME => $smtp]], EMS_AB_ADDRESS_LOOKUP);
+		}
+		catch (MAPIException $e) {
+			$e->setHandled();
+
+			return false;
+		}
+
+		return isset($rows[0][PR_ENTRYID]) && strcasecmp($rows[0][PR_ADDRTYPE] ?? '', 'EX') == 0 ? $rows[0] : false;
+	}
+
+	/**
+	 * Recipient rows of the attendees listed in a meeting forward notification.
+	 *
+	 * @param array $messageprops properties of the meeting forward notification
+	 *
+	 * @return array optional attendees addressed by SMTP
+	 */
+	private function getForwardRecipientRows(array $messageprops): array {
+		$names = array_values($messageprops[$this->proptags['forward_recipient_names']] ?? []);
+		$rows = [];
+		foreach (array_values($messageprops[$this->proptags['forward_recipients']] ?? []) as $i => $smtp) {
+			$smtp = trim((string) $smtp);
+			if ($smtp === '') {
+				continue;
+			}
+			$name = trim((string) ($names[$i] ?? ''));
+			$rows[] = [
+				PR_DISPLAY_NAME => $name !== '' ? $name : $smtp,
+				PR_RECIPIENT_DISPLAY_NAME => $name !== '' ? $name : $smtp,
+				PR_EMAIL_ADDRESS => $smtp,
+				PR_SMTP_ADDRESS => $smtp,
+				PR_ADDRTYPE => 'SMTP',
+				PR_RECIPIENT_TYPE => MAPI_CC,
+				PR_RECIPIENT_FLAGS => recipSendable,
+				PR_RECIPIENT_TRACKSTATUS => olRecipientTrackStatusNone,
+			];
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * The forwarded attendees that are not attendees of the meeting yet.
+	 *
+	 * @param array $existing  recipient rows of the meeting
+	 * @param array $forwarded recipient rows of the forwarded attendees
+	 *
+	 * @return array rows of $forwarded, each address once
+	 */
+	private function getNewForwardRecipients(array $existing, array $forwarded): array {
+		$new = [];
+		foreach ($forwarded as $recip) {
+			foreach (array_merge($existing, $new) as $known) {
+				if ($this->compareRecipients($known, $recip)) {
+					continue 2;
+				}
+			}
+			$new[] = $recip;
+		}
+
+		return $new;
+	}
+
+	/**
+	 * Addresses a forwarded attendee by the address book entry when it is a local user,
+	 * else by a one-off entryid.
+	 *
+	 * @param array $recip recipient row from getForwardRecipientRows()
+	 *
+	 * @return array the recipient row with PR_ENTRYID
+	 */
+	private function resolveForwardRecipient(array $recip): array {
+		$resolved = $this->resolveAddress($recip[PR_SMTP_ADDRESS]);
+		if ($resolved === false) {
+			$recip[PR_ENTRYID] = mapi_createoneoff($recip[PR_DISPLAY_NAME], 'SMTP', $recip[PR_SMTP_ADDRESS]);
+
+			return $recip;
+		}
+
+		$recip[PR_ENTRYID] = $resolved[PR_ENTRYID];
+		$recip[PR_EMAIL_ADDRESS] = $resolved[PR_EMAIL_ADDRESS] ?? $recip[PR_EMAIL_ADDRESS];
+		$recip[PR_ADDRTYPE] = $resolved[PR_ADDRTYPE];
+		if (isset($resolved[PR_SEARCH_KEY])) {
+			$recip[PR_SEARCH_KEY] = $resolved[PR_SEARCH_KEY];
+		}
+
+		return $recip;
+	}
+
+	/**
+	 * Marks the message as processed.
+	 */
+	private function setProcessed(): void {
+		mapi_setprops($this->message, [PR_PROCESSED => true]);
+		mapi_savechanges($this->message);
 	}
 
 	/**
