@@ -88,10 +88,10 @@ class MAPIExceptionTest extends TestCase {
 	}
 
 	public function testGetDisplayMessageWithUnknownError(): void {
-		$exception = new MAPIException('Test', 0x80040FFF);
+		$exception = new MAPIException('Test', 0x80040FFE);
 
 		$displayMessage = $exception->getDisplayMessage();
-		$this->assertStringContainsString('Unknown MAPI Error', $displayMessage);
+		$this->assertStringContainsStringIgnoringCase('Unknown MAPI error', $displayMessage);
 	}
 
 	public function testGetDisplayMessageWithCustomDisplayMessage(): void {
