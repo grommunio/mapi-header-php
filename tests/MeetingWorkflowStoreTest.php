@@ -244,4 +244,97 @@ class MeetingWorkflowStoreTest extends TestCase {
 			}
 		}
 	}
+
+	public function testOutgoingUpdatesAndCancellations(): void {
+		foreach ([false, true] as $cancel) {
+			foreach ([false, true] as $directBooking) {
+				$source = $this->newRequest();
+				$request = new class($this->store, $source->message) extends Meetingrequest {
+					public $draftFolder;
+					public array $submitted = [];
+
+					public function createOutgoingMessage(mixed $store = false): mixed {
+						$message = mapi_folder_createmessage($this->draftFolder);
+						mapi_setprops($message, [PR_SENDER_NAME => 'Transport identity']);
+
+						return $message;
+					}
+
+					public function submitOutgoingMessage(mixed $outgoing, bool $allowSendAsSelf = false): void {
+						$this->submitted[] = [
+							'cancellation' => $allowSendAsSelf,
+							'props' => mapi_getprops($outgoing, [PR_SUBJECT, PR_SENDER_NAME]) + mapi_getprops($outgoing),
+							'recipients' => mapi_table_queryallrows(
+								mapi_message_getrecipienttable($outgoing),
+								[PR_EMAIL_ADDRESS]
+							),
+						];
+					}
+				};
+				$request->draftFolder = $this->folder;
+				$request->setDirectBooking($directBooking);
+				$tags = $request->proptags;
+				mapi_setprops($request->message, [
+					PR_MESSAGE_CLASS => 'IPM.Appointment',
+					PR_SENDER_NAME => 'Original sender',
+					$tags['categories'] => ['Private category'],
+					$tags['busystatus'] => fbBusy,
+					$tags['last_updatecounter'] => 3,
+				]);
+				$recipients = [];
+				foreach (['attendee', 'resource', 'organizer', 'removed'] as $name) {
+					$email = $name . '@example.invalid';
+					$recipients[$name] = [
+						PR_ENTRYID => mapi_createoneoff($name, 'SMTP', $email),
+						PR_DISPLAY_NAME => $name,
+						PR_EMAIL_ADDRESS => $email,
+						PR_ADDRTYPE => 'SMTP',
+						PR_RECIPIENT_TYPE => $name === 'resource' ? MAPI_BCC : MAPI_TO,
+						PR_RECIPIENT_FLAGS => recipSendable | ($name === 'organizer' ? recipOrganizer : 0),
+					];
+				}
+				mapi_message_modifyrecipients(
+					$request->message,
+					MODRECIP_ADD,
+					[$recipients['attendee'], $recipients['resource'], $recipients['organizer']]
+				);
+				mapi_savechanges($request->message);
+				$request->submitMeetingRequest(
+					$request->message,
+					$cancel,
+					false,
+					false,
+					false,
+					true,
+					false,
+					[$recipients['attendee'], $recipients['removed']]
+				);
+				$this->assertCount(2, $request->submitted);
+				[$update, $removed] = $request->submitted;
+				$this->assertSame($cancel, $update['cancellation']);
+				$this->assertSame(
+					$cancel ? 'IPM.Schedule.Meeting.Canceled' : 'IPM.Schedule.Meeting.Request',
+					$update['props'][PR_MESSAGE_CLASS]
+				);
+				$this->assertSame($cancel ? fbFree : fbTentative, $update['props'][$tags['busystatus']]);
+				$this->assertSame(fbBusy, $update['props'][$tags['intendedbusystatus']]);
+				$this->assertSame('Transport identity', $update['props'][PR_SENDER_NAME]);
+				$this->assertArrayNotHasKey($tags['categories'], $update['props']);
+				$expected = ['attendee@example.invalid'];
+				if (!$directBooking) {
+					$expected[] = 'resource@example.invalid';
+				}
+				$this->assertSame($expected, array_column($update['recipients'], PR_EMAIL_ADDRESS));
+				$this->assertTrue($removed['cancellation']);
+				$this->assertSame(['removed@example.invalid'], array_column($removed['recipients'], PR_EMAIL_ADDRESS));
+				$this->assertSame('IPM.Schedule.Meeting.Canceled', $removed['props'][PR_MESSAGE_CLASS]);
+				$this->assertSame(IMPORTANCE_HIGH, $removed['props'][PR_IMPORTANCE]);
+				$props = mapi_getprops($request->message);
+				$this->assertTrue($props[$tags['requestsent']]);
+				$this->assertSame(olMeeting, $props[$tags['meetingstatus']]);
+				$this->assertSame(olResponseOrganized, $props[$tags['responsestatus']]);
+				$this->assertSame(3, $props[$tags['updatecounter']]);
+			}
+		}
+	}
 }

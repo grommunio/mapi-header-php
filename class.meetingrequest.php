@@ -3251,89 +3251,137 @@ class Meetingrequest {
 
 		// Copy the entire message into the new meeting request message
 		if (!empty($basedate)) {
-			// messageprops contains properties of whole recurring series
-			// and newmessageprops contains properties of exception item
-			$newmessageprops = mapi_getprops($message);
+			$newmessageprops = $this->getOutgoingExceptionProperties($message, $cancel, $basedate, $recurObject, $messageprops);
 
-			$basedateUtc = $basedate;
-			if ($recurObject instanceof BaseRecurrence && isset($recurObject->tz)) {
-				// PidLidExceptionReplaceTime is the original start, not the day
-				$origStart = $recurObject->dayStartOf($basedate) + $recurObject->recur['startocc'] * 60;
-				$basedateUtc = $recurObject->toGMT($recurObject->tz, $origStart);
-			}
-
-			// Ensure that the correct basedate is set in the new message
-			$newmessageprops[$this->proptags['basedate']] = $basedateUtc;
-
-			// Set isRecurring to false, because this is an exception
-			$newmessageprops[$this->proptags['recurring']] = false;
-
-			// PidLidIsRecurring indicates a message associated with a recurring series object.
-			// It's true both for the series and an exception.
-			$newmessageprops[$this->proptags['meetingrecurring']] = true;
-
-			// Recurrence data is not necessary for an exception
-			unset($newmessageprops[$this->proptags['recurrence_data']]);
-
-			// set LID_IS_EXCEPTION to true
-			$newmessageprops[$this->proptags['is_exception']] = true;
-
-			// Set to high importance
-			if ($cancel) {
-				$newmessageprops[PR_IMPORTANCE] = IMPORTANCE_HIGH;
-			}
-
-			// Set startdate and enddate of exception
-			if ($cancel && $recurObject) {
-				$newmessageprops[$this->proptags['startdate']] = $recurObject->getOccurrenceStart($basedate);
-				$newmessageprops[$this->proptags['duedate']] = $recurObject->getOccurrenceEnd($basedate);
-			}
-
-			// Set basedate in guid (0x3)
-			$newmessageprops[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedateUtc, $recurObject instanceof BaseRecurrence ? $recurObject : null);
-			$newmessageprops[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
-			$newmessageprops[PR_OWNER_APPT_ID] = $messageprops[PR_OWNER_APPT_ID];
-
-			// Get deleted recipiets from exception msg
-			$restriction = [
-				RES_AND,
-				[
-					[
-						RES_BITMASK,
-						[
-							ULTYPE => BMR_NEZ,
-							ULPROPTAG => PR_RECIPIENT_FLAGS,
-							ULMASK => recipExceptionalDeleted,
-						],
-					],
-					[
-						RES_BITMASK,
-						[
-							ULTYPE => BMR_EQZ,
-							ULPROPTAG => PR_RECIPIENT_FLAGS,
-							ULMASK => recipOrganizer,
-						],
-					],
-				],
-			];
-
-			// In direct-booking mode, we don't need to send cancellations to resources
-			if ($this->enableDirectBooking) {
-				$restriction[1][] = [
-					RES_PROPERTY,
-					[
-						RELOP => RELOP_NE,	// Does not equal recipient type: MAPI_BCC (Resource)
-						ULPROPTAG => PR_RECIPIENT_TYPE,
-						VALUE => [PR_RECIPIENT_TYPE => MAPI_BCC],
-					],
-				];
-			}
+			$restriction = $this->getMeetingRecipientRestriction(true);
 
 			$recipients = $this->getMessageRecipients($message, $restriction);
 
 			$deletedRecips = array_merge($deletedRecips ?: [], $recipients);
 		}
 
+		$newmessageprops = $this->getOutgoingMeetingProperties($newmessageprops, $messageprops, $prefix, $recurObject);
+		mapi_setprops($new, $newmessageprops);
+
+		// Copy attachments
+		$this->replaceAttachments($message, $new, $copyExceptions);
+
+		$stripResourcesRestriction = $this->getMeetingRecipientRestriction(false);
+
+		// If no recipients were explicitly provided, we will send the update to all
+		// recipients from the meeting.
+		if ($modifiedRecips === false) {
+			$modifiedRecips = $this->getMeetingUpdateRecipients($message, $basedate, $stripResourcesRestriction);
+		}
+
+		if (!empty($modifiedRecips)) {
+			$this->submitMeetingUpdate($new, $modifiedRecips, $messageprops, $newmessageprops, $cancel);
+		}
+
+		if ($deletedRecips) {
+			$deletedRecips = $this->filterCanceledRecipients($deletedRecips, $modifiedRecips);
+		}
+
+		// Send cancellation to deleted attendees
+		if ($deletedRecips) {
+			$this->submitCanceledAttendees($deletedRecips, $newmessageprops);
+		}
+
+		$props = $this->getSentMeetingProperties($messageprops, $newmessageprops, $modifiedRecips);
+		mapi_setprops($message, $props);
+
+		// saving of these properties on calendar item should be handled by caller function
+		// based on sending meeting request was successful or not
+	}
+
+	private function getOutgoingExceptionProperties(mixed $message, mixed $cancel, mixed $basedate, mixed $recurObject, array $messageprops): array {
+		// messageprops contains properties of whole recurring series
+		// and newmessageprops contains properties of exception item
+		$newmessageprops = mapi_getprops($message);
+
+		$basedateUtc = $basedate;
+		if ($recurObject instanceof BaseRecurrence && isset($recurObject->tz)) {
+			// PidLidExceptionReplaceTime is the original start, not the day
+			$origStart = $recurObject->dayStartOf($basedate) + $recurObject->recur['startocc'] * 60;
+			$basedateUtc = $recurObject->toGMT($recurObject->tz, $origStart);
+		}
+
+		// Ensure that the correct basedate is set in the new message
+		$newmessageprops[$this->proptags['basedate']] = $basedateUtc;
+
+		// Set isRecurring to false, because this is an exception
+		$newmessageprops[$this->proptags['recurring']] = false;
+
+		// PidLidIsRecurring indicates a message associated with a recurring series object.
+		// It's true both for the series and an exception.
+		$newmessageprops[$this->proptags['meetingrecurring']] = true;
+
+		// Recurrence data is not necessary for an exception
+		unset($newmessageprops[$this->proptags['recurrence_data']]);
+
+		// set LID_IS_EXCEPTION to true
+		$newmessageprops[$this->proptags['is_exception']] = true;
+
+		// Set to high importance
+		if ($cancel) {
+			$newmessageprops[PR_IMPORTANCE] = IMPORTANCE_HIGH;
+		}
+
+		// Set startdate and enddate of exception
+		if ($cancel && $recurObject) {
+			$newmessageprops[$this->proptags['startdate']] = $recurObject->getOccurrenceStart($basedate);
+			$newmessageprops[$this->proptags['duedate']] = $recurObject->getOccurrenceEnd($basedate);
+		}
+
+		// Set basedate in guid (0x3)
+		$newmessageprops[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedateUtc, $recurObject instanceof BaseRecurrence ? $recurObject : null);
+		$newmessageprops[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
+		$newmessageprops[PR_OWNER_APPT_ID] = $messageprops[PR_OWNER_APPT_ID];
+
+		return $newmessageprops;
+	}
+
+	private function getMeetingRecipientRestriction(bool $deleted): array {
+		// $deleted: the recipExceptionalDeleted rows, otherwise the live ones;
+		// never the organizer, and no resources in direct-booking mode
+		$restriction = [
+			RES_AND,
+			[
+				[
+					RES_BITMASK,
+					[
+						ULTYPE => $deleted ? BMR_NEZ : BMR_EQZ,
+						ULPROPTAG => PR_RECIPIENT_FLAGS,
+						ULMASK => recipExceptionalDeleted,
+					],
+				],
+				[
+					RES_BITMASK,
+					[
+						ULTYPE => BMR_EQZ,
+						ULPROPTAG => PR_RECIPIENT_FLAGS,
+						ULMASK => recipOrganizer,
+					],
+				],
+			],
+		];
+
+		// In direct-booking mode, we don't need to send cancellations to resources
+		if ($this->enableDirectBooking) {
+			$restriction[1][] = [
+				RES_PROPERTY,
+				[
+					RELOP => RELOP_NE,	// Does not equal recipient type: MAPI_BCC (Resource)
+					ULPROPTAG => PR_RECIPIENT_TYPE,
+					VALUE => [PR_RECIPIENT_TYPE => MAPI_BCC],
+				],
+			];
+		}
+
+		return $restriction;
+	}
+
+	private function getOutgoingMeetingProperties(array $newmessageprops, array $messageprops, mixed $prefix, mixed $recurObject): array {
 		// don't let the addressing copied from the calendar item override the
 		// sender set up by createOutgoingMessage
 		unset(
@@ -3374,7 +3422,8 @@ class Meetingrequest {
 			if ($this->mti_html) {
 				unset($newmessageprops[PR_BODY], $newmessageprops[PR_RTF_COMPRESSED]);
 				$newmessageprops[PR_HTML] = $meetingTimeInfo;
-			} else {
+			}
+			else {
 				unset($newmessageprops[PR_HTML], $newmessageprops[PR_RTF_COMPRESSED]);
 				$newmessageprops[PR_BODY] = $meetingTimeInfo;
 			}
@@ -3407,155 +3456,95 @@ class Meetingrequest {
 			!empty($newmessageprops[$this->proptags['categories']])) {
 			unset($newmessageprops[$this->proptags['categories']]);
 		}
-		mapi_setprops($new, $newmessageprops);
 
-		// Copy attachments
-		$this->replaceAttachments($message, $new, $copyExceptions);
+		return $newmessageprops;
+	}
 
-		// Retrieve only those recipient who should receive this meeting request.
-		$stripResourcesRestriction = [
-			RES_AND,
-			[
-				[
-					RES_BITMASK,
-					[
-						ULTYPE => BMR_EQZ,
-						ULPROPTAG => PR_RECIPIENT_FLAGS,
-						ULMASK => recipExceptionalDeleted,
-					],
-				],
-				[
-					RES_BITMASK,
-					[
-						ULTYPE => BMR_EQZ,
-						ULPROPTAG => PR_RECIPIENT_FLAGS,
-						ULMASK => recipOrganizer,
-					],
-				],
-			],
-		];
+	private function getMeetingUpdateRecipients(mixed $message, mixed $basedate, array $stripResourcesRestriction): array {
+		$modifiedRecips = $this->getMessageRecipients($message, $stripResourcesRestriction);
 
-		// In direct-booking mode, resources do not receive a meeting request
-		if ($this->enableDirectBooking) {
-			$stripResourcesRestriction[1][] = [
-				RES_PROPERTY,
-				[
-					RELOP => RELOP_NE,	// Does not equal recipient type: MAPI_BCC (Resource)
-					ULPROPTAG => PR_RECIPIENT_TYPE,
-					VALUE => [PR_RECIPIENT_TYPE => MAPI_BCC],
-				],
-			];
+		if (!empty($basedate) && empty($modifiedRecips)) {
+			// Retrieve full list
+			$modifiedRecips = $this->getMessageRecipients($this->message);
+
+			// Save recipients in exceptions
+			mapi_message_modifyrecipients($message, MODRECIP_ADD, $modifiedRecips);
+
+			// Now retrieve only those recipient who should receive this meeting request.
+			$modifiedRecips = $this->getMessageRecipients($this->message, $stripResourcesRestriction);
 		}
 
-		// If no recipients were explicitly provided, we will send the update to all
-		// recipients from the meeting.
-		if ($modifiedRecips === false) {
-			$modifiedRecips = $this->getMessageRecipients($message, $stripResourcesRestriction);
+		return $modifiedRecips;
+	}
 
-			if (!empty($basedate) && empty($modifiedRecips)) {
-				// Retrieve full list
-				$modifiedRecips = $this->getMessageRecipients($this->message);
+	private function submitMeetingUpdate(mixed $new, mixed $modifiedRecips, array $messageprops, array &$newmessageprops, mixed $cancel): void {
+		// Strip out the sender/'owner' recipient
+		mapi_message_modifyrecipients($new, MODRECIP_ADD, $modifiedRecips);
 
-				// Save recipients in exceptions
-				mapi_message_modifyrecipients($message, MODRECIP_ADD, $modifiedRecips);
+		// Set some properties that are different in the sent request than
+		// in the item in our calendar
 
-				// Now retrieve only those recipient who should receive this meeting request.
-				$modifiedRecips = $this->getMessageRecipients($this->message, $stripResourcesRestriction);
-			}
-		}
+		// we should store busystatus value to intendedbusystatus property, because busystatus for outgoing meeting request
+		// should always be fbTentative
+		$newmessageprops[$this->proptags['intendedbusystatus']] = $newmessageprops[$this->proptags['busystatus']] ?? $messageprops[$this->proptags['busystatus']];
+		$newmessageprops[$this->proptags['busystatus']] = fbTentative; // The default status when not accepted
+		$newmessageprops[$this->proptags['responsestatus']] = olResponseNotResponded; // The recipient has not responded yet
+		$newmessageprops[$this->proptags['attendee_critical_change']] = time();
+		$newmessageprops[$this->proptags['owner_critical_change']] = time();
+		$newmessageprops[$this->proptags['meetingtype']] = mtgRequest;
 
-		// @TODO: handle nonAcceptingResources
-		/*
-		 * Add resource recipients that did not automatically accept the meeting request.
-		 * (note: meaning that they did not decline the meeting request)
-		 */ /*
-		for($i=0;$i<count($this->nonAcceptingResources);$i++){
-			$recipients[] = $this->nonAcceptingResources[$i];
-		}*/
-
-		if (!empty($modifiedRecips)) {
-			// Strip out the sender/'owner' recipient
-			mapi_message_modifyrecipients($new, MODRECIP_ADD, $modifiedRecips);
-
-			// Set some properties that are different in the sent request than
-			// in the item in our calendar
-
-			// we should store busystatus value to intendedbusystatus property, because busystatus for outgoing meeting request
-			// should always be fbTentative
-			$newmessageprops[$this->proptags['intendedbusystatus']] = $newmessageprops[$this->proptags['busystatus']] ?? $messageprops[$this->proptags['busystatus']];
-			$newmessageprops[$this->proptags['busystatus']] = fbTentative; // The default status when not accepted
-			$newmessageprops[$this->proptags['responsestatus']] = olResponseNotResponded; // The recipient has not responded yet
-			$newmessageprops[$this->proptags['attendee_critical_change']] = time();
-			$newmessageprops[$this->proptags['owner_critical_change']] = time();
-			$newmessageprops[$this->proptags['meetingtype']] = mtgRequest;
-
-			if ($cancel) {
-				$newmessageprops[PR_MESSAGE_CLASS] = 'IPM.Schedule.Meeting.Canceled';
-				$newmessageprops[$this->proptags['meetingstatus']] = olMeetingCanceled; // It's a cancel request
-				$newmessageprops[$this->proptags['busystatus']] = fbFree; // set the busy status as free
-			}
-			else {
-				$newmessageprops[PR_MESSAGE_CLASS] = 'IPM.Schedule.Meeting.Request';
-				$newmessageprops[$this->proptags['meetingstatus']] = olMeetingReceived; // The recipient is receiving the request
-			}
-
-			mapi_setprops($new, $newmessageprops);
-			mapi_savechanges($new);
-
-			// Submit message to non-resource recipients
-			$this->submitOutgoingMessage($new, (bool) $cancel);
-		}
-
-		// Search through the deleted recipients, and see if any of them is also
-		// listed as a recipient to whom we have sent an update. As we don't
-		// want to send a cancellation message to recipients who will also receive
-		// an meeting update, we have to filter those recipients out.
-		if ($deletedRecips) {
-			$tmp = [];
-
-			foreach ($deletedRecips as $delRecip) {
-				$found = false;
-
-				// Search if the deleted recipient can be found inside
-				// the updated recipients as well.
-				foreach ($modifiedRecips as $recip) {
-					if ($this->compareRecipients($recip, $delRecip)) {
-						$found = true;
-						break;
-					}
-				}
-
-				// If the recipient was not found, it truly is deleted,
-				// and we can safely send a cancellation message
-				if (!$found) {
-					$tmp[] = $delRecip;
-				}
-			}
-
-			$deletedRecips = $tmp;
-		}
-
-		// Send cancellation to deleted attendees
-		if ($deletedRecips) {
-			$new = $this->createOutgoingMessage($this->store);
-
-			mapi_message_modifyrecipients($new, MODRECIP_ADD, $deletedRecips);
-
+		if ($cancel) {
 			$newmessageprops[PR_MESSAGE_CLASS] = 'IPM.Schedule.Meeting.Canceled';
 			$newmessageprops[$this->proptags['meetingstatus']] = olMeetingCanceled; // It's a cancel request
 			$newmessageprops[$this->proptags['busystatus']] = fbFree; // set the busy status as free
-			$newmessageprops[PR_IMPORTANCE] = IMPORTANCE_HIGH;	// HIGH Importance
-			if (isset($newmessageprops[PR_SUBJECT])) {
-				$newmessageprops[PR_SUBJECT] = _('Canceled') . ': ' . $newmessageprops[PR_SUBJECT];
-			}
-
-			mapi_setprops($new, $newmessageprops);
-			mapi_savechanges($new);
-
-			// mails to removed attendees are always cancellations
-			$this->submitOutgoingMessage($new, true);
+		}
+		else {
+			$newmessageprops[PR_MESSAGE_CLASS] = 'IPM.Schedule.Meeting.Request';
+			$newmessageprops[$this->proptags['meetingstatus']] = olMeetingReceived; // The recipient is receiving the request
 		}
 
+		mapi_setprops($new, $newmessageprops);
+		mapi_savechanges($new);
+
+		// Submit message to non-resource recipients
+		$this->submitOutgoingMessage($new, (bool) $cancel);
+	}
+
+	private function filterCanceledRecipients(mixed $deletedRecips, mixed $modifiedRecips): array {
+		$deleted = [];
+		foreach ($deletedRecips as $delRecip) {
+			foreach ($modifiedRecips as $recip) {
+				if ($this->compareRecipients($recip, $delRecip)) {
+					continue 2;
+				}
+			}
+			$deleted[] = $delRecip;
+		}
+
+		return $deleted;
+	}
+
+	private function submitCanceledAttendees(mixed $deletedRecips, array &$newmessageprops): void {
+		$new = $this->createOutgoingMessage($this->store);
+
+		mapi_message_modifyrecipients($new, MODRECIP_ADD, $deletedRecips);
+
+		$newmessageprops[PR_MESSAGE_CLASS] = 'IPM.Schedule.Meeting.Canceled';
+		$newmessageprops[$this->proptags['meetingstatus']] = olMeetingCanceled; // It's a cancel request
+		$newmessageprops[$this->proptags['busystatus']] = fbFree; // set the busy status as free
+		$newmessageprops[PR_IMPORTANCE] = IMPORTANCE_HIGH;	// HIGH Importance
+		if (isset($newmessageprops[PR_SUBJECT])) {
+			$newmessageprops[PR_SUBJECT] = _('Canceled') . ': ' . $newmessageprops[PR_SUBJECT];
+		}
+
+		mapi_setprops($new, $newmessageprops);
+		mapi_savechanges($new);
+
+		// mails to removed attendees are always cancellations
+		$this->submitOutgoingMessage($new, true);
+	}
+
+	private function getSentMeetingProperties(array $messageprops, array $newmessageprops, mixed $modifiedRecips): array {
 		// Set properties on meeting object in calendar
 		// Set requestsent to 'true' (turns on 'tracking', etc)
 		$props = [];
@@ -3579,10 +3568,7 @@ class Meetingrequest {
 		// when modifying the appointment
 		$props[PR_MESSAGE_FLAGS] = $messageprops[PR_MESSAGE_FLAGS] & ~MSGFLAG_UNSENT;
 
-		mapi_setprops($message, $props);
-
-		// saving of these properties on calendar item should be handled by caller function
-		// based on sending meeting request was successful or not
+		return $props;
 	}
 
 	/**
