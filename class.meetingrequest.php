@@ -397,35 +397,7 @@ class Meetingrequest {
 
 		// If basedate is found, then create/modify exception msg and do processing
 		if (!empty($basedate) && !empty($calendarItemProps[$this->proptags['recurring']])) {
-			$recurr = new Recurrence($store, $calendarItem);
-
-			// Copy properties from meeting request
-			$exception_props = mapi_getprops($this->message, [
-				PR_OWNER_APPT_ID,
-				$this->proptags['proposed_start_whole'],
-				$this->proptags['proposed_end_whole'],
-				$this->proptags['proposed_duration'],
-				$this->proptags['counter_proposal'],
-			]);
-
-			// Create/modify exception
-			if ($recurr->isException($basedate)) {
-				$recurr->modifyException($exception_props, $basedate);
-			}
-			else {
-				// When we are creating an exception we need copy recipients from main recurring item
-				$recips = $this->getMessageRecipients($calendarItem);
-
-				// Retrieve actual start/due dates from calendar item.
-				$exception_props[$this->proptags['startdate']] = $recurr->getOccurrenceStart($basedate);
-				$exception_props[$this->proptags['duedate']] = $recurr->getOccurrenceEnd($basedate);
-
-				$recurr->createException($exception_props, $basedate, false, $recips);
-			}
-
-			mapi_savechanges($calendarItem);
-
-			$attach = $recurr->getExceptionAttachment($basedate);
+			$attach = $this->saveResponseException($store, $calendarItem, $basedate);
 			if ($attach) {
 				$recurringItem = $calendarItem;
 				$calendarItem = mapi_attach_openobj($attach, MAPI_MODIFY);
@@ -435,6 +407,60 @@ class Meetingrequest {
 			}
 		}
 
+		$this->updateResponseRecipients($calendarItem, $messageprops, $senderentryid, $messageclass, $deliverytime);
+
+		// TODO: Update counter proposal number property on message
+		/*
+		If it is the first time this attendee has proposed a new date/time, increment the value of the PidLidAppointmentProposalNumber property on the organizer's meeting object, by 0x00000001. If this property did not previously exist on the organizer's meeting object, it MUST be set with a value of 0x00000001.
+		*/
+		// If this is a counter proposal, set the counter proposal indicator boolean
+		if (isset($messageprops[$this->proptags['counter_proposal']])) {
+			$props = [$this->proptags['counter_proposal'] => (bool) $messageprops[$this->proptags['counter_proposal']]];
+			mapi_setprops($calendarItem, $props);
+		}
+
+		mapi_savechanges($calendarItem);
+		if (isset($attach) && $recurringItem !== false) {
+			mapi_savechanges($attach);
+			mapi_savechanges($recurringItem);
+		}
+
+		return null;
+	}
+
+	private function saveResponseException(mixed $store, mixed $calendarItem, mixed $basedate): mixed {
+		$recurr = new Recurrence($store, $calendarItem);
+
+		// Copy properties from meeting request
+		$exception_props = mapi_getprops($this->message, [
+			PR_OWNER_APPT_ID,
+			$this->proptags['proposed_start_whole'],
+			$this->proptags['proposed_end_whole'],
+			$this->proptags['proposed_duration'],
+			$this->proptags['counter_proposal'],
+		]);
+
+		// Create/modify exception
+		if ($recurr->isException($basedate)) {
+			$recurr->modifyException($exception_props, $basedate);
+		}
+		else {
+			// When we are creating an exception we need copy recipients from main recurring item
+			$recips = $this->getMessageRecipients($calendarItem);
+
+			// Retrieve actual start/due dates from calendar item.
+			$exception_props[$this->proptags['startdate']] = $recurr->getOccurrenceStart($basedate);
+			$exception_props[$this->proptags['duedate']] = $recurr->getOccurrenceEnd($basedate);
+
+			$recurr->createException($exception_props, $basedate, false, $recips);
+		}
+
+		mapi_savechanges($calendarItem);
+
+		return $recurr->getExceptionAttachment($basedate);
+	}
+
+	private function updateResponseRecipients(mixed $calendarItem, array $messageprops, mixed $senderentryid, mixed $messageclass, mixed $deliverytime): void {
 		// Get the recipients of the calendar item
 		$recipients = $this->getMessageRecipients($calendarItem);
 
@@ -460,18 +486,7 @@ class Meetingrequest {
 					continue;
 				}
 
-				// The email address matches, update the row
-				$recipient[PR_RECIPIENT_TRACKSTATUS] = $this->getTrackStatus($messageclass);
-				if (isset($messageprops[$this->proptags['attendee_critical_change']])) {
-					$recipient[PR_RECIPIENT_TRACKSTATUS_TIME] = $messageprops[$this->proptags['attendee_critical_change']];
-				}
-
-				// If this is a counter proposal, set the proposal properties in the recipient row
-				if (isset($messageprops[$this->proptags['counter_proposal']]) && $messageprops[$this->proptags['counter_proposal']]) {
-					$recipient[PR_RECIPIENT_PROPOSEDSTARTTIME] = $messageprops[$this->proptags['proposed_start_whole']];
-					$recipient[PR_RECIPIENT_PROPOSEDENDTIME] = $messageprops[$this->proptags['proposed_end_whole']];
-					$recipient[PR_RECIPIENT_PROPOSED] = $messageprops[$this->proptags['counter_proposal']];
-				}
+				$recipient = $this->getResponseRecipientProperties($recipient, $messageprops, $messageclass);
 
 				// Update the recipient information
 				mapi_message_modifyrecipients($calendarItem, MODRECIP_REMOVE, [$recipient]);
@@ -482,43 +497,48 @@ class Meetingrequest {
 		// If the recipient was not found in the original calendar item,
 		// then add the recpient as a new optional recipient
 		if (!$found) {
-			$recipient = [];
-			$recipient[PR_ENTRYID] = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
-			$recipient[PR_EMAIL_ADDRESS] = $messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS];
-			$recipient[PR_DISPLAY_NAME] = $messageprops[PR_SENT_REPRESENTING_NAME];
-			$recipient[PR_ADDRTYPE] = $messageprops[PR_SENT_REPRESENTING_ADDRTYPE];
-			$recipient[PR_RECIPIENT_TYPE] = MAPI_CC;
-			$recipient[PR_SEARCH_KEY] = $messageprops[PR_SENT_REPRESENTING_SEARCH_KEY];
-			$recipient[PR_RECIPIENT_TRACKSTATUS] = $this->getTrackStatus($messageclass);
-			$recipient[PR_RECIPIENT_TRACKSTATUS_TIME] = $deliverytime;
-
-			// If this is a counter proposal, set the proposal properties in the recipient row
-			if (isset($messageprops[$this->proptags['counter_proposal']])) {
-				$recipient[PR_RECIPIENT_PROPOSEDSTARTTIME] = $messageprops[$this->proptags['proposed_start_whole']];
-				$recipient[PR_RECIPIENT_PROPOSEDENDTIME] = $messageprops[$this->proptags['proposed_end_whole']];
-				$recipient[PR_RECIPIENT_PROPOSED] = $messageprops[$this->proptags['counter_proposal']];
-			}
+			$recipient = $this->getNewResponseRecipient($messageprops, $messageclass, $deliverytime);
 
 			mapi_message_modifyrecipients($calendarItem, MODRECIP_ADD, [$recipient]);
 		}
+	}
 
-		// TODO: Update counter proposal number property on message
-		/*
-		If it is the first time this attendee has proposed a new date/time, increment the value of the PidLidAppointmentProposalNumber property on the organizer's meeting object, by 0x00000001. If this property did not previously exist on the organizer's meeting object, it MUST be set with a value of 0x00000001.
-		*/
-		// If this is a counter proposal, set the counter proposal indicator boolean
+	private function getResponseRecipientProperties(array $recipient, array $messageprops, mixed $messageclass): array {
+		// The email address matches, update the row
+		$recipient[PR_RECIPIENT_TRACKSTATUS] = $this->getTrackStatus($messageclass);
+		if (isset($messageprops[$this->proptags['attendee_critical_change']])) {
+			$recipient[PR_RECIPIENT_TRACKSTATUS_TIME] = $messageprops[$this->proptags['attendee_critical_change']];
+		}
+
+		// If this is a counter proposal, set the proposal properties in the recipient row
+		if (isset($messageprops[$this->proptags['counter_proposal']]) && $messageprops[$this->proptags['counter_proposal']]) {
+			$recipient[PR_RECIPIENT_PROPOSEDSTARTTIME] = $messageprops[$this->proptags['proposed_start_whole']];
+			$recipient[PR_RECIPIENT_PROPOSEDENDTIME] = $messageprops[$this->proptags['proposed_end_whole']];
+			$recipient[PR_RECIPIENT_PROPOSED] = $messageprops[$this->proptags['counter_proposal']];
+		}
+
+		return $recipient;
+	}
+
+	private function getNewResponseRecipient(array $messageprops, mixed $messageclass, mixed $deliverytime): array {
+		$recipient = [];
+		$recipient[PR_ENTRYID] = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
+		$recipient[PR_EMAIL_ADDRESS] = $messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS];
+		$recipient[PR_DISPLAY_NAME] = $messageprops[PR_SENT_REPRESENTING_NAME];
+		$recipient[PR_ADDRTYPE] = $messageprops[PR_SENT_REPRESENTING_ADDRTYPE];
+		$recipient[PR_RECIPIENT_TYPE] = MAPI_CC;
+		$recipient[PR_SEARCH_KEY] = $messageprops[PR_SENT_REPRESENTING_SEARCH_KEY];
+		$recipient[PR_RECIPIENT_TRACKSTATUS] = $this->getTrackStatus($messageclass);
+		$recipient[PR_RECIPIENT_TRACKSTATUS_TIME] = $deliverytime;
+
+		// If this is a counter proposal, set the proposal properties in the recipient row
 		if (isset($messageprops[$this->proptags['counter_proposal']])) {
-			$props = [$this->proptags['counter_proposal'] => (bool) $messageprops[$this->proptags['counter_proposal']]];
-			mapi_setprops($calendarItem, $props);
+			$recipient[PR_RECIPIENT_PROPOSEDSTARTTIME] = $messageprops[$this->proptags['proposed_start_whole']];
+			$recipient[PR_RECIPIENT_PROPOSEDENDTIME] = $messageprops[$this->proptags['proposed_end_whole']];
+			$recipient[PR_RECIPIENT_PROPOSED] = $messageprops[$this->proptags['counter_proposal']];
 		}
 
-		mapi_savechanges($calendarItem);
-		if (isset($attach) && $recurringItem !== false) {
-			mapi_savechanges($attach);
-			mapi_savechanges($recurringItem);
-		}
-
-		return null;
+		return $recipient;
 	}
 
 	/**

@@ -179,4 +179,69 @@ class MeetingWorkflowStoreTest extends TestCase {
 			));
 		}
 	}
+
+	public function testNewAndStaleAttendeeResponses(): void {
+		foreach (['new', 'stale', 'proposal', 'no proposal'] as $case) {
+			$request = $this->newRequest();
+			$tags = $request->proptags;
+			$entryid = mapi_createoneoff('Attendee', 'SMTP', 'attendee@example.invalid');
+			$response = [
+				PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Resp.Pos',
+				PR_SENT_REPRESENTING_ENTRYID => $entryid,
+				PR_SENT_REPRESENTING_NAME => 'Attendee',
+				PR_SENT_REPRESENTING_EMAIL_ADDRESS => 'attendee@example.invalid',
+				PR_SENT_REPRESENTING_ADDRTYPE => 'SMTP',
+				PR_SENT_REPRESENTING_SEARCH_KEY => "SMTP:ATTENDEE@EXAMPLE.INVALID\0",
+				PR_MESSAGE_DELIVERY_TIME => 1700000000,
+				$tags['attendee_critical_change'] => 1700000100,
+			];
+			if ($case === 'proposal' || $case === 'no proposal') {
+				$response += [
+					$tags['counter_proposal'] => $case === 'proposal',
+					$tags['proposed_start_whole'] => 1774868400,
+					$tags['proposed_end_whole'] => 1774872000,
+				];
+			}
+			mapi_setprops($request->message, $response);
+			$appointment = mapi_folder_createmessage($this->calendar);
+			mapi_setprops($appointment, [PR_MESSAGE_CLASS => 'IPM.Appointment',
+				$tags['recurring'] => false]);
+			if ($case === 'stale') {
+				mapi_message_modifyrecipients($appointment, MODRECIP_ADD, [[
+					PR_ENTRYID => $entryid,
+					PR_EMAIL_ADDRESS => 'attendee@example.invalid',
+					PR_ADDRTYPE => 'SMTP',
+					PR_RECIPIENT_TYPE => MAPI_TO,
+					PR_RECIPIENT_TRACKSTATUS => olRecipientTrackStatusDeclined,
+					PR_RECIPIENT_TRACKSTATUS_TIME => 1700000200,
+				]]);
+			}
+			mapi_savechanges($appointment);
+			$this->assertNull($request->processResponse(
+				$this->store,
+				$appointment,
+				false,
+				$response
+			));
+			$rows = mapi_table_queryallrows(mapi_message_getrecipienttable($appointment), [
+				PR_RECIPIENT_TYPE, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME,
+				PR_RECIPIENT_PROPOSED, PR_RECIPIENT_PROPOSEDSTARTTIME, PR_RECIPIENT_PROPOSEDENDTIME,
+			]);
+			$this->assertCount(1, $rows);
+			$this->assertSame($case === 'stale' ? MAPI_TO : MAPI_CC, $rows[0][PR_RECIPIENT_TYPE]);
+			$this->assertSame(
+				$case === 'stale' ? olRecipientTrackStatusDeclined : olRecipientTrackStatusAccepted,
+				$rows[0][PR_RECIPIENT_TRACKSTATUS]
+			);
+			$this->assertSame(
+				$case === 'stale' ? 1700000200 : 1700000000,
+				$rows[0][PR_RECIPIENT_TRACKSTATUS_TIME]
+			);
+			if ($case === 'proposal' || $case === 'no proposal') {
+				$this->assertSame($case === 'proposal', $rows[0][PR_RECIPIENT_PROPOSED]);
+				$this->assertSame(1774868400, $rows[0][PR_RECIPIENT_PROPOSEDSTARTTIME]);
+				$this->assertSame(1774872000, $rows[0][PR_RECIPIENT_PROPOSEDENDTIME]);
+			}
+		}
+	}
 }
