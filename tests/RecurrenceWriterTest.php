@@ -39,6 +39,28 @@ class RecurrenceWriterTest extends TestCase {
 		return json_decode($output, true, 512, JSON_THROW_ON_ERROR);
 	}
 
+	public function testPatternSerialization(): void {
+		// Stored bytes and normalized dates from merged master (6425ec1).
+		$patterns = json_decode(file_get_contents(
+			__DIR__ . '/fixtures/recurrence_patterns.json'
+		), true, 512, JSON_THROW_ON_ERROR);
+		$cases = [];
+		foreach ($patterns as $pattern) {
+			$cases[] = $pattern['pattern'] + self::daily();
+		}
+		$results = $this->writeCases($cases);
+		foreach (array_values($patterns) as $index => $expected) {
+			[$recur, $props] = $results[$index];
+			$this->assertSame($expected['blob'], $props[13]);
+			$this->assertSame($expected['start'], $recur['start']);
+			$this->assertSame($expected['end'], $recur['end']);
+			$this->assertSame($expected['start'], $props[6]);
+			$this->assertSame($expected['end'], $props[7]);
+			$this->assertSame($expected['start'] + 36000, $props[1]);
+			$this->assertSame($expected['start'] + 39600, $props[3]);
+		}
+	}
+
 	public function testExceptionSerialization(): void {
 		$fields = [
 			1 => ['subject', "SäΩ\0", "S\0\xe4\0\xa9\x03\0\0"],
