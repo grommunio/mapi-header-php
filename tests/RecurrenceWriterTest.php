@@ -113,4 +113,53 @@ class RecurrenceWriterTest extends TestCase {
 			$this->assertTrue($props[15]);
 		}
 	}
+
+	public function testExceptionDatesAreSortedWithoutDroppingDuplicates(): void {
+		$base = self::daily();
+		$day = $base['start'];
+		$case = [
+			'deleted_occurrences' => [$day + 86400, $day, $day],
+			'changed_occurrences' => [
+				['basedate' => $day + 3000, 'start' => $day + 381600,
+					'end' => $day + 385200],
+				['basedate' => $day + 173400, 'start' => $day + 295200,
+					'end' => $day + 298800],
+			],
+		] + $base;
+		[[$recur, $props]] = $this->writeCases([$case]);
+		$expected = pack(
+			'V10',
+			5,
+			223655040,
+			223655040,
+			223655040,
+			223656480,
+			223657920,
+			2,
+			223659360,
+			223660800,
+			223655040
+		);
+		$this->assertSame($expected, substr(hex2bin($props[13]), 34, 40));
+		$this->assertSame($case, $recur);
+	}
+
+	public function testInvalidPatternsDoNotWriteProperties(): void {
+		$base = self::daily();
+		$cases = [];
+		foreach (['type', 'subtype', 'start', 'end', 'startocc', 'endocc'] as $field) {
+			$case = $base;
+			unset($case[$field]);
+			$cases[] = $case;
+		}
+		foreach ([['type' => 9], ['subtype' => 5], ['everyn' => 0],
+			['type' => 11, 'everyn' => 0], ['type' => 12, 'everyn' => 0],
+			['type' => 13, 'everyn' => 0, 'month' => 0]] as $pattern) {
+			$cases[] = $pattern + $base;
+		}
+		foreach ($this->writeCases($cases) as $index => [$recur, $props]) {
+			$this->assertNull($props);
+			$this->assertSame($cases[$index], $recur);
+		}
+	}
 }
