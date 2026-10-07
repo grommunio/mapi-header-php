@@ -3365,6 +3365,8 @@ class Meetingrequest {
 			$sentprops = [];
 			$this->setAddressProperties($sentprops, $userDetails, 'SENT_REPRESENTING');
 			$this->setAddressProperties($sentprops, $userDetails, 'SENDER');
+			// zcore checks the SMTP address first, it must not name the other user
+			mapi_deleteprops($outgoing, [PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENDER_SMTP_ADDRESS]);
 			mapi_setprops($outgoing, $sentprops);
 			mapi_savechanges($outgoing);
 			mapi_message_submitmessage($outgoing);
