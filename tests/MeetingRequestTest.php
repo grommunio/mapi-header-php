@@ -235,6 +235,11 @@ class MeetingRequestTest extends TestCase {
 			$mr->entryid = $entryid;
 			$this->assertFalse($mr->openBaseFolder(PR_IPM_SENTMAIL_ENTRYID));
 			$this->assertFalse($mr->openDefaultFolder(PR_IPM_APPOINTMENT_ENTRYID));
+			$this->assertFalse($mr->getDefaultWastebasketEntryID());
+			$this->assertFalse($mr->getDefaultSentmailEntryID());
 		}
+		$mr->entryid = "entry\0id";
+		$this->assertSame($mr->entryid, $mr->getDefaultWastebasketEntryID());
+		$this->assertSame($mr->entryid, $mr->getDefaultSentmailEntryID());
 	}
 }

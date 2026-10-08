@@ -2062,7 +2062,9 @@ class Meetingrequest {
 	 * @return false|string default calendar folder of store
 	 */
 	public function getDefaultWastebasketEntryID(mixed $store = false): bool|string {
-		return $this->getBaseEntryID(PR_IPM_WASTEBASKET_ENTRYID, $store);
+		$entryid = $this->getBaseEntryID(PR_IPM_WASTEBASKET_ENTRYID, $store);
+
+		return is_string($entryid) ? $entryid : false;
 	}
 
 	/**
@@ -2073,7 +2075,9 @@ class Meetingrequest {
 	 * @return false|string default sent mail folder of store
 	 */
 	public function getDefaultSentmailEntryID(mixed $store = false): bool|string {
-		return $this->getBaseEntryID(PR_IPM_SENTMAIL_ENTRYID, $store);
+		$entryid = $this->getBaseEntryID(PR_IPM_SENTMAIL_ENTRYID, $store);
+
+		return is_string($entryid) ? $entryid : false;
 	}
 
 	/**
@@ -4395,7 +4399,7 @@ class Meetingrequest {
 	 * PR_RCVD_REPRESENTING. The acting user is what the message has to be
 	 * measured against.
 	 */
-	private function getDelegatorEntryId(array $messageprops): string|false {
+	private function getDelegatorEntryId(array $messageprops): false|string {
 		$representing = $messageprops[PR_RCVD_REPRESENTING_ENTRYID] ?? false;
 		if (empty($representing)) {
 			return false;
