@@ -36,6 +36,82 @@ class KeyCloakTest extends TestCase {
 		];
 	}
 
+	private function createResponseClient(array $responses): KeyCloak {
+		$client = new class($this->createTestConfig()) extends KeyCloak {
+			public array $responses = [];
+
+			public function checkToken(?Token $token): bool {
+				return $this->validate_token($token);
+			}
+
+			protected function http_curl_request(string $method, string $domain, array $headers = [], string $data = ''): array {
+				return array_shift($this->responses);
+			}
+		};
+		$client->responses = $responses;
+
+		return $client;
+	}
+
+	public function testIntrospectionRequiresBooleanTrue(): void {
+		foreach (['false', '"false"', '"true"', '1', '0', 'null', '[]', '{}'] as $active) {
+			$client = $this->createResponseClient([['code' => 200, 'body' => '{"active":' . $active . '}']]);
+			$this->assertFalse($client->checkToken(new Token('opaque-token')), $active);
+		}
+		foreach (['null', '{', '[]', '{}', '{"active":true,"error":null}'] as $body) {
+			$client = $this->createResponseClient([['code' => 200, 'body' => $body]]);
+			$this->assertFalse($client->checkToken(new Token('opaque-token')));
+		}
+		foreach ([0, 199, 200, 299, 300, 401, 500] as $code) {
+			$client = $this->createResponseClient([['code' => $code, 'body' => '{"active":true}']]);
+			$this->assertSame($code >= 200 && $code <= 299, $client->checkToken(new Token('opaque-token')));
+		}
+		$this->assertFalse($this->createResponseClient([])->checkToken(null));
+	}
+
+	public function testMalformedGrantsAreRejected(): void {
+		$invalid = [
+			false, 'null', '{', '[]', '{}',
+			'{"error":"invalid_grant"}',
+			'{"access_token":""}',
+			'{"access_token":true}',
+			'{"access_token":[]}',
+			'{"access_token":"token","error":null}',
+			'{"access_token":"token","refresh_token":[]}',
+			'{"access_token":"token","id_token":42}',
+		];
+		foreach ($invalid as $body) {
+			$client = $this->createResponseClient([['code' => 200, 'body' => $body]]);
+			$this->assertFalse($client->password_grant_req('user', 'password'));
+			$this->assertNull($client->grant);
+			$this->assertNull($client->access_token);
+		}
+	}
+
+	public function testValidGrantTokensRemainAvailable(): void {
+		$grant = ['access_token' => 'access', 'refresh_token' => 'refresh', 'id_token' => 'identity'];
+		foreach ([$grant, json_encode($grant)] as $body) {
+			$client = $this->createResponseClient([['code' => 200, 'body' => $body]]);
+			$this->assertTrue($client->password_grant_req('user', 'password'));
+			$this->assertSame($grant, $client->grant);
+			$this->assertSame('access', $client->access_token->get_payload());
+			$this->assertSame('refresh', $client->refresh_token->get_payload());
+			$this->assertSame('identity', $client->id_token->get_payload());
+		}
+	}
+
+	public function testFailedRefreshDoesNotValidateGrant(): void {
+		$client = $this->createResponseClient([
+			['code' => 200, 'body' => '{"active":false}'],
+			['code' => 200, 'body' => '{"error":"invalid_grant"}'],
+		]);
+		$client->grant = ['access_token' => 'expired', 'refresh_token' => 'refresh'];
+		$client->access_token = new Token('expired');
+		$client->refresh_token = new Token('refresh');
+		$this->assertFalse($client->validate_grant());
+		$this->assertNull($client->grant);
+	}
+
 	protected function setUp(): void {
 		// Set up required server variables for URL construction
 		$_SERVER['HTTP_HOST'] = 'example.com';

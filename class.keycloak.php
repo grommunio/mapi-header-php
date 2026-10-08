@@ -189,18 +189,34 @@ class KeyCloak {
 
 			return false;
 		}
-		$this->grant = $response['body'];
-		if (is_string($this->grant)) {
-			$this->grant = json_decode($this->grant, true);
+		$grant = $this->parseGrant($response['body']);
+		if ($grant === null) {
+			$this->error = $response['body'];
+			$this->grant = null;
+
+			return false;
 		}
-		else {
-			$this->grant = json_encode($this->grant);
-		}
+		$this->grant = $grant;
 		$this->access_token = isset($this->grant['access_token']) ? new Token($this->grant['access_token']) : null;
 		$this->refresh_token = isset($this->grant['refresh_token']) ? new Token($this->grant['refresh_token']) : null;
 		$this->id_token = isset($this->grant['id_token']) ? new Token($this->grant['id_token']) : null;
 
 		return true;
+	}
+
+	private function parseGrant(mixed $body): ?array {
+		$grant = is_string($body) ? json_decode($body, true) : $body;
+		if (!is_array($grant) || array_key_exists('error', $grant) ||
+			!is_string($grant['access_token'] ?? null) || $grant['access_token'] === '') {
+			return null;
+		}
+		foreach (['refresh_token', 'id_token'] as $name) {
+			if (isset($grant[$name]) && !is_string($grant[$name])) {
+				return null;
+			}
+		}
+
+		return $grant;
 	}
 
 	/**
@@ -234,14 +250,9 @@ class KeyCloak {
 			return false;
 		}
 
-		try {
-			$data = json_decode((string) $response['body'], true);
-		}
-		catch (Exception) {
-			return false;
-		}
+		$data = json_decode((string) $response['body'], true);
 
-		return is_array($data) && !array_key_exists('error', $data) && ($data['active'] ?? false);
+		return is_array($data) && !array_key_exists('error', $data) && ($data['active'] ?? null) === true;
 	}
 
 	/**
