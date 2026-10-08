@@ -4004,9 +4004,6 @@ class Meetingrequest {
 	 * @psalm-return bool|int<1, max>
 	 */
 	public function isMeetingConflicting(mixed $message = false, mixed $userStore = false, mixed $calFolder = false): bool|int {
-		$returnValue = false;
-		$noOfInstances = 0;
-
 		if ($message === false) {
 			$message = $this->message;
 		}
@@ -4051,87 +4048,79 @@ class Meetingrequest {
 			$calFolder = $this->openDefaultCalendar($userStore);
 		}
 
-		if ($calFolder) {
-			// Meeting request is recurring, so get all occurrence and check for each occurrence whether it conflicts with other appointments in Calendar.
-			if (isset($messageProps[$this->proptags['recurring']]) && $messageProps[$this->proptags['recurring']] === true) {
-				// Apply recurrence class and retrieve all occurrences(max: 30 occurrence because recurrence can also be set as 'no end date')
-				$recurr = new Recurrence($userStore, $message);
-				try {
-					$items = $recurr->getItems($messageProps[$this->proptags['clipstart']], $messageProps[$this->proptags['clipend']] * (24 * 24 * 60), 30);
-				}
-				catch (RecurrenceException $re) {
-					error_log(sprintf(
-						"isMeetingConflicting RecurrenceException (%d) for item '%s' - %s - %s",
-						$re->getCode(),
-						$messageProps[PR_SUBJECT] ?? '<empty subject>',
-						bin2hex($messageProps[PR_ENTRYID]),
-						bin2hex($messageProps[$this->proptags['recurring_data']])
-					));
-					$re->setHandled();
-					return $returnValue;
-				}
+		if (!$calFolder) {
+			return false;
+		}
+		if (($messageProps[$this->proptags['recurring']] ?? false) === true) {
+			return $this->countRecurringConflicts($message, $userStore, $calFolder, $messageProps);
+		}
 
-				foreach ($items as $item) {
-					// Get all items in the timeframe that we want to book, and get the goid and busystatus for each item
-					$calendarItems = $recurr->getCalendarItems($userStore, $calFolder, $item[$this->proptags['startdate']], $item[$this->proptags['duedate']], [$this->proptags['goid'], $this->proptags['busystatus']]);
+		// Get all items in the timeframe that we want to book, and get the goid and busystatus for each item
+		$items = getCalendarItems($userStore, $calFolder, $messageProps[$this->proptags['startdate']], $messageProps[$this->proptags['duedate']], [$this->proptags['goid'], $this->proptags['busystatus']]);
 
-					foreach ($calendarItems as $calendarItem) {
-						if ($calendarItem[$this->proptags['busystatus']] !== fbFree) {
-							/*
-							 * Only meeting requests have globalID, normal appointments do not have globalID
-							 * so if any normal appointment if found then it is assumed to be conflict.
-							 */
-							if (isset($calendarItem[$this->proptags['goid']])) {
-								if ($calendarItem[$this->proptags['goid']] !== $messageProps[$this->proptags['goid']]) {
-									++$noOfInstances;
-									break;
-								}
-							}
-							else {
-								++$noOfInstances;
-								break;
-							}
-						}
-					}
-				}
+		if (isset($messageProps[$this->proptags['basedate']]) && !empty($messageProps[$this->proptags['basedate']])) {
+			$basedate = $messageProps[$this->proptags['basedate']];
+			// Get the goid2 from recurring MR which further used to
+			// check the resource conflicts item.
+			$recurrItemProps = mapi_getprops($this->message, [$this->proptags['goid2']]);
+			$recurrenceHelper = new Recurrence($this->store, $this->message);
+			$messageProps[$this->proptags['goid']] = $this->setBasedateInGlobalID($recurrItemProps[$this->proptags['goid2']], $basedate, $recurrenceHelper);
+			$messageProps[$this->proptags['goid2']] = $recurrItemProps[$this->proptags['goid2']];
+		}
+		return $this->hasCalendarConflict($items, $messageProps, true);
+	}
 
-				if ($noOfInstances > 0) {
-					$returnValue = $noOfInstances;
-				}
-			}
-			else {
-				// Get all items in the timeframe that we want to book, and get the goid and busystatus for each item
-				$items = getCalendarItems($userStore, $calFolder, $messageProps[$this->proptags['startdate']], $messageProps[$this->proptags['duedate']], [$this->proptags['goid'], $this->proptags['busystatus']]);
+	private function countRecurringConflicts(mixed $message, mixed $userStore, mixed $calFolder, array $messageProps): false|int {
+		$noOfInstances = 0;
+		// Apply recurrence class and retrieve all occurrences(max: 30 occurrence because recurrence can also be set as 'no end date')
+		$recurr = new Recurrence($userStore, $message);
+		try {
+			$items = $recurr->getItems($messageProps[$this->proptags['clipstart']], $messageProps[$this->proptags['clipend']] * (24 * 24 * 60), 30);
+		}
+		catch (RecurrenceException $re) {
+			error_log(sprintf(
+				"isMeetingConflicting RecurrenceException (%d) for item '%s' - %s - %s",
+				$re->getCode(),
+				$messageProps[PR_SUBJECT] ?? '<empty subject>',
+				bin2hex($messageProps[PR_ENTRYID]),
+				bin2hex($messageProps[$this->proptags['recurrence_data']])
+			));
+			$re->setHandled();
 
-				if (isset($messageProps[$this->proptags['basedate']]) && !empty($messageProps[$this->proptags['basedate']])) {
-					$basedate = $messageProps[$this->proptags['basedate']];
-					// Get the goid2 from recurring MR which further used to
-					// check the resource conflicts item.
-					$recurrItemProps = mapi_getprops($this->message, [$this->proptags['goid2']]);
-					$recurrenceHelper = new Recurrence($this->store, $this->message);
-					$messageProps[$this->proptags['goid']] = $this->setBasedateInGlobalID($recurrItemProps[$this->proptags['goid2']], $basedate, $recurrenceHelper);
-					$messageProps[$this->proptags['goid2']] = $recurrItemProps[$this->proptags['goid2']];
-				}
+			return false;
+		}
 
-				foreach ($items as $item) {
-					if ($item[$this->proptags['busystatus']] !== fbFree) {
-						if (isset($item[$this->proptags['goid']])) {
-							if (($item[$this->proptags['goid']] !== $messageProps[$this->proptags['goid']]) &&
-								($item[$this->proptags['goid']] !== $messageProps[$this->proptags['goid2']])) {
-								$returnValue = true;
-								break;
-							}
-						}
-						else {
-							$returnValue = true;
-							break;
-						}
-					}
-				}
+		foreach ($items as $item) {
+			// Get all items in the timeframe that we want to book, and get the goid and busystatus for each item
+			$calendarItems = $recurr->getCalendarItems($userStore, $calFolder, $item[$this->proptags['startdate']], $item[$this->proptags['duedate']], [$this->proptags['goid'], $this->proptags['busystatus']]);
+
+			if ($this->hasCalendarConflict($calendarItems, $messageProps, false)) {
+				++$noOfInstances;
 			}
 		}
 
-		return $returnValue;
+		return $noOfInstances ?: false;
+	}
+
+	private function hasCalendarConflict(array $items, array $messageProps, bool $checkCleanId): bool {
+		foreach ($items as $item) {
+			if ($item[$this->proptags['busystatus']] === fbFree) {
+				continue;
+			}
+			/*
+			 * Only meeting requests have globalID, normal appointments do not have globalID
+			 * so if any normal appointment if found then it is assumed to be conflict.
+			 */
+			if (!isset($item[$this->proptags['goid']])) {
+				return true;
+			}
+			if ($item[$this->proptags['goid']] !== $messageProps[$this->proptags['goid']] &&
+				(!$checkCleanId || $item[$this->proptags['goid']] !== $messageProps[$this->proptags['goid2']])) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

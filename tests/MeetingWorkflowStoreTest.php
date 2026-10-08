@@ -245,6 +245,55 @@ class MeetingWorkflowStoreTest extends TestCase {
 		}
 	}
 
+	public function testMeetingConflicts(): void {
+		foreach ([false, true] as $recurring) {
+			$request = $this->newRequest();
+			$tags = $request->proptags;
+			$props = mapi_getprops($request->message, [$tags['goid'], $tags['goid2']]);
+			if ($recurring) {
+				$recurrence = new Recurrence($this->store, $request->message);
+				$recurrence->setRecurrence(null, [
+					'type' => 10, 'subtype' => rptDay, 'everyn' => 1440, 'regen' => 0,
+					'term' => 0x22, 'numoccur' => 3, 'start' => 1774828800,
+					'end' => 1775001600, 'startocc' => 600, 'endocc' => 660,
+				]);
+				mapi_setprops($request->message, [
+					$tags['clipstart'] => 1774828800,
+					$tags['clipend'] => 1775088000,
+				]);
+				mapi_savechanges($request->message);
+			}
+			$this->assertFalse($request->isMeetingConflicting($request->message, $this->store, $this->calendar));
+			foreach ([null, 'different', $props[$tags['goid']], $props[$tags['goid2']]] as $goid) {
+				foreach ([fbFree, fbTentative, fbBusy] as $busy) {
+					$appointment = mapi_folder_createmessage($this->calendar);
+					mapi_setprops($appointment, [
+						PR_MESSAGE_CLASS => 'IPM.Appointment',
+						$tags['recurring'] => false,
+						$tags['startdate'] => 1774864800,
+						$tags['duedate'] => 1774868400,
+						$tags['busystatus'] => $busy,
+					]);
+					if ($goid !== null) {
+						mapi_setprops($appointment, [$tags['goid'] => $goid]);
+					}
+					mapi_savechanges($appointment);
+					$conflict = $busy !== fbFree && $goid !== $props[$tags['goid']] &&
+						($recurring || $goid !== $props[$tags['goid2']]);
+					$this->assertSame(
+						$conflict ? ($recurring ? 1 : true) : false,
+						$request->isMeetingConflicting($request->message, $this->store, $this->calendar)
+					);
+					mapi_folder_deletemessages(
+						$this->calendar,
+						[mapi_getprops($appointment, [PR_ENTRYID])[PR_ENTRYID]],
+						DELETE_HARD_DELETE
+					);
+				}
+			}
+		}
+	}
+
 	public function testOutgoingUpdatesAndCancellations(): void {
 		foreach ([false, true] as $cancel) {
 			foreach ([false, true] as $directBooking) {
