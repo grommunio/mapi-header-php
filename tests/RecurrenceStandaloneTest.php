@@ -5,15 +5,15 @@
  * SPDX-FileCopyrightText: Copyright 2026 grommunio GmbH
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * grommunio-sync and grommunio-dav autoload the classes without bootstrap.php.
  *
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class RecurrenceStandaloneTest extends TestCase {
 	public function testRecurrenceLoadsItsTranslationHelpers(): void {
 		$dir = var_export(dirname(__DIR__), true);

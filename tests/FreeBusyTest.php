@@ -7,13 +7,13 @@
  * Unit tests for FreeBusy class
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class FreeBusyTest extends TestCase {
 	// Test constants
 	public function testAssociatedFreeBusyFolderConstant(): void {

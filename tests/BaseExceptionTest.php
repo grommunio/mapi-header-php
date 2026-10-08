@@ -7,13 +7,13 @@
  * Unit tests for BaseException class
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class BaseExceptionTest extends TestCase {
 	public function testConstructorWithMessage(): void {
 		$exception = new BaseException('Test error message');

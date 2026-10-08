@@ -7,13 +7,13 @@
  * Unit tests for KeyCloak class
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class KeyCloakTest extends TestCase {
 	private function createTestConfig(): array {
 		return [

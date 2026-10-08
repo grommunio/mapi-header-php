@@ -7,14 +7,14 @@
  * Unit tests for the expansion and the timezone handling of BaseRecurrence
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class RecurrenceExpansionTest extends TestCase {
 	private string $serverTimezone;
 

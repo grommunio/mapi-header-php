@@ -7,13 +7,13 @@
  * Unit tests for Token class
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class TokenTest extends TestCase {
 	private function createValidJWT(): string {
 		$header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));

@@ -7,14 +7,14 @@
  * Unit tests for TimezoneUtil
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class TimezoneUtilTest extends TestCase {
 	/** gromox data/W__Europe.tzd */
 	private const TZDEF_W_EUROPE = '020134000200170057002e0020004500750072006f007000650020005300740061006e0064006100720064002000540069006d006500010002013e00020041060100000001000000000000000000c4ffffff00000000c4ffffff00000a0000000500030000000000000000000300000005000200000000000000';
