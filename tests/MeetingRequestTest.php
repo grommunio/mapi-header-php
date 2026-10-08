@@ -87,6 +87,40 @@ class MeetingRequestTest extends TestCase {
 		$this->assertSame([], $this->invoke('getNewForwardRecipients', $existing, []));
 	}
 
+	private function timezone(string $zone): array {
+		return TimezoneUtil::GetTzFromTimezoneStruct(TimezoneUtil::GetTimezoneStructFromTz(TimezoneUtil::GetFullTZ($zone)));
+	}
+
+	public function testFormatMeetingTime(): void {
+		$start = gmmktime(9, 0, 0, 3, 10, 2026);
+		$this->assertSame('10/03/2026 9:00 - 10:00 (UTC)', $this->invoke('formatMeetingTime', $start, $start + 3600, null, 'ignored'));
+		$berlin = $this->timezone('Europe/Berlin');
+		$this->assertSame('10/03/2026 10:00 - 11:00 (Berlin)', $this->invoke('formatMeetingTime', $start, $start + 3600, $berlin, 'Berlin'));
+		// the offset names a zone without a name, daylight saving time included
+		$summer = gmmktime(9, 0, 0, 7, 10, 2026);
+		$this->assertSame('10/07/2026 11:00 - 12:00 (UTC+02:00)', $this->invoke('formatMeetingTime', $summer, $summer + 3600, $berlin, ''));
+		$winter = gmmktime(4, 0, 0, 2, 10, 2026);
+		$this->assertSame('09/02/2026 23:00 - 10/02/2026 5:00 (UTC-05:00)', $this->invoke('formatMeetingTime', $winter, $winter + 6 * 3600, $this->timezone('America/New_York'), ''));
+	}
+
+	public function testMeetingTimezone(): void {
+		$this->mr->proptags = ['tzdefstart' => 1, 'timezone_data' => 2, 'timezone' => 3];
+		$tz = TimezoneUtil::GetFullTZ('Europe/Berlin');
+		$tzdef = TimezoneUtil::GetTimezoneDefinitionFromTz($tz, 'W. Europe Standard Time');
+		$tzstruct = TimezoneUtil::GetTimezoneStructFromTz($tz);
+		$start = gmmktime(9, 0, 0, 3, 10, 2026);
+
+		[$found, $name] = $this->invoke('getMeetingTimezone', [1 => $tzdef, 2 => $tzstruct, 3 => 'Amsterdam, Berlin']);
+		$this->assertSame('W. Europe Standard Time', $name);
+		$this->assertSame($start + 3600, TimezoneUtil::GetLocalTimeByTz($start, $found));
+
+		[$found, $name] = $this->invoke('getMeetingTimezone', [2 => $tzstruct, 3 => 'Amsterdam, Berlin']);
+		$this->assertSame('Amsterdam, Berlin', $name);
+		$this->assertSame($start + 3600, TimezoneUtil::GetLocalTimeByTz($start, $found));
+
+		$this->assertSame([null, ''], $this->invoke('getMeetingTimezone', [3 => 'Amsterdam, Berlin']));
+	}
+
 	private function recurrence(string $zone): Recurrence {
 		$r = new class extends Recurrence {
 			public function __construct() {}

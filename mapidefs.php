@@ -629,6 +629,11 @@ define('mtgInfo', 0x00020000);                   // Informational update.
 define('mtgOutOfDate', 0x00080000);              // A newer Meeting Request object or Meeting Update object was received after this one.
 define('mtgDelegatorCopy', 0x00100000);          // This is set on the delegator's copy when a delegate will handle meeting-related objects.
 
+/* PidLidAppointmentAuxiliaryFlags */
+define('auxApptFlagCopied', 0x00000001);         // the object was copied from another object
+define('auxApptFlagForceMtgResponse', 0x00000002); // the client sends a response for an updated request
+define('auxApptFlagForwarded', 0x00000004);      // the meeting request was forwarded by an attendee or the organizer
+
 define('MAPI_ONE_OFF_UNICODE', 0x8000);          // the flag that defines whether the embedded strings are Unicode in one off entryids.
 define('MAPI_ONE_OFF_NO_RICH_INFO', 0x0001);     // the flag that specifies whether the recipient gets TNEF or not.
 

@@ -75,6 +75,10 @@ class Meetingrequest {
 	 * Cancelling a meeting request:
 	 *   - Call doCancelInvitation, which will send cancellation mails to attendees and will remove
 	 *     meeting object from calendar
+	 *
+	 * Forwarding a meeting request:
+	 *   - Call forwardMeetingRequest(), which sends the meeting to further attendees in the name
+	 *     of the organizer and notifies the organizer
 	 */
 
 	// All properties for a recipient that are interesting
@@ -1726,6 +1730,227 @@ class Meetingrequest {
 			// this way we can make sure that every time we will be using a uniwue number for every operation
 			mapi_setprops($this->message, [$this->proptags['last_updatecounter'] => $counter]);
 		}
+	}
+
+	/**
+	 * Forwards the meeting to further attendees (MS-OXOCAL v22.1 §3.1.4.7.5). The request is sent
+	 * from the acting user's outbox in the name of the organizer, so the new attendees
+	 * respond to the organizer, who is informed with a meeting forward notification.
+	 * Pass the calendar item or the meeting request as $message in the constructor.
+	 *
+	 * @param array     $recipients recipient rows of the attendees to forward to
+	 * @param string    $prefix     subject prefix
+	 * @param false|int $basedate   basedate of the occurrence to forward
+	 */
+	public function forwardMeetingRequest(array $recipients, string $prefix = 'FW: ', false|int $basedate = false): void {
+		$organizer = $this->getMeetingOrganizer();
+		[$exception, $occurrence] = $this->getForwardOccurrence($basedate);
+
+		$new = $this->createOutgoingMessage();
+		$exclude = [
+			PR_ENTRYID,
+			PR_PARENT_ENTRYID,
+			PR_STORE_ENTRYID,
+			PR_MESSAGE_FLAGS,
+			PR_MESSAGE_RECIPIENTS,
+			PR_MESSAGE_DELIVERY_TIME,
+			PR_SENTMAIL_ENTRYID,
+			PR_ICON_INDEX,
+			PR_PROCESSED,
+			PR_INTERNET_MESSAGE_ID,
+			PR_TRANSPORT_MESSAGE_HEADERS,
+			PR_SENDER_ENTRYID,
+			PR_SENDER_NAME,
+			PR_SENDER_EMAIL_ADDRESS,
+			PR_SENDER_ADDRTYPE,
+			PR_SENDER_SEARCH_KEY,
+			PR_SENDER_SMTP_ADDRESS,
+			PR_SENT_REPRESENTING_ENTRYID,
+			PR_SENT_REPRESENTING_NAME,
+			PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+			PR_SENT_REPRESENTING_ADDRTYPE,
+			PR_SENT_REPRESENTING_SEARCH_KEY,
+			PR_SENT_REPRESENTING_SMTP_ADDRESS,
+			PR_RECEIVED_BY_ENTRYID,
+			PR_RECEIVED_BY_NAME,
+			PR_RECEIVED_BY_EMAIL_ADDRESS,
+			PR_RECEIVED_BY_ADDRTYPE,
+			PR_RECEIVED_BY_SEARCH_KEY,
+			PR_RCVD_REPRESENTING_ENTRYID,
+			PR_RCVD_REPRESENTING_NAME,
+			PR_RCVD_REPRESENTING_EMAIL_ADDRESS,
+			PR_RCVD_REPRESENTING_ADDRTYPE,
+			PR_RCVD_REPRESENTING_SEARCH_KEY,
+		];
+		// an occurrence takes the attachments of its exception, not the exceptions of the series
+		mapi_copyto($this->message, [], !empty($occurrence) ? array_merge($exclude, [PR_MESSAGE_ATTACHMENTS]) : $exclude, $new);
+		if ($exception !== false) {
+			mapi_copyto($exception, [], $exclude, $new);
+		}
+
+		$messageprops = mapi_getprops($new, [
+			PR_SUBJECT,
+			$this->proptags['startdate'],
+			$this->proptags['duedate'],
+			$this->proptags['busystatus'],
+			$this->proptags['intendedbusystatus'],
+			$this->proptags['auxiliary_flags'],
+		]);
+		$messageprops = $occurrence + $messageprops;
+		$intendedBusyStatus = $messageprops[$this->proptags['intendedbusystatus']] ?? $messageprops[$this->proptags['busystatus']] ?? fbBusy;
+
+		$props = $occurrence;
+		$props[PR_MESSAGE_CLASS] = 'IPM.Schedule.Meeting.Request';
+		$props[PR_SUBJECT] = $prefix . ($messageprops[PR_SUBJECT] ?? '');
+		$props[PR_RESPONSE_REQUESTED] = true;
+		$props[$this->proptags['auxiliary_flags']] = ($messageprops[$this->proptags['auxiliary_flags']] ?? 0) | auxApptFlagForwarded;
+		$props[$this->proptags['attendee_critical_change']] = time();
+		$props[$this->proptags['responsestatus']] = olResponseNotResponded;
+		$props[$this->proptags['meetingstatus']] = olMeetingReceived;
+		$props[$this->proptags['intendedbusystatus']] = $intendedBusyStatus;
+		$props[$this->proptags['busystatus']] = $intendedBusyStatus === fbFree ? fbFree : fbTentative;
+		$props[$this->proptags['toattendeesstring']] = '';
+		$props[$this->proptags['ccattendeesstring']] = '';
+		$props[$this->proptags['allattendeesstring']] = '';
+		$props[PR_START_DATE] = $messageprops[$this->proptags['startdate']] ?? null;
+		$props[PR_END_DATE] = $messageprops[$this->proptags['duedate']] ?? null;
+		if ($organizer !== false) {
+			$props[PR_SENT_REPRESENTING_ENTRYID] = $organizer[PR_ENTRYID];
+			$props[PR_SENT_REPRESENTING_NAME] = $organizer[PR_DISPLAY_NAME];
+			$props[PR_SENT_REPRESENTING_EMAIL_ADDRESS] = $organizer[PR_EMAIL_ADDRESS];
+			$props[PR_SENT_REPRESENTING_ADDRTYPE] = $organizer[PR_ADDRTYPE];
+			$props[PR_SENT_REPRESENTING_SEARCH_KEY] = $organizer[PR_SEARCH_KEY];
+			$props[PR_SENT_REPRESENTING_SMTP_ADDRESS] = $organizer[PR_SMTP_ADDRESS];
+		}
+		// the forwarder's note, as set with setMeetingTimeInfo()
+		$meetingTimeInfo = $this->getMeetingTimeInfo();
+		if ($meetingTimeInfo) {
+			$props[$this->mti_html ? PR_HTML : PR_BODY] = $meetingTimeInfo;
+		}
+		mapi_setprops($new, array_filter($props, static fn ($value) => $value !== null));
+
+		$deleteProps = [
+			$this->proptags['counter_proposal'],
+			$this->proptags['requestsent'],
+			$this->proptags['replytime'],
+			$this->proptags['apptreplyname'],
+			$this->proptags['categories'],
+		];
+		if (!empty($occurrence)) {
+			$deleteProps[] = $this->proptags['recurrence_data'];
+			$deleteProps[] = $this->proptags['recurring_pattern'];
+		}
+		mapi_deleteprops($new, $deleteProps);
+
+		mapi_message_modifyrecipients($new, MODRECIP_ADD, $recipients);
+		mapi_savechanges($new);
+
+		// an older zcore refuses the organizer's name; the notification still tells the organizer
+		$this->submitOutgoingMessage($new, $organizer !== false);
+
+		$this->sendMeetingForwardNotification($recipients, $basedate);
+	}
+
+	/**
+	 * Sends a meeting forward notification to the organizer, telling whom the meeting was
+	 * forwarded to (MS-OXOCAL v22.1 §3.1.4.10.1). Nothing is sent when the organizer is not a local
+	 * user or is the acting user.
+	 *
+	 * @param array     $recipients recipient rows of the attendees the meeting was forwarded to
+	 * @param false|int $basedate   basedate of the forwarded occurrence
+	 */
+	public function sendMeetingForwardNotification(array $recipients, false|int $basedate = false): void {
+		$organizer = $this->getMeetingOrganizer();
+		$organizer = $organizer !== false ? $this->resolveAddress($organizer[PR_SMTP_ADDRESS]) : false;
+		if ($organizer === false) {
+			return;
+		}
+
+		$userDetails = $this->getOwnerAddress($this->openDefaultStore());
+		if ($userDetails === false || $this->compareABEntryIDs($organizer[PR_ENTRYID], $userDetails[3])) {
+			return;
+		}
+
+		$addresses = $names = $forwardedTo = [];
+		foreach ($recipients as $recip) {
+			$smtp = $this->getRecipientSMTPAddress($recip);
+			// Bcc recipients stay hidden from the organizer
+			if ($smtp === '' || ($recip[PR_RECIPIENT_TYPE] ?? MAPI_TO) == MAPI_BCC) {
+				continue;
+			}
+			$name = $recip[PR_DISPLAY_NAME] ?? '';
+			$addresses[] = $smtp;
+			$names[] = $name !== '' ? $name : $smtp;
+			$forwardedTo[] = $name !== '' && strcasecmp($name, $smtp) != 0 ? $name . ' <' . $smtp . '>' : $smtp;
+		}
+		if (empty($addresses)) {
+			return;
+		}
+
+		[, $occurrence] = $this->getForwardOccurrence($basedate);
+		$messageprops = $occurrence + mapi_getprops($this->message, [
+			PR_SUBJECT,
+			PR_OWNER_APPT_ID,
+			$this->proptags['goid'],
+			$this->proptags['goid2'],
+			$this->proptags['startdate'],
+			$this->proptags['duedate'],
+			$this->proptags['location'],
+			$this->proptags['timezone'],
+			$this->proptags['timezone_data'],
+			$this->proptags['tzdefstart'],
+		]);
+		$subject = $messageprops[PR_SUBJECT] ?? '';
+		$location = $messageprops[$this->proptags['location']] ?? '';
+
+		$body = sprintf(_('%s has forwarded your meeting request to additional recipients.'), $userDetails[0]) . "\n\n";
+		$body .= _('Meeting') . ': ' . $subject . "\n";
+		if (isset($messageprops[$this->proptags['startdate']], $messageprops[$this->proptags['duedate']])) {
+			[$tz, $zone] = $this->getMeetingTimezone($messageprops);
+			$body .= _('When') . ': ' . $this->formatMeetingTime($messageprops[$this->proptags['startdate']], $messageprops[$this->proptags['duedate']], $tz, $zone) . "\n";
+		}
+		if ($location !== '') {
+			$body .= _('Location') . ': ' . $location . "\n";
+		}
+		$body .= _('Recipients') . ': ' . implode(', ', $forwardedTo) . "\n";
+
+		$props = [
+			PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Notification.Forward',
+			PR_SUBJECT => _('Meeting Forward Notification') . ': ' . $subject,
+			PR_BODY => $body,
+			$this->proptags['forward_recipients'] => $addresses,
+			$this->proptags['forward_recipient_names'] => $names,
+			$this->proptags['attendee_critical_change'] => time(),
+		];
+		if (isset($messageprops[$this->proptags['goid']])) {
+			$props[$this->proptags['goid']] = $messageprops[$this->proptags['goid']];
+		}
+		if (isset($messageprops[$this->proptags['goid2']])) {
+			$props[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
+		}
+		if (isset($messageprops[PR_OWNER_APPT_ID])) {
+			$props[PR_OWNER_APPT_ID] = $messageprops[PR_OWNER_APPT_ID];
+		}
+		if (isset($messageprops[$this->proptags['startdate']], $messageprops[$this->proptags['duedate']])) {
+			$props[$this->proptags['startdate']] = $props[PR_START_DATE] = $messageprops[$this->proptags['startdate']];
+			$props[$this->proptags['duedate']] = $props[PR_END_DATE] = $messageprops[$this->proptags['duedate']];
+		}
+		if ($location !== '') {
+			$props[$this->proptags['location']] = $location;
+		}
+
+		$new = $this->createOutgoingMessage();
+		mapi_setprops($new, $props);
+		mapi_message_modifyrecipients($new, MODRECIP_ADD, [[
+			PR_ENTRYID => $organizer[PR_ENTRYID],
+			PR_DISPLAY_NAME => $organizer[PR_DISPLAY_NAME] ?? '',
+			PR_EMAIL_ADDRESS => $organizer[PR_EMAIL_ADDRESS] ?? '',
+			PR_ADDRTYPE => $organizer[PR_ADDRTYPE] ?? 'SMTP',
+			PR_SEARCH_KEY => $organizer[PR_SEARCH_KEY] ?? '',
+			PR_RECIPIENT_TYPE => MAPI_TO,
+		]]);
+		mapi_savechanges($new);
+		mapi_message_submitmessage($new);
 	}
 
 	/**
@@ -4213,6 +4438,121 @@ class Meetingrequest {
 	}
 
 	/**
+	 * The organizer of the meeting as a recipient row that has PR_SMTP_ADDRESS: the sender
+	 * of the meeting, else its organizer recipient, else the owner of the store when the
+	 * meeting is organized there.
+	 *
+	 * @return array|false false when the organizer is unknown
+	 */
+	private function getMeetingOrganizer(): array|false {
+		$messageprops = mapi_getprops($this->message, [
+			PR_SENT_REPRESENTING_ENTRYID,
+			PR_SENT_REPRESENTING_NAME,
+			PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+			PR_SENT_REPRESENTING_ADDRTYPE,
+			PR_SENT_REPRESENTING_SEARCH_KEY,
+			PR_SENT_REPRESENTING_SMTP_ADDRESS,
+		]);
+
+		$organizer = false;
+		if (!empty($messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS])) {
+			$organizer = [
+				PR_ENTRYID => $messageprops[PR_SENT_REPRESENTING_ENTRYID] ?? null,
+				PR_DISPLAY_NAME => $messageprops[PR_SENT_REPRESENTING_NAME] ?? '',
+				PR_EMAIL_ADDRESS => $messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS],
+				PR_ADDRTYPE => $messageprops[PR_SENT_REPRESENTING_ADDRTYPE] ?? 'SMTP',
+				PR_SEARCH_KEY => $messageprops[PR_SENT_REPRESENTING_SEARCH_KEY] ?? null,
+				PR_SMTP_ADDRESS => $messageprops[PR_SENT_REPRESENTING_SMTP_ADDRESS] ?? null,
+			];
+		}
+		else {
+			foreach ($this->getMessageRecipients($this->message) as $recip) {
+				if (($recip[PR_RECIPIENT_FLAGS] ?? 0) & recipOrganizer) {
+					$organizer = $recip;
+					break;
+				}
+			}
+		}
+
+		if ($organizer === false && $this->isLocalOrganiser()) {
+			$ownerDetails = $this->getOwnerAddress($this->store, false);
+			if ($ownerDetails !== false) {
+				$organizer = [
+					PR_DISPLAY_NAME => $ownerDetails[0],
+					PR_EMAIL_ADDRESS => $ownerDetails[1],
+					PR_ADDRTYPE => $ownerDetails[2],
+					PR_ENTRYID => $ownerDetails[3],
+					PR_SEARCH_KEY => $ownerDetails[4],
+				];
+			}
+		}
+		if ($organizer === false) {
+			return false;
+		}
+
+		$organizer[PR_SMTP_ADDRESS] = $this->getRecipientSMTPAddress($organizer);
+		if ($organizer[PR_SMTP_ADDRESS] === '') {
+			return false;
+		}
+		$organizer[PR_ENTRYID] ??= mapi_createoneoff($organizer[PR_DISPLAY_NAME] ?? '', 'SMTP', $organizer[PR_SMTP_ADDRESS]);
+
+		return $organizer;
+	}
+
+	/**
+	 * The exception and the properties of the occurrence of a series that is forwarded,
+	 * as a forwarded occurrence is a meeting of its own.
+	 *
+	 * @param false|int $basedate basedate of the occurrence, false for the whole meeting
+	 *
+	 * @return array the exception message or false, and the properties of the occurrence
+	 *               (empty when the whole meeting is forwarded)
+	 *
+	 * @throws MAPIException with MAPI_E_NOT_FOUND for a deleted occurrence
+	 */
+	private function getForwardOccurrence(false|int $basedate): array {
+		$messageprops = mapi_getprops($this->message, [$this->proptags['recurring'], $this->proptags['goid2']]);
+		if ($basedate === false || empty($messageprops[$this->proptags['recurring']])) {
+			return [false, []];
+		}
+
+		$recurr = new Recurrence($this->store, $this->message);
+		if ($recurr->isDeleteException($basedate)) {
+			throw new MAPIException(_('The occurrence has been deleted'), MAPI_E_NOT_FOUND);
+		}
+
+		$props = [
+			$this->proptags['basedate'] => $recurr->getOccurrenceStart($basedate),
+			$this->proptags['startdate'] => $recurr->getOccurrenceStart($basedate),
+			$this->proptags['duedate'] => $recurr->getOccurrenceEnd($basedate),
+			$this->proptags['recurring'] => false,
+			$this->proptags['meetingrecurring'] => true,
+			$this->proptags['is_exception'] => true,
+			$this->proptags['forward_instance'] => true,
+		];
+		if (isset($messageprops[$this->proptags['goid2']])) {
+			$props[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedate);
+		}
+
+		$exception = false;
+		$attach = $recurr->getExceptionAttachment($basedate);
+		if ($attach) {
+			$exception = mapi_attach_openobj($attach, 0);
+			$props = mapi_getprops($exception, [
+				PR_SUBJECT,
+				$this->proptags['startdate'],
+				$this->proptags['duedate'],
+				$this->proptags['location'],
+				$this->proptags['busystatus'],
+			]) + $props;
+		}
+		$props[$this->proptags['commonstart']] = $props[$this->proptags['startdate']];
+		$props[$this->proptags['commonend']] = $props[$this->proptags['duedate']];
+
+		return [$exception, $props];
+	}
+
+	/**
 	 * The address book entry of a local user.
 	 *
 	 * @param string $smtp SMTP address of the user
@@ -4313,6 +4653,55 @@ class Meetingrequest {
 		}
 
 		return $recip;
+	}
+
+	/**
+	 * The timezone a meeting is shown in and the name of it, from
+	 * PidLidAppointmentTimeZoneDefinitionStartDisplay or PidLidTimeZoneStruct.
+	 *
+	 * @param array $messageprops properties of the meeting
+	 *
+	 * @return array the timezone or null when the meeting has none, and its name
+	 */
+	private function getMeetingTimezone(array $messageprops): array {
+		$tzdef = parseTimezoneDefinition($messageprops[$this->proptags['tzdefstart']] ?? null);
+		if (getEffectiveTimezoneRule($tzdef) !== null) {
+			return [TimezoneUtil::GetTzFromTimezoneDef($tzdef), (string) iconv('UTF-16LE', 'UTF-8', $tzdef['keyname'])];
+		}
+
+		$tzstruct = (string) ($messageprops[$this->proptags['timezone_data']] ?? '');
+		if (strlen($tzstruct) >= 48) {
+			return [TimezoneUtil::GetTzFromTimezoneStruct($tzstruct), (string) ($messageprops[$this->proptags['timezone']] ?? '')];
+		}
+
+		return [null, ''];
+	}
+
+	/**
+	 * Start and end of a meeting in its timezone, which is named, or in UTC.
+	 *
+	 * @param int        $start start of the meeting (UTC)
+	 * @param int        $end   end of the meeting (UTC)
+	 * @param null|array $tz    timezone of the meeting
+	 * @param string     $zone  name of the timezone, the offset to UTC is shown without one
+	 */
+	private function formatMeetingTime(int $start, int $end, ?array $tz, string $zone): string {
+		if ($tz === null) {
+			$zone = 'UTC';
+		}
+		elseif ($zone === '') {
+			$offset = -TimezoneUtil::GetBiasAtUtc($start, $tz);
+			$zone = sprintf('UTC%s%02d:%02d', $offset < 0 ? '-' : '+', intdiv(abs($offset), 60), abs($offset) % 60);
+		}
+		$localStart = TimezoneUtil::GetLocalTimeByTz($start, $tz);
+		$localEnd = TimezoneUtil::GetLocalTimeByTz($end, $tz);
+
+		$text = gmdate(_('d/m/Y'), $localStart) . ' ' . gmdate(_('G:i'), $localStart) . ' - ';
+		if (gmdate('Ymd', $localStart) !== gmdate('Ymd', $localEnd)) {
+			$text .= gmdate(_('d/m/Y'), $localEnd) . ' ';
+		}
+
+		return $text . gmdate(_('G:i'), $localEnd) . ' (' . $zone . ')';
 	}
 
 	/**
