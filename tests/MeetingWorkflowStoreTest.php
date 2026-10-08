@@ -302,7 +302,7 @@ class MeetingWorkflowStoreTest extends TestCase {
 				$request->submitMeetingRequest(
 					$request->message,
 					$cancel,
-					false,
+					'Update: ',
 					false,
 					false,
 					true,
@@ -311,6 +311,8 @@ class MeetingWorkflowStoreTest extends TestCase {
 				);
 				$this->assertCount(2, $request->submitted);
 				[$update, $removed] = $request->submitted;
+				$this->assertSame('Update: Meeting workflow test', $update['props'][PR_SUBJECT]);
+				$this->assertSame('Canceled: Update: Meeting workflow test', $removed['props'][PR_SUBJECT]);
 				$this->assertSame($cancel, $update['cancellation']);
 				$this->assertSame(
 					$cancel ? 'IPM.Schedule.Meeting.Canceled' : 'IPM.Schedule.Meeting.Request',

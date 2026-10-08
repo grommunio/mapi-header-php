@@ -3260,6 +3260,16 @@ class Meetingrequest {
 			$deletedRecips = array_merge($deletedRecips ?: [], $recipients);
 		}
 
+		// gromox returns PR_NORMALIZED_SUBJECT and PR_SUBJECT_PREFIX from a
+		// getprops without a tag list, but no PR_SUBJECT
+		if (($prefix || $deletedRecips) && !isset($newmessageprops[PR_SUBJECT])) {
+			$source = empty($basedate) ? $this->message : $message;
+			$subject = mapi_getprops($source, [PR_SUBJECT]);
+			if (isset($subject[PR_SUBJECT])) {
+				$newmessageprops[PR_SUBJECT] = $subject[PR_SUBJECT];
+			}
+		}
+
 		$newmessageprops = $this->getOutgoingMeetingProperties($newmessageprops, $messageprops, $prefix, $recurObject);
 		mapi_setprops($new, $newmessageprops);
 
@@ -3449,6 +3459,7 @@ class Meetingrequest {
 
 		// Prefix the subject if needed
 		if ($prefix && isset($newmessageprops[PR_SUBJECT])) {
+			unset($newmessageprops[PR_NORMALIZED_SUBJECT], $newmessageprops[PR_SUBJECT_PREFIX]);
 			$newmessageprops[PR_SUBJECT] = $prefix . $newmessageprops[PR_SUBJECT];
 		}
 
@@ -3534,6 +3545,7 @@ class Meetingrequest {
 		$newmessageprops[$this->proptags['busystatus']] = fbFree; // set the busy status as free
 		$newmessageprops[PR_IMPORTANCE] = IMPORTANCE_HIGH;	// HIGH Importance
 		if (isset($newmessageprops[PR_SUBJECT])) {
+			unset($newmessageprops[PR_NORMALIZED_SUBJECT], $newmessageprops[PR_SUBJECT_PREFIX]);
 			$newmessageprops[PR_SUBJECT] = _('Canceled') . ': ' . $newmessageprops[PR_SUBJECT];
 		}
 
