@@ -22,27 +22,22 @@ class Token {
 		// Initialize with default empty payload
 		$this->token_payload = ['expires_at' => 0];
 
-		if ($this->_raw) {
-			try {
-				$parts = explode('.', (string) $this->_raw);
-				if (count($parts) !== 3) {
-					throw new Exception('Invalid token format');
-				}
-				$th = $this->base64_url_decode($parts[0]);
-				$tp = $this->base64_url_decode($parts[1]);
-				$this->token_header = json_decode($th, true);
-				$payload = json_decode($tp, true);
-				// Only use decoded payload if it's valid
-				if (is_array($payload)) {
-					$this->token_payload = $payload;
-				}
-				$this->token_signature = $this->base64_url_decode($parts[2]);
-				$this->signed = $parts[0] . '.' . $parts[1];
-			}
-			catch (Exception) {
-				// Keep default payload on error
-			}
+		if (!$this->_raw) {
+			return;
 		}
+		$parts = explode('.', (string) $this->_raw);
+		if (count($parts) !== 3) {
+			return;
+		}
+		$header = json_decode((string) $this->base64_url_decode($parts[0]), true);
+		$payload = json_decode((string) $this->base64_url_decode($parts[1]), true);
+		if (!is_array($header) || !is_array($payload)) {
+			return;
+		}
+		$this->token_header = $header;
+		$this->token_payload = $payload;
+		$this->token_signature = $this->base64_url_decode($parts[2]);
+		$this->signed = $parts[0] . '.' . $parts[1];
 	}
 
 	/**
@@ -78,13 +73,15 @@ class Token {
 	 * Checks if a token is expired comparing to the current time.
 	 */
 	public function is_expired(): bool {
-		return ($this->token_payload['exp'] ?? 0) <= time();
+		$expires = $this->token_payload['exp'] ?? 0;
+
+		return !is_numeric($expires) || !is_finite((float) $expires) || $expires <= time();
 	}
 
 	/**
 	 * Returns decoded JWT/JWS part.
 	 */
-	private function base64_url_decode(string $data): string|false {
+	private function base64_url_decode(string $data): false|string {
 		$data = strtr($data, '-_', '+/');
 		$data .= str_repeat('=', (4 - strlen($data) % 4) % 4);
 

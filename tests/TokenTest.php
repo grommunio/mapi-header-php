@@ -62,6 +62,38 @@ class TokenTest extends TestCase {
 		$this->assertNotNull($signature);
 	}
 
+	public function testMalformedJsonPartsRemainExpired(): void {
+		$header = '{"alg":"HS256","typ":"JWT"}';
+		$payload = json_encode(['exp' => time() + 3600]);
+		foreach (['true', 'false', '42', '"header"', 'null', '{', ''] as $invalid) {
+			foreach ([[$invalid, $payload], [$header, $invalid]] as [$head, $body]) {
+				$token = new Token(base64_encode($head) . '.' . base64_encode($body) . '.c2ln');
+				$this->assertTrue($token->is_expired());
+				$this->assertNull($token->get_signed());
+			}
+		}
+		$this->assertTrue((new Token('!!!.' . base64_encode($payload) . '.c2ln'))->is_expired());
+	}
+
+	public function testInvalidExpiryValuesRemainExpired(): void {
+		foreach (['null', 'true', 'false', '[]', '{}', '"never"', '""', '1e1000', '"1e1000"'] as $expiry) {
+			$raw = base64_encode('{}') . '.' . base64_encode('{"exp":' . $expiry . '}') . '.c2ln';
+			$this->assertTrue((new Token($raw))->is_expired(), $expiry);
+		}
+	}
+
+	public function testNumericExpiryValuesRemainCompatible(): void {
+		$future = time() + 3600;
+		foreach ([$future, (float) $future + 0.5, (string) $future] as $expiry) {
+			$raw = base64_encode('{}') . '.' . base64_encode(json_encode(['exp' => $expiry])) . '.c2ln';
+			$this->assertFalse((new Token($raw))->is_expired());
+		}
+		foreach ([0, time() - 1, time()] as $expiry) {
+			$raw = base64_encode('{}') . '.' . base64_encode(json_encode(['exp' => $expiry])) . '.c2ln';
+			$this->assertTrue((new Token($raw))->is_expired());
+		}
+	}
+
 	public function testGetSigned(): void {
 		$jwt = $this->createValidJWT();
 		$token = new Token($jwt);
