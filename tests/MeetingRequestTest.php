@@ -90,4 +90,58 @@ class MeetingRequestTest extends TestCase {
 			date_default_timezone_set($serverTimezone);
 		}
 	}
+
+	public function testOrganizerOfReceivedRequest(): void {
+		$props = [PR_SENT_REPRESENTING_ENTRYID => 'org', PR_SENT_REPRESENTING_NAME => 'Org',
+			PR_SENT_REPRESENTING_EMAIL_ADDRESS => 'org@example.com', PR_SENT_REPRESENTING_SEARCH_KEY => 'SMTP:ORG@EXAMPLE.COM'];
+		// gromox imports the organizer with recipOriginal
+		$recips = [[PR_SMTP_ADDRESS => 'org@example.com', PR_RECIPIENT_FLAGS => recipSendable | recipOrganizer | recipOriginal]];
+		$this->mr->addOrganizer($props, $recips);
+		$this->assertCount(1, $recips);
+
+		$r = $this->recurrence('UTC');
+		$r->addOrganizer($props, $recips);
+		$this->assertCount(1, $recips);
+
+		$recips = [[PR_SMTP_ADDRESS => 'att@example.com', PR_RECIPIENT_FLAGS => recipSendable]];
+		$this->mr->addOrganizer($props, $recips);
+		$this->assertCount(2, $recips);
+		$this->assertSame(recipSendable | recipOrganizer, $recips[0][PR_RECIPIENT_FLAGS]);
+	}
+
+	public function testFindExceptionRecipient(): void {
+		$find = (new ReflectionMethod(Recurrence::class, 'findRecipient'))->getClosure($this->recurrence('UTC'));
+		$list = [
+			[PR_ADDRTYPE => 'SMTP', PR_EMAIL_ADDRESS => 'Org@example.com'],
+			[PR_SEARCH_KEY => 'SMTP:ATT@EXAMPLE.COM', PR_SMTP_ADDRESS => 'att@example.com'],
+		];
+		// rows imported from iCalendar carry no search key
+		$this->assertTrue($find([PR_SMTP_ADDRESS => 'org@example.com'], $list));
+		$this->assertTrue($find([PR_SEARCH_KEY => 'SMTP:ATT@EXAMPLE.COM'], $list));
+		$this->assertTrue($find([PR_ENTRYID => 'abc'], [[PR_ENTRYID => 'abc']]));
+		$this->assertFalse($find([PR_SMTP_ADDRESS => 'other@example.com', PR_SEARCH_KEY => 'SMTP:OTHER@EXAMPLE.COM'], $list));
+		$this->assertFalse($find([PR_ADDRTYPE => 'EX', PR_EMAIL_ADDRESS => '/o=org/cn=x'], [[PR_ADDRTYPE => 'EX', PR_EMAIL_ADDRESS => '/o=org/cn=y']]));
+		$this->assertFalse($find([PR_SMTP_ADDRESS => 'org@example.com'], []));
+	}
+
+	public function testDelegatorAddedOnce(): void {
+		$mr = new class extends Meetingrequest {
+			public function __construct() {}
+
+			public function compareABEntryIDs(string $entryid1, string $entryid2): bool {
+				return $entryid1 === $entryid2;
+			}
+		};
+		$props = [PR_RCVD_REPRESENTING_ENTRYID => 'owner', PR_RCVD_REPRESENTING_NAME => 'Owner',
+			PR_RCVD_REPRESENTING_EMAIL_ADDRESS => '/O=ORG/CN=RECIPIENTS/CN=OWNER', PR_RCVD_REPRESENTING_ADDRTYPE => 'EX',
+			PR_RCVD_REPRESENTING_SEARCH_KEY => 'EX:/O=ORG/CN=RECIPIENTS/CN=OWNER'];
+		// the request lists the delegator with its SMTP address
+		$recips = [[PR_ENTRYID => 'owner', PR_ADDRTYPE => 'SMTP', PR_EMAIL_ADDRESS => 'owner@example.com']];
+		$mr->addDelegator($props, $recips);
+		$this->assertCount(1, $recips);
+
+		$recips = [[PR_ENTRYID => 'other', PR_ADDRTYPE => 'SMTP', PR_EMAIL_ADDRESS => 'other@example.com']];
+		$mr->addDelegator($props, $recips);
+		$this->assertCount(2, $recips);
+	}
 }

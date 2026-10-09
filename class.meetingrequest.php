@@ -952,10 +952,13 @@ class Meetingrequest {
 							PR_SENT_REPRESENTING_SMTP_ADDRESS,
 						]);
 
-						// add owner to recipient table
-						$recips = [];
+						// mapi_copyto() has brought the recipients along, add the owner only if missing
+						$recips = $this->getMessageRecipients($this->message);
+						$count = count($recips);
 						$this->addOrganizer($props, $recips);
-						mapi_message_modifyrecipients($calmsg, MODRECIP_ADD, $recips);
+						if (count($recips) > $count) {
+							mapi_message_modifyrecipients($calmsg, MODRECIP_ADD, [$recips[0]]);
+						}
 						mapi_savechanges($calmsg);
 
 						// Move the message to the wastebasket
@@ -2299,7 +2302,8 @@ class Meetingrequest {
 		$hasOrganizer = false;
 		// Check if meeting already has an organizer.
 		foreach ($recipients as $key => $recipient) {
-			if (isset($recipient[PR_RECIPIENT_FLAGS]) && $recipient[PR_RECIPIENT_FLAGS] == (recipSendable | recipOrganizer)) {
+			// gromox also sets recipOriginal on the organizer of a received request
+			if (isset($recipient[PR_RECIPIENT_FLAGS]) && ($recipient[PR_RECIPIENT_FLAGS] & recipOrganizer)) {
 				$hasOrganizer = true;
 			}
 			elseif ($isException && !isset($recipient[PR_RECIPIENT_FLAGS])) {
@@ -3810,9 +3814,14 @@ class Meetingrequest {
 	 */
 	public function addDelegator(array $messageProps, array &$recipients): void {
 		$hasDelegator = false;
-		// Check if meeting already has an organizer.
-		foreach ($recipients as $key => $recipient) {
-			if (isset($messageProps[PR_RCVD_REPRESENTING_EMAIL_ADDRESS]) && $recipient[PR_EMAIL_ADDRESS] == $messageProps[PR_RCVD_REPRESENTING_EMAIL_ADDRESS]) {
+		// gromox stamps the delegator as an EX address, the request lists it as SMTP
+		$delegatorRow = [
+			PR_ENTRYID => $messageProps[PR_RCVD_REPRESENTING_ENTRYID] ?? null,
+			PR_EMAIL_ADDRESS => $messageProps[PR_RCVD_REPRESENTING_EMAIL_ADDRESS] ?? null,
+			PR_ADDRTYPE => $messageProps[PR_RCVD_REPRESENTING_ADDRTYPE] ?? null,
+		];
+		foreach ($recipients as $recipient) {
+			if ($this->compareRecipients($recipient, array_filter($delegatorRow))) {
 				$hasDelegator = true;
 			}
 		}
@@ -3940,7 +3949,8 @@ class Meetingrequest {
 	 * @return bool True if message is from delegate
 	 */
 	private function isMessageFromDelegate(array $messageprops): bool {
-		return isset($messageprops[PR_RCVD_REPRESENTING_NAME]);
+		// gromox stamps PR_RCVD_REPRESENTING on every delivered message
+		return $this->getDelegatorEntryId($messageprops) !== false;
 	}
 
 	/**
