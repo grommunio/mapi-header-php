@@ -217,9 +217,15 @@ abstract class BaseRecurrence {
 			return $ret;
 		}
 
+		$this->parseAppointmentRecurrence($rdata, $ret, $exc_base_dates);
+
+		return $ret;
+	}
+
+	private function parseAppointmentRecurrence(string &$rdata, array &$ret, array $exc_base_dates): void {
 		// this is where task recurrence stop
 		if (strlen($rdata) < 16) {
-			return $ret;
+			return;
 		}
 
 		$data = unpack("Vreaderversion/Vwriterversion/Vstartmin/Vendmin", $rdata);
@@ -228,45 +234,60 @@ abstract class BaseRecurrence {
 		$ret["startocc"] = $data["startmin"];
 		$ret["endocc"] = $data["endmin"];
 		$writerversion = $data["writerversion"];
+		// base dates without an exception record are deleted occurrences
+		$ret["deleted_occurrences"] = $exc_base_dates;
 
+		if (strlen($rdata) < 2) {
+			return;
+		}
 		$data = unpack("vnumber", $rdata);
 		$rdata = substr($rdata, 2);
 
 		$nexceptions = $data["number"];
+		if ($nexceptions === 0) {
+			return;
+		}
 		$exc_changed_details = [];
 
 		for ($i = 0; $i < $nexceptions; ++$i) {
-			$exc_changed_details[] = $this->parseRecurrenceException($rdata);
+			$item = $this->parseRecurrenceException($rdata);
+			if ($item === null) {
+				break;
+			}
+			$exc_changed_details[] = $item;
 		}
 
 		// Base dates without a modified exception represent deletions.
-		$changed_dates = array_column($exc_changed_details, "basedate");
+		$changed_dates = array_fill_keys(array_column($exc_changed_details, "basedate"), true);
 		$ret["deleted_occurrences"] = array_values(array_filter(
 			$exc_base_dates,
-			static fn ($date) => !in_array($date, $changed_dates)
+			static fn ($date) => !isset($changed_dates[$date])
 		));
 		$ret["changed_occurrences"] = $exc_changed_details;
 
-		// enough data for normal exception (no extended data)
-		if (strlen($rdata) < 8) {
-			return $ret;
+		// enough data for normal exception (no extended data); a cut record has none
+		if (count($exc_changed_details) < $nexceptions || strlen($rdata) < 8) {
+			return;
 		}
 
-		$data = unpack("Vreservedsize", $rdata);
-		$rdata = substr($rdata, 4 + $data["reservedsize"]);
+		if (!$this->skipRecurrenceBlock($rdata)) {
+			return;
+		}
 
 		for ($i = 0; $i < $nexceptions; ++$i) {
-			$exc_changed_details[$i] = $this->parseExtendedException(
+			$item = $this->parseExtendedException(
 				$rdata,
 				$exc_changed_details[$i],
 				$writerversion
 			);
+			if ($item === null) {
+				break;
+			}
+			$exc_changed_details[$i] = $item;
 		}
 
 		// update with extended data
 		$ret["changed_occurrences"] = $exc_changed_details;
-
-		return $ret;
 	}
 
 	private function parseDailyPattern(string &$rdata, array &$ret): bool {
@@ -412,143 +433,94 @@ abstract class BaseRecurrence {
 	}
 
 	private function parseRecurrenceDates(string &$rdata, int $count): ?array {
-		$dates = [];
-		for ($i = 0; $i < $count; ++$i) {
-			if (strlen($rdata) < 4) {
-				return null;
-			}
-			$data = unpack("Vdate", $rdata);
-			$rdata = substr($rdata, 4);
-			$dates[] = $this->recurDataToUnixData($data["date"]);
+		if ($count === 0) {
+			return [];
 		}
+		if ($count > intdiv(strlen($rdata), 4)) {
+			return null;
+		}
+		$dates = [];
+		for ($offset = 0; $offset < $count; $offset += 256) {
+			$length = min(256, $count - $offset);
+			foreach (unpack("V{$length}", $rdata, $offset * 4) as $value) {
+				$dates[] = $this->recurDataToUnixData($value);
+			}
+		}
+		$rdata = substr($rdata, $count * 4);
 
 		return $dates;
 	}
 
-	private function parseRecurrenceException(string &$rdata): array {
-		$item = [];
-
-		// The base date identifies the original occurrence.
-		$data = unpack("Vstartdate/Venddate/Vbasedate", $rdata);
-		$rdata = substr($rdata, 12);
-
-		$startdate = $this->recurDataToUnixData($data["startdate"]);
-		$enddate = $this->recurDataToUnixData($data["enddate"]);
-		$basedate = $this->recurDataToUnixData($data["basedate"]);
-
-		$item["basedate"] = $this->dayStartOf($basedate);
-		$item["start"] = $startdate;
-		$item["end"] = $enddate;
-
-		$data = unpack("vbitmask", $rdata);
-		$rdata = substr($rdata, 2);
-		$item["bitmask"] = $data["bitmask"]; // save bitmask for extended exceptions
-
+	private function parseRecurrenceException(string &$rdata): ?array {
+		$dataLength = strlen($rdata);
+		if ($dataLength < 14) {
+			return null;
+		}
+		$data = unpack("Vstartdate/Venddate/Vbasedate/vbitmask", $rdata);
+		$offset = 14;
 		$bitmask = $data["bitmask"];
+		$item = [
+			"basedate" => $this->dayStartOf($this->recurDataToUnixData($data["basedate"])),
+			"start" => $this->recurDataToUnixData($data["startdate"]),
+			"end" => $this->recurDataToUnixData($data["enddate"]),
+			"bitmask" => $bitmask,
+		];
 
-		// ARO_SUBJECT: 0x0001
-		// Look for field: SubjectLength (2b), SubjectLength2 (2b) and Subject
-		if ($bitmask & (1 << 0)) {
-			$data = unpack("vnull_length/vlength", $rdata);
-			$rdata = substr($rdata, 4);
-
-			$length = (int) $data["length"];
-			$item["subject"] = substr($rdata, 0, $length);
-			$rdata = substr($rdata, $length);
+		// ExceptionInfo fields in the order of MS-OXOCAL 2.2.1.44.2
+		$fields = [
+			0x01 => "subject", // ARO_SUBJECT
+			0x02 => null, // ARO_MEETINGTYPE
+			0x04 => "remind_before", // ARO_REMINDERDELTA
+			0x08 => "reminder_set", // ARO_REMINDER
+			0x10 => "location", // ARO_LOCATION
+			0x20 => "busystatus", // ARO_BUSYSTATUS
+			0x40 => null, // ARO_ATTACHMENT
+			0x80 => "alldayevent", // ARO_SUBTYPE
+			0x100 => "label", // ARO_APPTCOLOR
+		];
+		foreach ($fields as $flag => $name) {
+			if (!($bitmask & $flag)) {
+				continue;
+			}
+			if ($dataLength - $offset < 4) {
+				return null;
+			}
+			$length = 4;
+			if ($flag & 0x11) {
+				$size = unpack("vlength", $rdata, $offset + 2)["length"];
+				$length += $size;
+				if ($dataLength - $offset < $length) {
+					return null;
+				}
+				$item[$name] = substr($rdata, $offset + 4, $size);
+			}
+			elseif ($name !== null) {
+				$item[$name] = unpack("Vvalue", $rdata, $offset)["value"];
+			}
+			$offset += $length;
 		}
-
-		// ARO_MEETINGTYPE: 0x0002
-		if ($bitmask & (1 << 1)) {
-			$rdata = substr($rdata, 4);
-			// Attendees modified: no data here (only in attachment)
-		}
-
-		// ARO_REMINDERDELTA: 0x0004
-		// Look for field: ReminderDelta (4b)
-		if ($bitmask & (1 << 2)) {
-			$data = unpack("Vremind_before", $rdata);
-			$rdata = substr($rdata, 4);
-
-			$item["remind_before"] = $data["remind_before"];
-		}
-
-		// ARO_REMINDER: 0x0008
-		// Look field: ReminderSet (4b)
-		if ($bitmask & (1 << 3)) {
-			$data = unpack("Vreminder_set", $rdata);
-			$rdata = substr($rdata, 4);
-
-			$item["reminder_set"] = $data["reminder_set"];
-		}
-
-		// ARO_LOCATION: 0x0010
-		// Look for fields: LocationLength (2b), LocationLength2 (2b) and Location
-		// Similar to ARO_SUBJECT above.
-		if ($bitmask & (1 << 4)) {
-			$data = unpack("vnull_length/vlength", $rdata);
-			$rdata = substr($rdata, 4);
-
-			$item["location"] = "";
-
-			$length = $data["length"];
-			$data = substr($rdata, 0, $length);
-			$rdata = substr($rdata, $length);
-
-			$item["location"] .= $data;
-		}
-
-		// ARO_BUSYSTATUS: 0x0020
-		// Look for field: BusyStatus (4b)
-		if ($bitmask & (1 << 5)) {
-			$data = unpack("Vbusystatus", $rdata);
-			$rdata = substr($rdata, 4);
-
-			$item["busystatus"] = $data["busystatus"];
-		}
-
-		// ARO_ATTACHMENT: 0x0040
-		if ($bitmask & (1 << 6)) {
-			// no data: RESERVED
-			$rdata = substr($rdata, 4);
-		}
-
-		// ARO_SUBTYPE: 0x0080
-		// Look for field: SubType (4b). Determines whether it is an allday event.
-		if ($bitmask & (1 << 7)) {
-			$data = unpack("Vallday", $rdata);
-			$rdata = substr($rdata, 4);
-
-			$item["alldayevent"] = $data["allday"];
-		}
-
-		// ARO_APPTCOLOR: 0x0100
-		// Look for field: AppointmentColor (4b)
-		if ($bitmask & (1 << 8)) {
-			$data = unpack("Vlabel", $rdata);
-			$rdata = substr($rdata, 4);
-
-			$item["label"] = $data["label"];
-		}
+		$rdata = substr($rdata, $offset);
 
 		return $item;
 	}
 
-	private function parseExtendedException(
-		string &$rdata,
-		array $item,
-		int $writerversion
-	): array {
+	private function parseExtendedException(string &$rdata, array $item, int $writerversion): ?array {
 		// subject and location in ucs-2 to utf-8
 		if ($writerversion >= 0x3009) {
-			$data = unpack("Vsize/Vvalue", $rdata); // size includes sizeof(value)==4
-			$rdata = substr($rdata, 4 + $data["size"]);
+			if (!$this->skipRecurrenceBlock($rdata)) {
+				return null;
+			}
 		}
 
-		$data = unpack("Vreservedsize", $rdata);
-		$rdata = substr($rdata, 4 + $data["reservedsize"]);
+		if (!$this->skipRecurrenceBlock($rdata)) {
+			return null;
+		}
 
 		// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
 		if ($item["bitmask"] & 0x11) {
+			if (strlen($rdata) < 12) {
+				return null;
+			}
 			$data = unpack("Vstart/Vend/Vorig", $rdata);
 			$rdata = substr($rdata, 4 * 3);
 
@@ -559,28 +531,54 @@ abstract class BaseRecurrence {
 
 		if ($item["bitmask"] & 0x01) {
 			$item["subject"] = $this->parseExceptionString($rdata);
+			if ($item["subject"] === null) {
+				return null;
+			}
 		}
 		if ($item["bitmask"] & 0x10) {
 			$item["location"] = $this->parseExceptionString($rdata);
+			if ($item["location"] === null) {
+				return null;
+			}
 		}
 
 		// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
 		if ($item["bitmask"] & 0x11) {
-			$data = unpack("Vreservedsize", $rdata);
-			$rdata = substr($rdata, 4 + $data["reservedsize"]);
+			if (!$this->skipRecurrenceBlock($rdata)) {
+				return null;
+			}
 		}
 
 		return $item;
 	}
 
-	private function parseExceptionString(string &$rdata): false|string {
+	private function parseExceptionString(string &$rdata): false|string|null {
+		if (strlen($rdata) < 2) {
+			return null;
+		}
 		$data = unpack("vlength", $rdata);
 		$rdata = substr($rdata, 2);
 		$length = $data["length"];
+		if ($length > intdiv(strlen($rdata), 2)) {
+			return null;
+		}
 		$data = substr($rdata, 0, $length * 2);
 		$rdata = substr($rdata, $length * 2);
 
 		return iconv("UCS-2LE", "UTF-8", $data);
+	}
+
+	private function skipRecurrenceBlock(string &$rdata): bool {
+		if (strlen($rdata) < 4) {
+			return false;
+		}
+		$size = unpack("Vsize", $rdata)["size"];
+		if ($size > strlen($rdata) - 4) {
+			return false;
+		}
+		$rdata = substr($rdata, 4 + $size);
+
+		return true;
 	}
 
 	/**

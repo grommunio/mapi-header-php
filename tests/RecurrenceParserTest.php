@@ -246,4 +246,79 @@ class RecurrenceParserTest extends TestCase {
 			$this->recurrence->parseRecurrence($prefix . $range)
 		);
 	}
+
+	public function testTruncatedExceptionRecordsDoNotReadPastTheBlob(): void {
+		$prefix = self::header(10, 0) . pack('V3', 0, 1440, 0) . self::range();
+		$fields = [
+			1 => pack('v2', 5, 4) . 'ANSI',
+			2 => pack('V', 8), 4 => pack('V', 15), 8 => pack('V', 1),
+			16 => pack('v2', 6, 5) . 'Room!',
+			32 => pack('V', 2), 64 => pack('V', 1),
+			128 => pack('V', 1), 256 => pack('V', 7),
+		];
+		set_error_handler(static function (int $severity, string $message): never {
+			throw new ErrorException($message, 0, $severity);
+		});
+
+		try {
+			foreach ([0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 511] as $flags) {
+				$blob = $prefix . pack('V4v', 0x3006, 0x3009, 600, 660, 1) .
+					pack('V3v', 223658520, 223658580, 223657080, $flags);
+				foreach ($fields as $bit => $value) {
+					if ($flags & $bit) {
+						$blob .= $value;
+					}
+				}
+				$blob .= pack('V4', 0, 4, 0, 0);
+				if ($flags & 0x11) {
+					$blob .= pack('V3', 223658520, 223658580, 223657080);
+				}
+				foreach ([1 => "S\0", 16 => "L\0"] as $bit => $value) {
+					if ($flags & $bit) {
+						$blob .= pack('v', 1) . $value;
+					}
+				}
+				$blob .= pack('V2', 0, 0);
+				for ($length = strlen($prefix); $length <= strlen($blob); ++$length) {
+					$this->assertIsArray($this->recurrence->parseRecurrence(substr($blob, 0, $length)));
+				}
+			}
+			$oversized = $prefix . pack('V4v', 0x3006, 0x3009, 600, 660, 65535);
+			$this->assertSame([], $this->recurrence->parseRecurrence($oversized)['changed_occurrences']);
+		}
+		finally {
+			restore_error_handler();
+		}
+	}
+
+	public function testTruncatedExceptionRecordsKeepTheDeletedDates(): void {
+		// Two base dates, the second one modified by a single exception.
+		$prefix = self::header(10, 0) . pack('V3', 0, 1440, 0) .
+			pack('V4', 0x2022, 4, 1, 2) . pack('V2', 223655040, 223656480) .
+			pack('V2', 1, 223656480) . pack('V2', 223655040, 223668000) .
+			pack('V4v', 0x3006, 0x3009, 600, 660, 1);
+		$record = pack('V3v', 223658520, 223658580, 223657080, 1) .
+			pack('v2', 5, 4) . 'ANSI';
+		$extended = pack('V4', 0, 4, 0, 0) .
+			pack('V3', 223658520, 223658580, 223657080) .
+			pack('v', 1) . "S\0" . pack('V2', 0, 0);
+		$blob = $prefix . $record . $extended;
+		for ($length = strlen($prefix); $length <= strlen($blob); ++$length) {
+			$parsed = $this->recurrence->parseRecurrence(substr($blob, 0, $length));
+			if ($length < strlen($prefix . $record)) {
+				$this->assertSame([1774828800, 1774915200], $parsed['deleted_occurrences']);
+				$this->assertSame([], $parsed['changed_occurrences']);
+
+				continue;
+			}
+			$this->assertSame([1774828800], $parsed['deleted_occurrences']);
+			$this->assertCount(1, $parsed['changed_occurrences']);
+			$this->assertSame(1774915200, $parsed['changed_occurrences'][0]['basedate']);
+			// The last four bytes are the trailing ReservedBlock2Size.
+			$this->assertSame(
+				$length < strlen($blob) - 4 ? 'ANSI' : 'S',
+				$parsed['changed_occurrences'][0]['subject']
+			);
+		}
+	}
 }
