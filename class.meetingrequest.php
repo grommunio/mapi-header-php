@@ -3814,9 +3814,14 @@ class Meetingrequest {
 	 */
 	public function addDelegator(array $messageProps, array &$recipients): void {
 		$hasDelegator = false;
-		// Check if meeting already has an organizer.
-		foreach ($recipients as $key => $recipient) {
-			if (isset($messageProps[PR_RCVD_REPRESENTING_EMAIL_ADDRESS]) && $recipient[PR_EMAIL_ADDRESS] == $messageProps[PR_RCVD_REPRESENTING_EMAIL_ADDRESS]) {
+		// gromox stamps the delegator as an EX address, the request lists it as SMTP
+		$delegatorRow = [
+			PR_ENTRYID => $messageProps[PR_RCVD_REPRESENTING_ENTRYID] ?? null,
+			PR_EMAIL_ADDRESS => $messageProps[PR_RCVD_REPRESENTING_EMAIL_ADDRESS] ?? null,
+			PR_ADDRTYPE => $messageProps[PR_RCVD_REPRESENTING_ADDRTYPE] ?? null,
+		];
+		foreach ($recipients as $recipient) {
+			if ($this->compareRecipients($recipient, array_filter($delegatorRow))) {
 				$hasDelegator = true;
 			}
 		}
@@ -3944,7 +3949,8 @@ class Meetingrequest {
 	 * @return bool True if message is from delegate
 	 */
 	private function isMessageFromDelegate(array $messageprops): bool {
-		return isset($messageprops[PR_RCVD_REPRESENTING_NAME]);
+		// gromox stamps PR_RCVD_REPRESENTING on every delivered message
+		return $this->getDelegatorEntryId($messageprops) !== false;
 	}
 
 	/**

@@ -124,4 +124,24 @@ class MeetingRequestTest extends TestCase {
 		$this->assertFalse($find([PR_SMTP_ADDRESS => 'org@example.com'], []));
 	}
 
+	public function testDelegatorAddedOnce(): void {
+		$mr = new class extends Meetingrequest {
+			public function __construct() {}
+
+			public function compareABEntryIDs(string $entryid1, string $entryid2): bool {
+				return $entryid1 === $entryid2;
+			}
+		};
+		$props = [PR_RCVD_REPRESENTING_ENTRYID => 'owner', PR_RCVD_REPRESENTING_NAME => 'Owner',
+			PR_RCVD_REPRESENTING_EMAIL_ADDRESS => '/O=ORG/CN=RECIPIENTS/CN=OWNER', PR_RCVD_REPRESENTING_ADDRTYPE => 'EX',
+			PR_RCVD_REPRESENTING_SEARCH_KEY => 'EX:/O=ORG/CN=RECIPIENTS/CN=OWNER'];
+		// the request lists the delegator with its SMTP address
+		$recips = [[PR_ENTRYID => 'owner', PR_ADDRTYPE => 'SMTP', PR_EMAIL_ADDRESS => 'owner@example.com']];
+		$mr->addDelegator($props, $recips);
+		$this->assertCount(1, $recips);
+
+		$recips = [[PR_ENTRYID => 'other', PR_ADDRTYPE => 'SMTP', PR_EMAIL_ADDRESS => 'other@example.com']];
+		$mr->addDelegator($props, $recips);
+		$this->assertCount(2, $recips);
+	}
 }
