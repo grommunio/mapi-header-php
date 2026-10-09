@@ -24,7 +24,7 @@ build:
       tests:
         override:
           - php tools/phpunit.phar --configuration phpunit.xml
-          - php-scrutinizer-run
+          - php-scrutinizer-run --enable-security-analysis
           - command: phpcs-run
             use_website_config: true
 checks:
