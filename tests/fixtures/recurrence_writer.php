@@ -5,6 +5,10 @@
  * SPDX-FileCopyrightText: Copyright 2026 grommunio GmbH
  */
 
+if (!extension_loaded('iconv')) {
+	dl('iconv.' . PHP_SHLIB_SUFFIX);
+}
+
 // Run without php-mapi to capture exactly what saveRecurrence writes.
 function mapi_load_mapidefs($flags): void {}
 

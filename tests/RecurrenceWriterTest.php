@@ -24,7 +24,7 @@ class RecurrenceWriterTest extends TestCase {
 
 	private function writeCases(array $cases): array {
 		$process = proc_open([
-			PHP_BINARY, '-n', '-d', 'extension=iconv',
+			PHP_BINARY, '-n',
 			__DIR__ . '/fixtures/recurrence_writer.php', dirname(__DIR__),
 		], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 		$this->assertIsResource($process);
