@@ -7,13 +7,13 @@
  * Unit tests for mapi.util.php utility functions
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class UtilityFunctionsTest extends TestCase {
 	public function testMakeGuid(): void {
 		$guid = '{00062008-0000-0000-C000-000000000046}';

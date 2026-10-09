@@ -7,13 +7,13 @@
  * Unit tests for MAPIException class
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class MAPIExceptionTest extends TestCase {
 	public function testConstructorWithMessage(): void {
 		$exception = new MAPIException('MAPI error occurred');

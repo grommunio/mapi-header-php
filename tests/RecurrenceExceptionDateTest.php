@@ -7,13 +7,13 @@
  * Unit tests for Recurrence::isValidExceptionDate
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class RecurrenceExceptionDateTest extends TestCase {
 	private const BASEDATE = 1790899200; // 2026-10-02 00:00 UTC
 	private const DAY = 86400;

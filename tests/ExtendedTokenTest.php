@@ -7,13 +7,13 @@
  * Extended unit tests for Token class edge cases and additional scenarios
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class ExtendedTokenTest extends TestCase {
 	private function createJWTWithCustomExpiry(int $expiryOffset): string {
 		$header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));

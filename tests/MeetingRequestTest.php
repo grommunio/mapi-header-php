@@ -7,13 +7,13 @@
  * Unit tests for Meetingrequest helpers
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class MeetingRequestTest extends TestCase {
 	private Meetingrequest $mr;
 

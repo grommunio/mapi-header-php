@@ -7,14 +7,14 @@
  * Unit tests for the next occurrence of regenerating tasks
  */
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
+#[CoversNothing]
 class TaskRecurrenceRegenerationTest extends TestCase {
 	private function makeTaskRecurrence(int $type, int $everyn, int $completed, int $term = 0x23, int $end = 0x7FFFFFFF): TaskRecurrence {
 		$r = new class extends TaskRecurrence {
