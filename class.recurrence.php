@@ -58,6 +58,7 @@ class Recurrence extends BaseRecurrence {
 		PR_RECIPIENT_TRACKSTATUS_TIME,
 		PR_RECIPIENT_FLAGS,
 		PR_ROWID,
+		PR_SMTP_ADDRESS,
 	];
 
 	/**
@@ -1293,27 +1294,11 @@ class Recurrence extends BaseRecurrence {
 
 		if (!empty($exception_recips)) {
 			foreach ($recipientRows as $recipient) {
-				$found = false;
-				foreach ($exception_recips as $excep_recip) {
-					if (isset($recipient[PR_SEARCH_KEY], $excep_recip[PR_SEARCH_KEY]) && $recipient[PR_SEARCH_KEY] == $excep_recip[PR_SEARCH_KEY]) {
-						$found = true;
-					}
-				}
+				$found = $this->findRecipient($recipient, $exception_recips);
 
 				if (!$found) {
-					$foundInDeletedRecipients = false;
-					// Look if the $recipient is in the list of deleted recipients
-					if (!empty($deletedRecipients)) {
-						foreach ($deletedRecipients as $recip) {
-							if (isset($recipient[PR_SEARCH_KEY], $excep_recip[PR_SEARCH_KEY]) && $recip[PR_SEARCH_KEY] == $recipient[PR_SEARCH_KEY]) {
-								$foundInDeletedRecipients = true;
-								break;
-							}
-						}
-					}
-
 					// If recipient is not in list of deleted recipient, add him
-					if (!$foundInDeletedRecipients) {
+					if (!$this->findRecipient($recipient, $deletedRecipients)) {
 						if (!isset($recipient[PR_RECIPIENT_FLAGS]) || $recipient[PR_RECIPIENT_FLAGS] != (recipReserved | recipExceptionalDeleted | recipSendable)) {
 							$recipient[PR_RECIPIENT_FLAGS] = recipSendable | recipExceptionalDeleted;
 						}
@@ -1348,6 +1333,38 @@ class Recurrence extends BaseRecurrence {
 	}
 
 	/**
+	 * Whether $recipient is in $list. Recipients imported from iCalendar have
+	 * no search key, so the address and entryid are compared as well.
+	 */
+	private function findRecipient(array $recipient, array $list): bool {
+		$address = $this->getRecipientAddress($recipient);
+		foreach ($list as $item) {
+			if (isset($recipient[PR_SEARCH_KEY], $item[PR_SEARCH_KEY]) && $recipient[PR_SEARCH_KEY] == $item[PR_SEARCH_KEY]) {
+				return true;
+			}
+			if ($address !== '' && strcasecmp($address, $this->getRecipientAddress($item)) === 0) {
+				return true;
+			}
+			if (isset($recipient[PR_ENTRYID], $item[PR_ENTRYID]) && compareEntryIds($recipient[PR_ENTRYID], $item[PR_ENTRYID])) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function getRecipientAddress(array $recipient): string {
+		if (!empty($recipient[PR_SMTP_ADDRESS])) {
+			return $recipient[PR_SMTP_ADDRESS];
+		}
+		if (isset($recipient[PR_ADDRTYPE]) && strcasecmp($recipient[PR_ADDRTYPE], 'SMTP') == 0) {
+			return $recipient[PR_EMAIL_ADDRESS] ?? '';
+		}
+
+		return '';
+	}
+
+	/**
 	 * Function returns basedates of all changed occurrences.
 	 *
 	 * @return array|false array( 0 => 123459321 )
@@ -1379,7 +1396,7 @@ class Recurrence extends BaseRecurrence {
 		$hasOrganizer = false;
 		// Check if meeting already has an organizer.
 		foreach ($recipients as $key => $recipient) {
-			if (isset($recipient[PR_RECIPIENT_FLAGS]) && $recipient[PR_RECIPIENT_FLAGS] == (recipSendable | recipOrganizer)) {
+			if (isset($recipient[PR_RECIPIENT_FLAGS]) && ($recipient[PR_RECIPIENT_FLAGS] & recipOrganizer)) {
 				$hasOrganizer = true;
 			}
 			elseif ($isException && !isset($recipient[PR_RECIPIENT_FLAGS])) {

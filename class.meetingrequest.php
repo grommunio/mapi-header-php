@@ -952,10 +952,13 @@ class Meetingrequest {
 							PR_SENT_REPRESENTING_SMTP_ADDRESS,
 						]);
 
-						// add owner to recipient table
-						$recips = [];
+						// mapi_copyto() has brought the recipients along, add the owner only if missing
+						$recips = $this->getMessageRecipients($this->message);
+						$count = count($recips);
 						$this->addOrganizer($props, $recips);
-						mapi_message_modifyrecipients($calmsg, MODRECIP_ADD, $recips);
+						if (count($recips) > $count) {
+							mapi_message_modifyrecipients($calmsg, MODRECIP_ADD, [$recips[0]]);
+						}
 						mapi_savechanges($calmsg);
 
 						// Move the message to the wastebasket
@@ -2299,7 +2302,8 @@ class Meetingrequest {
 		$hasOrganizer = false;
 		// Check if meeting already has an organizer.
 		foreach ($recipients as $key => $recipient) {
-			if (isset($recipient[PR_RECIPIENT_FLAGS]) && $recipient[PR_RECIPIENT_FLAGS] == (recipSendable | recipOrganizer)) {
+			// gromox also sets recipOriginal on the organizer of a received request
+			if (isset($recipient[PR_RECIPIENT_FLAGS]) && ($recipient[PR_RECIPIENT_FLAGS] & recipOrganizer)) {
 				$hasOrganizer = true;
 			}
 			elseif ($isException && !isset($recipient[PR_RECIPIENT_FLAGS])) {
