@@ -2828,6 +2828,86 @@ class Meetingrequest {
 			return [];
 		}
 
+		$messageprops = $this->getResourceMessageProperties($message, $basedate);
+
+		// Get resource recipients
+		$getResourcesRestriction = [
+			RES_PROPERTY,
+			[
+				RELOP => RELOP_EQ,	// Equals recipient type 3: Resource
+				ULPROPTAG => PR_RECIPIENT_TYPE,
+				VALUE => [PR_RECIPIENT_TYPE => MAPI_BCC],
+			],
+		];
+		$resourceRecipients = $this->getMessageRecipients($message, $getResourcesRestriction);
+
+		$this->errorSetResource = false;
+		$resourceRecipData = [];
+		$resourceMsgProps = null;
+
+		// Put appointment into store resource users
+		$i = 0;
+		$len = count($resourceRecipients);
+		while (empty($this->errorSetResource) && $i < $len) {
+			try {
+				$userStore = $this->openCustomUserStore($resourceRecipients[$i][PR_ENTRYID]);
+			}
+			catch (MAPIException $e) {
+				$e->setHandled();
+				$userStore = null;
+			}
+			if (!$userStore) {
+				$this->errorSetResource = 1; // No access
+
+				break;
+			}
+
+			$calFolder = $this->openResourceCalendar($userStore);
+
+			if ($calFolder !== false) {
+				$this->checkResourceBooking($message, $messageprops, $userStore, $calFolder, $resourceRecipients[$i], $cancel);
+			}
+
+			if (empty($this->errorSetResource) && $calFolder !== false) {
+				$newResourceMsg = $this->findResourceCalendarMessage($userStore, $calFolder, $messageprops, $resourceMsgProps);
+
+				$this->setResourceMessageProperties($messageprops, $prefix, $cancel);
+
+				$this->saveResourceMessage($message, $userStore, $newResourceMsg, $messageprops, $basedate, $resourceMsgProps);
+
+				$resourceRecipData[] = [
+					'store' => $userStore,
+					'folder' => $calFolder,
+					'msg' => $newResourceMsg,
+				];
+				$this->includesResources = true;
+			}
+			else {
+				/*
+				 * If no other errors occurred and you have no access to the
+				 * folder of the resource, throw an error=1.
+				 */
+				if (empty($this->errorSetResource)) {
+					$this->errorSetResource = 1;
+				}
+
+				for ($j = 0, $len = count($resourceRecipData); $j < $len; ++$j) {
+					// Get the EntryID
+					$props = mapi_getprops($resourceRecipData[$j]['msg']);
+
+					mapi_folder_deletemessages($resourceRecipData[$j]['folder'], [$props[PR_ENTRYID]], DELETE_HARD_DELETE);
+				}
+				$this->recipientDisplayname = $resourceRecipients[$i][PR_DISPLAY_NAME];
+			}
+			++$i;
+		}
+
+		$this->updateResourceTracking($message);
+
+		return $resourceRecipData;
+	}
+
+	private function getResourceMessageProperties(mixed $message, mixed $basedate): array {
 		// Get the properties of the message
 		$messageprops = mapi_getprops($message);
 
@@ -2864,255 +2944,198 @@ class Meetingrequest {
 			$messageprops[$this->proptags['owner_critical_change']] = time();
 		}
 
-		// Get resource recipients
-		$getResourcesRestriction = [
-			RES_PROPERTY,
-			[
-				RELOP => RELOP_EQ,	// Equals recipient type 3: Resource
-				ULPROPTAG => PR_RECIPIENT_TYPE,
-				VALUE => [PR_RECIPIENT_TYPE => MAPI_BCC],
-			],
-		];
-		$resourceRecipients = $this->getMessageRecipients($message, $getResourcesRestriction);
+		return $messageprops;
+	}
 
-		$this->errorSetResource = false;
-		$resourceRecipData = [];
+	private function openResourceCalendar(mixed $userStore): mixed {
+		// Open root folder
+		$userRoot = mapi_msgstore_openentry($userStore);
 
-		// Put appointment into store resource users
-		$i = 0;
-		$len = count($resourceRecipients);
-		while (empty($this->errorSetResource) && $i < $len) {
-			try {
-				$userStore = $this->openCustomUserStore($resourceRecipients[$i][PR_ENTRYID]);
+		// Get calendar entryID
+		$userRootProps = mapi_getprops($userRoot, [PR_STORE_ENTRYID, PR_IPM_APPOINTMENT_ENTRYID, PR_FREEBUSY_ENTRYIDS]);
+
+		// Open Calendar folder
+		$calFolder = false;
+
+		try {
+			// @FIXME this checks delegate has access to resource's calendar folder
+			// but it should use boss' credentials
+
+			if ($this->checkCalendarWriteAccess($this->store)) {
+				$calFolder = mapi_msgstore_openentry($userStore, $userRootProps[PR_IPM_APPOINTMENT_ENTRYID]);
 			}
-			catch (MAPIException $e) {
-				$e->setHandled();
-				$userStore = null;
-			}
-			if (!$userStore) {
-				$this->errorSetResource = 1; // No access
-
-				break;
-			}
-
-			// Open root folder
-			$userRoot = mapi_msgstore_openentry($userStore);
-
-			// Get calendar entryID
-			$userRootProps = mapi_getprops($userRoot, [PR_STORE_ENTRYID, PR_IPM_APPOINTMENT_ENTRYID, PR_FREEBUSY_ENTRYIDS]);
-
-			// Open Calendar folder
-			$calFolder = false;
-
-			try {
-				// @FIXME this checks delegate has access to resource's calendar folder
-				// but it should use boss' credentials
-
-				if ($this->checkCalendarWriteAccess($this->store)) {
-					$calFolder = mapi_msgstore_openentry($userStore, $userRootProps[PR_IPM_APPOINTMENT_ENTRYID]);
-				}
-			}
-			catch (MAPIException $e) {
-				$e->setHandled();
-				$this->errorSetResource = 1; // No access
-			}
-
-			if ($calFolder !== false) {
-				/**
-				 * Get the LocalFreebusy message that contains the properties that
-				 * are set to accept or decline resource meeting requests.
-				 */
-				$localFreebusyMsg = FreeBusy::getLocalFreeBusyMessage($userStore);
-				if ($localFreebusyMsg) {
-					$props = mapi_getprops($localFreebusyMsg, [PR_SCHDINFO_AUTO_ACCEPT_APPTS, PR_SCHDINFO_DISALLOW_RECURRING_APPTS, PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS]);
-
-					$acceptMeetingRequests = $props[PR_SCHDINFO_AUTO_ACCEPT_APPTS] ?? false;
-					$declineRecurringMeetingRequests = $props[PR_SCHDINFO_DISALLOW_RECURRING_APPTS] ?? false;
-					$declineConflictingMeetingRequests = $props[PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS] ?? false;
-
-					if (!$acceptMeetingRequests) {
-						/*
-						 * When a resource has not been set to automatically accept meeting requests,
-						 * the meeting request has to be sent to him rather than being put directly into
-						 * his calendar. No error should be returned.
-						 */
-						// $errorSetResource = 2;
-						$this->nonAcceptingResources[] = $resourceRecipients[$i];
-					}
-					else {
-						if ($declineRecurringMeetingRequests && !$cancel) {
-							// Check if appointment is recurring
-							if ($messageprops[$this->proptags['recurring']]) {
-								$this->errorSetResource = 3;
-							}
-						}
-						if ($declineConflictingMeetingRequests && !$cancel) {
-							// Check for conflicting items
-							if ($calFolder && $this->isMeetingConflicting($message, $userStore, $calFolder)) {
-								$this->errorSetResource = 4; // Conflict
-							}
-						}
-					}
-				}
-			}
-
-			if (empty($this->errorSetResource) && $calFolder !== false) {
-				/**
-				 * First search on GlobalID(0x3)
-				 * If (recurring and occurrence) If Resource was booked for only this occurrence then Resource should have only this occurrence in Calendar and not whole series.
-				 * If (normal meeting) then GlobalID(0x3) and CleanGlobalID(0x23) are same, so doesn't matter if search is based on GlobalID.
-				 */
-				$rows = $this->findCalendarItems($messageprops[$this->proptags['goid']], $calFolder);
-
-				/*
-				 * If no entry is found then
-				 * 1) Resource doesn't have meeting in Calendar. Seriously!!
-				 * OR
-				 * 2) We were looking for occurrence item but Resource has whole series
-				 */
-				if (empty($rows)) {
-					/**
-					 * Now search on CleanGlobalID(0x23) WHY???
-					 * Because we are looking recurring item.
-					 *
-					 * Possible results of this search
-					 * 1) If Resource was booked for more than one occurrences then this search will return all those occurrence because search is perform on CleanGlobalID
-					 * 2) If Resource was booked for whole series then it should return series.
-					 */
-					$rows = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder, true);
-
-					$newResourceMsg = false;
-					if (!empty($rows)) {
-						// Since we are looking for recurring item, open every result and check for 'recurring' property.
-						foreach ($rows as $row) {
-							$ResourceMsg = mapi_msgstore_openentry($userStore, $row);
-							$ResourceMsgProps = mapi_getprops($ResourceMsg, [$this->proptags['recurring']]);
-
-							if (!empty($ResourceMsgProps[$this->proptags['recurring']])) {
-								$newResourceMsg = $ResourceMsg;
-								break;
-							}
-						}
-					}
-
-					// Still no results found. I giveup, create new message.
-					if (!$newResourceMsg) {
-						$newResourceMsg = mapi_folder_createmessage($calFolder);
-					}
-				}
-				else {
-					$newResourceMsg = mapi_msgstore_openentry($userStore, $rows[0]);
-				}
-
-				// Prefix the subject if needed
-				if ($prefix && isset($messageprops[PR_SUBJECT])) {
-					$messageprops[PR_SUBJECT] = $prefix . $messageprops[PR_SUBJECT];
-				}
-
-				// Set status to cancelled if needed
-				$messageprops[$this->proptags['busystatus']] = fbBusy; // The default status (Busy)
-				if ($cancel) {
-					$messageprops[$this->proptags['meetingstatus']] = olMeetingCanceled; // The meeting has been canceled
-					$messageprops[$this->proptags['busystatus']] = fbFree; // Free
-				}
-				else {
-					$messageprops[$this->proptags['meetingstatus']] = olMeetingReceived; // The recipient is receiving the request
-				}
-				$messageprops[$this->proptags['responsestatus']] = olResponseAccepted; // The resource automatically accepts the appointment
-
-				$messageprops[PR_MESSAGE_CLASS] = 'IPM.Appointment';
-
-				// Remove the PR_ICON_INDEX as it is not needed in the sent message.
-				$messageprops[PR_ICON_INDEX] = null;
-				$messageprops[PR_RESPONSE_REQUESTED] = true;
-
-				// get the store of organizer, in case of delegates it will be delegate store
-				$defaultStore = $this->openDefaultStore();
-
-				$storeProps = mapi_getprops($this->store, [PR_ENTRYID]);
-				$defaultStoreProps = mapi_getprops($defaultStore, [PR_ENTRYID]);
-
-				if (!compareEntryIds($storeProps[PR_ENTRYID], $defaultStoreProps[PR_ENTRYID])) {
-					// get delegate information
-					$addrInfo = $this->getOwnerAddress($defaultStore, false) ?: [];
-					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
-
-					// get delegator information
-					$addrInfo = $this->getOwnerAddress($this->store, false) ?: [];
-					$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
-				}
-				else {
-					// get organizer information
-					$addrInfo = $this->getOwnerAddress($this->store) ?: [];
-					$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
-					$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
-				}
-
-				$messageprops[$this->proptags['replytime']] = time();
-
-				if (!empty($basedate) && isset($ResourceMsgProps[$this->proptags['recurring']]) && $ResourceMsgProps[$this->proptags['recurring']]) {
-					$recurr = new Recurrence($userStore, $newResourceMsg);
-
-					// Copy recipients list
-					$reciptable = mapi_message_getrecipienttable($message);
-					$recips = mapi_table_queryallrows($reciptable, $this->recipprops);
-
-					// add owner to recipient table
-					$this->addOrganizer($messageprops, $recips, true);
-
-					// Update occurrence
-					if ($recurr->isException($basedate)) {
-						$recurr->modifyException($messageprops, $basedate, $recips);
-					}
-					else {
-						$recurr->createException($messageprops, $basedate, false, $recips);
-					}
-				}
-				else {
-					mapi_setprops($newResourceMsg, $messageprops);
-
-					// Copy attachments
-					$this->replaceAttachments($message, $newResourceMsg);
-
-					// Copy all recipients too
-					$this->replaceRecipients($message, $newResourceMsg);
-
-					// Now add organizer also to recipient table
-					$recips = [];
-					$this->addOrganizer($messageprops, $recips);
-
-					mapi_message_modifyrecipients($newResourceMsg, MODRECIP_ADD, $recips);
-				}
-
-				mapi_savechanges($newResourceMsg);
-
-				$resourceRecipData[] = [
-					'store' => $userStore,
-					'folder' => $calFolder,
-					'msg' => $newResourceMsg,
-				];
-				$this->includesResources = true;
-			}
-			else {
-				/*
-				 * If no other errors occurred and you have no access to the
-				 * folder of the resource, throw an error=1.
-				 */
-				if (empty($this->errorSetResource)) {
-					$this->errorSetResource = 1;
-				}
-
-				for ($j = 0, $len = count($resourceRecipData); $j < $len; ++$j) {
-					// Get the EntryID
-					$props = mapi_getprops($resourceRecipData[$j]['msg']);
-
-					mapi_folder_deletemessages($resourceRecipData[$j]['folder'], [$props[PR_ENTRYID]], DELETE_HARD_DELETE);
-				}
-				$this->recipientDisplayname = $resourceRecipients[$i][PR_DISPLAY_NAME];
-			}
-			++$i;
+		}
+		catch (MAPIException $e) {
+			$e->setHandled();
+			$this->errorSetResource = 1; // No access
 		}
 
+		return $calFolder;
+	}
+
+	private function checkResourceBooking(mixed $message, array $messageprops, mixed $userStore, mixed $calFolder, array $recipient, mixed $cancel): void {
+		$localFreebusyMsg = FreeBusy::getLocalFreeBusyMessage($userStore);
+		if (!$localFreebusyMsg) {
+			return;
+		}
+		$props = mapi_getprops($localFreebusyMsg, [PR_SCHDINFO_AUTO_ACCEPT_APPTS, PR_SCHDINFO_DISALLOW_RECURRING_APPTS, PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS]);
+
+		$acceptMeetingRequests = $props[PR_SCHDINFO_AUTO_ACCEPT_APPTS] ?? false;
+		$declineRecurringMeetingRequests = $props[PR_SCHDINFO_DISALLOW_RECURRING_APPTS] ?? false;
+		$declineConflictingMeetingRequests = $props[PR_SCHDINFO_DISALLOW_OVERLAPPING_APPTS] ?? false;
+
+		if (!$acceptMeetingRequests) {
+			$this->nonAcceptingResources[] = $recipient;
+
+			return;
+		}
+		if ($declineRecurringMeetingRequests && !$cancel && $messageprops[$this->proptags['recurring']]) {
+			$this->errorSetResource = 3;
+		}
+		if ($declineConflictingMeetingRequests && !$cancel &&
+			$calFolder && $this->isMeetingConflicting($message, $userStore, $calFolder)) {
+			$this->errorSetResource = 4;
+		}
+	}
+
+	private function findResourceCalendarMessage(mixed $userStore, mixed $calFolder, array $messageprops, mixed &$resourceMsgProps): mixed {
+		/*
+		 * First search on GlobalID(0x3)
+		 * If (recurring and occurrence) If Resource was booked for only this occurrence then Resource should have only this occurrence in Calendar and not whole series.
+		 * If (normal meeting) then GlobalID(0x3) and CleanGlobalID(0x23) are same, so doesn't matter if search is based on GlobalID.
+		 */
+		$rows = $this->findCalendarItems($messageprops[$this->proptags['goid']], $calFolder);
+
+		/*
+		 * If no entry is found then
+		 * 1) Resource doesn't have meeting in Calendar. Seriously!!
+		 * OR
+		 * 2) We were looking for occurrence item but Resource has whole series
+		 */
+		if (empty($rows)) {
+			/**
+			 * Now search on CleanGlobalID(0x23) WHY???
+			 * Because we are looking recurring item.
+			 *
+			 * Possible results of this search
+			 * 1) If Resource was booked for more than one occurrences then this search will return all those occurrence because search is perform on CleanGlobalID
+			 * 2) If Resource was booked for whole series then it should return series.
+			 */
+			$rows = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder, true);
+
+			$newResourceMsg = false;
+			if (!empty($rows)) {
+				// Since we are looking for recurring item, open every result and check for 'recurring' property.
+				foreach ($rows as $row) {
+					$ResourceMsg = mapi_msgstore_openentry($userStore, $row);
+					$resourceMsgProps = mapi_getprops($ResourceMsg, [$this->proptags['recurring']]);
+
+					if (!empty($resourceMsgProps[$this->proptags['recurring']])) {
+						$newResourceMsg = $ResourceMsg;
+						break;
+					}
+				}
+			}
+
+			// Still no results found. I giveup, create new message.
+			if (!$newResourceMsg) {
+				$newResourceMsg = mapi_folder_createmessage($calFolder);
+			}
+		}
+		else {
+			$newResourceMsg = mapi_msgstore_openentry($userStore, $rows[0]);
+		}
+
+		return $newResourceMsg;
+	}
+
+	private function setResourceMessageProperties(array &$messageprops, mixed $prefix, mixed $cancel): void {
+		// Prefix the subject if needed
+		if ($prefix && isset($messageprops[PR_SUBJECT])) {
+			$messageprops[PR_SUBJECT] = $prefix . $messageprops[PR_SUBJECT];
+		}
+
+		// Set status to cancelled if needed
+		$messageprops[$this->proptags['busystatus']] = fbBusy; // The default status (Busy)
+		if ($cancel) {
+			$messageprops[$this->proptags['meetingstatus']] = olMeetingCanceled; // The meeting has been canceled
+			$messageprops[$this->proptags['busystatus']] = fbFree; // Free
+		}
+		else {
+			$messageprops[$this->proptags['meetingstatus']] = olMeetingReceived; // The recipient is receiving the request
+		}
+		$messageprops[$this->proptags['responsestatus']] = olResponseAccepted; // The resource automatically accepts the appointment
+
+		$messageprops[PR_MESSAGE_CLASS] = 'IPM.Appointment';
+
+		// Remove the PR_ICON_INDEX as it is not needed in the sent message.
+		$messageprops[PR_ICON_INDEX] = null;
+		$messageprops[PR_RESPONSE_REQUESTED] = true;
+
+		// get the store of organizer, in case of delegates it will be delegate store
+		$defaultStore = $this->openDefaultStore();
+
+		$storeProps = mapi_getprops($this->store, [PR_ENTRYID]);
+		$defaultStoreProps = mapi_getprops($defaultStore, [PR_ENTRYID]);
+
+		if (!compareEntryIds($storeProps[PR_ENTRYID], $defaultStoreProps[PR_ENTRYID])) {
+			// get delegate information
+			$addrInfo = $this->getOwnerAddress($defaultStore, false) ?: [];
+			$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
+
+			// get delegator information
+			$addrInfo = $this->getOwnerAddress($this->store, false) ?: [];
+			$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
+		}
+		else {
+			// get organizer information
+			$addrInfo = $this->getOwnerAddress($this->store) ?: [];
+			$this->setAddressProperties($messageprops, $addrInfo, 'SENDER');
+			$this->setAddressProperties($messageprops, $addrInfo, 'SENT_REPRESENTING');
+		}
+
+		$messageprops[$this->proptags['replytime']] = time();
+	}
+
+	private function saveResourceMessage(mixed $message, mixed $userStore, mixed $newResourceMsg, array $messageprops, mixed $basedate, mixed $resourceMsgProps): void {
+		if (!empty($basedate) && isset($resourceMsgProps[$this->proptags['recurring']]) && $resourceMsgProps[$this->proptags['recurring']]) {
+			$recurr = new Recurrence($userStore, $newResourceMsg);
+
+			// Copy recipients list
+			$reciptable = mapi_message_getrecipienttable($message);
+			$recips = mapi_table_queryallrows($reciptable, $this->recipprops);
+
+			// add owner to recipient table
+			$this->addOrganizer($messageprops, $recips, true);
+
+			// Update occurrence
+			if ($recurr->isException($basedate)) {
+				$recurr->modifyException($messageprops, $basedate, $recips);
+			}
+			else {
+				$recurr->createException($messageprops, $basedate, false, $recips);
+			}
+		}
+		else {
+			mapi_setprops($newResourceMsg, $messageprops);
+
+			// Copy attachments
+			$this->replaceAttachments($message, $newResourceMsg);
+
+			// Copy all recipients too
+			$this->replaceRecipients($message, $newResourceMsg);
+
+			// Now add organizer also to recipient table
+			$recips = [];
+			$this->addOrganizer($messageprops, $recips);
+
+			mapi_message_modifyrecipients($newResourceMsg, MODRECIP_ADD, $recips);
+		}
+
+		mapi_savechanges($newResourceMsg);
+	}
+
+	private function updateResourceTracking(mixed $message): void {
 		$resourceRecipients = $this->getMessageRecipients($message);
 		if (!empty($resourceRecipients)) {
 			// Set Tracking status of resource recipients to olResponseAccepted (3)
@@ -3124,8 +3147,6 @@ class Meetingrequest {
 			}
 			mapi_message_modifyrecipients($message, MODRECIP_MODIFY, $resourceRecipients);
 		}
-
-		return $resourceRecipData;
 	}
 
 	/**

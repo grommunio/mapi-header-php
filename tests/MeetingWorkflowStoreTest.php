@@ -13,6 +13,7 @@ use PHPUnit\Framework\TestCase;
  */
 #[CoversNothing]
 class MeetingWorkflowStoreTest extends TestCase {
+	private $session;
 	private $store;
 	private $parent;
 	private $folder;
@@ -24,13 +25,13 @@ class MeetingWorkflowStoreTest extends TestCase {
 		if (!$user || !extension_loaded('mapi')) {
 			$this->markTestSkipped('Requires MAPI_TEST_USER and a local MAPI session');
 		}
-		$session = mapi_logon_np($user, 0);
+		$this->session = mapi_logon_np($user, 0);
 		foreach (mapi_table_queryallrows(
-			mapi_getmsgstorestable($session),
+			mapi_getmsgstorestable($this->session),
 			[PR_ENTRYID, PR_DEFAULT_STORE]
 		) as $row) {
 			if (!empty($row[PR_DEFAULT_STORE])) {
-				$this->store = mapi_openmsgstore($session, $row[PR_ENTRYID]);
+				$this->store = mapi_openmsgstore($this->session, $row[PR_ENTRYID]);
 				break;
 			}
 		}
@@ -385,6 +386,74 @@ class MeetingWorkflowStoreTest extends TestCase {
 				$this->assertSame(olMeeting, $props[$tags['meetingstatus']]);
 				$this->assertSame(olResponseOrganized, $props[$tags['responsestatus']]);
 				$this->assertSame(3, $props[$tags['updatecounter']]);
+			}
+		}
+	}
+
+	public function testBookResourcesWritesTheResourceCalendar(): void {
+		// Opening the resource store takes a session.
+		$request = new Meetingrequest($this->store, $this->newRequest()->message, $this->session);
+		$request->setDirectBooking(true);
+		$tags = $request->proptags;
+		mapi_setprops($request->message, [
+			PR_MESSAGE_CLASS => 'IPM.Appointment',
+			$tags['busystatus'] => fbBusy,
+			$tags['meetingstatus'] => olMeeting,
+			$tags['responsestatus'] => olResponseOrganized,
+		]);
+		// The test mailbox books itself as the resource.
+		$resource = mapi_ab_resolvename(
+			mapi_openaddressbook($this->session),
+			[[PR_DISPLAY_NAME => getenv('MAPI_TEST_USER')]],
+			EMS_AB_ADDRESS_LOOKUP
+		)[0];
+		mapi_message_modifyrecipients($request->message, MODRECIP_ADD, [[
+			PR_ENTRYID => mapi_createoneoff('attendee', 'SMTP', 'attendee@example.invalid'),
+			PR_DISPLAY_NAME => 'attendee',
+			PR_EMAIL_ADDRESS => 'attendee@example.invalid',
+			PR_ADDRTYPE => 'SMTP',
+			PR_RECIPIENT_TYPE => MAPI_TO,
+			PR_RECIPIENT_FLAGS => recipSendable,
+		], [
+			PR_ENTRYID => $resource[PR_ENTRYID],
+			PR_DISPLAY_NAME => $resource[PR_DISPLAY_NAME],
+			PR_EMAIL_ADDRESS => $resource[PR_EMAIL_ADDRESS],
+			PR_ADDRTYPE => $resource[PR_ADDRTYPE],
+			PR_RECIPIENT_TYPE => MAPI_BCC,
+			PR_RECIPIENT_FLAGS => recipSendable,
+		]]);
+		mapi_savechanges($request->message);
+		$goid = mapi_getprops($request->message, [$tags['goid']])[$tags['goid']];
+		$restriction = [RES_PROPERTY, [RELOP => RELOP_EQ, ULPROPTAG => $tags['goid'], VALUE => $goid]];
+
+		try {
+			$booked = $request->bookResources($request->message, false, false);
+			$this->assertFalse($request->errorSetResource);
+			$this->assertCount(1, $booked);
+			$items = mapi_table_queryallrows(
+				mapi_folder_getcontentstable($this->parent),
+				[PR_MESSAGE_CLASS, $tags['meetingstatus'], $tags['responsestatus'], $tags['busystatus']],
+				$restriction
+			);
+			$this->assertCount(1, $items);
+			$this->assertSame('IPM.Appointment', $items[0][PR_MESSAGE_CLASS]);
+			$this->assertSame(olMeetingReceived, $items[0][$tags['meetingstatus']]);
+			$this->assertSame(olResponseAccepted, $items[0][$tags['responsestatus']]);
+			$this->assertSame(fbBusy, $items[0][$tags['busystatus']]);
+			foreach (mapi_table_queryallrows(
+				mapi_message_getrecipienttable($request->message),
+				[PR_RECIPIENT_TYPE, PR_RECIPIENT_TRACKSTATUS]
+			) as $recipient) {
+				$this->assertSame(
+					$recipient[PR_RECIPIENT_TYPE] === MAPI_BCC ? olRecipientTrackStatusAccepted : olRecipientTrackStatusNone,
+					$recipient[PR_RECIPIENT_TRACKSTATUS] ?? olRecipientTrackStatusNone
+				);
+			}
+		}
+		finally {
+			$left = mapi_table_queryallrows(mapi_folder_getcontentstable($this->parent), [PR_ENTRYID], $restriction);
+			if ($left) {
+				mapi_folder_deletemessages($this->parent, array_column($left, PR_ENTRYID), DELETE_HARD_DELETE);
 			}
 		}
 	}
