@@ -924,7 +924,7 @@ class Recurrence extends BaseRecurrence {
 
 		$imessage = mapi_attach_openobj($attachment, MAPI_CREATE | MAPI_MODIFY);
 
-		if ($copy_attach_from) {
+		if (is_resource($copy_attach_from)) {
 			$attachmentTable = mapi_message_getattachmenttable($copy_attach_from);
 			if ($attachmentTable) {
 				$attachments = mapi_table_queryallrows($attachmentTable, [PR_ATTACH_NUM, PR_ATTACH_SIZE, PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_HIDDEN, PR_DISPLAY_NAME, PR_ATTACH_METHOD]);

@@ -16,16 +16,16 @@ PHP library.
 
 ### Installing Dependencies
 
-Install PHPUnit and development dependencies via Composer:
+Use PHP 8.2 or newer and the same PHPUnit release as CI:
 
 ```bash
-composer install --dev
+mkdir -p tools
+curl --fail --location https://phar.phpunit.de/phpunit-11.5.56.phar \
+  -o tools/phpunit.phar
 ```
 
-This installs:
-- PHPUnit 9.x/10.x (depending on PHP version)
-- PHP-CS-Fixer for code style
-- Rector for compatibility checks
+Run these commands from the repository root. The standalone runner avoids
+loading a system-installed MAPI header library through Composer's autoloader.
 
 ### MAPI Stub
 
@@ -40,16 +40,16 @@ allows tests to run in CI/CD environments.
 Run the complete test suite:
 
 ```bash
-vendor/bin/phpunit
+php tools/phpunit.phar
 ```
 
-`RecurrenceAttachmentTest` also exercises a real MAPI store when
-`MAPI_TEST_USER` names a local test mailbox. Run it on the mail server with
-permission to use `mapi_logon_np`; it creates and removes a temporary folder:
+The attachment, folder and meeting workflow tests also exercise a real MAPI
+store when `MAPI_TEST_USER` names a local test mailbox. Run the suite on the
+mail server with permission to use `mapi_logon_np`. These tests create and
+remove temporary folders; outgoing meeting submission is intercepted:
 
 ```bash
-MAPI_TEST_USER=test@example.org php -d auto_prepend_file=tests/bootstrap.php \
-  vendor/bin/phpunit tests/RecurrenceAttachmentTest.php
+MAPI_TEST_USER=test@example.org php tools/phpunit.phar
 ```
 
 ### Specific Test File
@@ -57,8 +57,8 @@ MAPI_TEST_USER=test@example.org php -d auto_prepend_file=tests/bootstrap.php \
 Run a single test file:
 
 ```bash
-vendor/bin/phpunit tests/TokenTest.php
-vendor/bin/phpunit tests/BaseExceptionTest.php
+php tools/phpunit.phar tests/TokenTest.php
+php tools/phpunit.phar tests/BaseExceptionTest.php
 ```
 
 ### Specific Test Method
@@ -66,7 +66,7 @@ vendor/bin/phpunit tests/BaseExceptionTest.php
 Run a specific test:
 
 ```bash
-vendor/bin/phpunit --filter testTokenParsing tests/TokenTest.php
+php tools/phpunit.phar --filter testTokenConstructorWithValidJWT tests/TokenTest.php
 ```
 
 ### Test Groups
@@ -74,8 +74,8 @@ vendor/bin/phpunit --filter testTokenParsing tests/TokenTest.php
 Run tests by group (if defined):
 
 ```bash
-vendor/bin/phpunit --group authentication
-vendor/bin/phpunit --exclude-group slow
+php tools/phpunit.phar --group authentication
+php tools/phpunit.phar --exclude-group slow
 ```
 
 ### With Coverage
@@ -83,19 +83,19 @@ vendor/bin/phpunit --exclude-group slow
 Generate HTML coverage report (requires Xdebug or PCOV):
 
 ```bash
-vendor/bin/phpunit --coverage-html coverage
+php tools/phpunit.phar --coverage-html coverage
 ```
 
 Generate text coverage summary:
 
 ```bash
-vendor/bin/phpunit --coverage-text
+php tools/phpunit.phar --coverage-text
 ```
 
 Generate Clover XML for CI:
 
 ```bash
-vendor/bin/phpunit --coverage-clover coverage.xml
+php tools/phpunit.phar --coverage-clover coverage.xml
 ```
 
 ### Verbose Output
@@ -103,8 +103,7 @@ vendor/bin/phpunit --coverage-clover coverage.xml
 See detailed test progress:
 
 ```bash
-vendor/bin/phpunit --verbose
-vendor/bin/phpunit --debug
+php tools/phpunit.phar --debug
 ```
 
 ### Configuration
@@ -199,7 +198,7 @@ class MyFeatureTest extends TestCase {
    - `BaseExceptionTest.php` for testing `BaseException` class
 
 2. **Test Method Names**: `test{MethodName}{Scenario}()`
-   - `testTokenParsing()` - tests parsing functionality
+   - `testTokenConstructorWithValidJWT()` - tests parsing functionality
    - `testTokenThrowsExceptionOnInvalidFormat()` - tests exception scenario
    - `testIsExpiredReturnsTrueWhenExpired()` - descriptive scenario
 
@@ -345,14 +344,14 @@ public function testTokenProperties(): void {
 Run this to see current coverage:
 
 ```bash
-vendor/bin/phpunit --coverage-text --colors=never | grep -A 3 "Code Coverage Report"
+php tools/phpunit.phar --coverage-text --colors=never | grep -A 3 "Code Coverage Report"
 ```
 
 ### Improving Coverage
 
 1. **Identify gaps**:
    ```bash
-   vendor/bin/phpunit --coverage-html coverage
+   php tools/phpunit.phar --coverage-html coverage
    # Open coverage/index.html in browser
    ```
 
@@ -422,9 +421,9 @@ Example CI configuration:
 ```yaml
 test:
   script:
-    - composer install --dev
-    - vendor/bin/phpunit --coverage-text --colors=never
-    - vendor/bin/php-cs-fixer fix --dry-run --diff
+    - mkdir -p tools
+    - curl --fail --location https://phar.phpunit.de/phpunit-11.5.56.phar -o tools/phpunit.phar
+    - php tools/phpunit.phar --coverage-text --colors=never
 ```
 
 ### Local Pre-commit Hook
@@ -433,7 +432,7 @@ Add to `.git/hooks/pre-commit`:
 
 ```bash
 #!/bin/bash
-vendor/bin/phpunit
+php tools/phpunit.phar
 if [ $? -ne 0 ]; then
     echo "Tests failed. Commit aborted."
     exit 1

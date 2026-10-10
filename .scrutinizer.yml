@@ -12,7 +12,7 @@ build:
   image: default-bionic
   environment:
     php:
-      version: 8.3.3
+      version: 8.2.33
       ini:
         xdebug.mode: coverage
   nodes:
@@ -24,13 +24,14 @@ build:
       tests:
         override:
           - php tools/phpunit.phar --configuration phpunit.xml
-          - php-scrutinizer-run
+          - php-scrutinizer-run --enable-security-analysis
           - command: phpcs-run
             use_website_config: true
 checks:
   php:
     code_rating: true
     duplication: true
+    security_vulnerabilities: true
     excluded_dependencies:
       - phpunit/phpunit
 tools:

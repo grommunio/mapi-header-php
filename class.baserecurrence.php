@@ -199,195 +199,33 @@ abstract class BaseRecurrence {
 		$ret["subtype"] = $data["rtype2"];
 		$rdata = substr($rdata, 10);
 
-		switch ($data["rtype"]) {
-			case IDC_RCEV_PAT_ORB_DAILY:
-				if (strlen($rdata) < 12) {
-					return $ret;
-				}
-
-				$data = unpack("Vunknown/Veveryn/Vregen", $rdata);
-				if ($data["everyn"] > 1438560) { // minutes for 999 days
-					return $ret;
-				}
-				$ret["everyn"] = $data["everyn"];
-				$ret["regen"] = $data["regen"];
-
-				switch ($ret["subtype"]) {
-					case rptDay:
-						$rdata = substr($rdata, 12);
-						break;
-
-					case rptWeek:
-						$rdata = substr($rdata, 16);
-						break;
-				}
-
-				break;
-
-			case IDC_RCEV_PAT_ORB_WEEKLY:
-				if (strlen($rdata) < 16) {
-					return $ret;
-				}
-
-				$data = unpack("Vconst1/Veveryn/Vregen", $rdata);
-				if ($data["everyn"] > 99) {
-					return $ret;
-				}
-
-				$rdata = substr($rdata, 12);
-
-				$ret["everyn"] = $data["everyn"];
-				$ret["regen"] = $data["regen"];
-				$ret["weekdays"] = 0;
-
-				if ($data["regen"] == 0) {
-					$data = unpack("Vweekdays", $rdata);
-					$rdata = substr($rdata, 4);
-
-					$ret["weekdays"] = $data["weekdays"];
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_MONTHLY:
-				if (strlen($rdata) < 16) {
-					return $ret;
-				}
-
-				$data = unpack("Vconst1/Veveryn/Vregen/Vmonthday", $rdata);
-				if ($data["everyn"] > 99) {
-					return $ret;
-				}
-
-				$ret["everyn"] = $data["everyn"];
-				$ret["regen"] = $data["regen"];
-
-				if ($ret["subtype"] == rptMonthNth) {
-					$ret["weekdays"] = $data["monthday"];
-				}
-				else {
-					$ret["monthday"] = $data["monthday"];
-				}
-
-				$rdata = substr($rdata, 16);
-				if ($ret["subtype"] == rptMonthNth) {
-					$data = unpack("Vnday", $rdata);
-					// Sanity check for valid values (and opportunistically try to fix)
-					if ($data["nday"] == 0xFFFFFFFF || $data["nday"] == -1) {
-						$data["nday"] = 5;
-					}
-					elseif ($data["nday"] < 0 || $data["nday"] > 5) {
-						$data["nday"] = 0;
-					}
-					$ret["nday"] = $data["nday"];
-					$rdata = substr($rdata, 4);
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_YEARLY:
-				if (strlen($rdata) < 16) {
-					return $ret;
-				}
-
-				$data = unpack("Vmonth/Veveryn/Vregen/Vmonthday", $rdata);
-				// recurring yearly tasks and events have a period in months multiple by 12
-				if ($data["everyn"] % 12 != 0) {
-					return $ret;
-				}
-
-				$ret["month"] = $data["month"];
-				$ret["everyn"] = $data["everyn"] / 12;
-				$ret["regen"] = $data["regen"];
-
-				if ($ret["subtype"] == rptMonthNth) {
-					$ret["weekdays"] = $data["monthday"];
-				}
-				else {
-					$ret["monthday"] = $data["monthday"];
-				}
-
-				$rdata = substr($rdata, 16);
-
-				if ($ret["subtype"] == rptMonthNth) {
-					$data = unpack("Vnday", $rdata);
-					// Sanity check for valid values (and opportunistically try to fix)
-					if ($data["nday"] == 0xFFFFFFFF || $data["nday"] == -1) {
-						$data["nday"] = 5;
-					}
-					elseif ($data["nday"] < 0 || $data["nday"] > 5) {
-						$data["nday"] = 0;
-					}
-					$ret["nday"] = $data["nday"];
-					$rdata = substr($rdata, 4);
-				}
-				break;
-		}
-
-		if (strlen($rdata) < 16) {
+		$valid = match ($data["rtype"]) {
+			IDC_RCEV_PAT_ORB_DAILY => $this->parseDailyPattern($rdata, $ret),
+			IDC_RCEV_PAT_ORB_WEEKLY => $this->parseWeeklyPattern($rdata, $ret),
+			default => $this->parseMonthlyPattern(
+				$rdata,
+				$ret,
+				$data["rtype"] == IDC_RCEV_PAT_ORB_YEARLY
+			),
+		};
+		if (!$valid) {
 			return $ret;
 		}
 
-		$data = unpack("Vterm/Vnumoccur/Vconst2/Vnumexcept", $rdata);
-		$rdata = substr($rdata, 16);
-		if (!in_array($data["term"], [IDC_RCEV_PAT_ERB_END, IDC_RCEV_PAT_ERB_AFTERNOCCUR, IDC_RCEV_PAT_ERB_NOEND, 0xFFFFFFFF], true)) {
+		$exc_base_dates = $this->parseRecurrenceRange($rdata, $ret);
+		if ($exc_base_dates === null) {
 			return $ret;
 		}
 
-		$ret["term"] = (int) $data["term"] > 0x2000 ? (int) $data["term"] - 0x2000 : $data["term"];
-		$ret["numoccur"] = $data["numoccur"];
-		$ret["first_dow"] = $data["const2"];
-		$ret["numexcept"] = $data["numexcept"];
+		$this->parseAppointmentRecurrence($rdata, $ret, $exc_base_dates);
 
-		// exc_base_dates are *all* the base dates that have been either deleted or modified
-		$exc_base_dates = [];
-		for ($i = 0; $i < $ret["numexcept"]; ++$i) {
-			if (strlen($rdata) < 4) {
-				// We shouldn't arrive here, because that implies
-				// numexcept does not match the amount of data
-				// which is available for the exceptions.
-				return $ret;
-			}
-			$data = unpack("Vbasedate", $rdata);
-			$rdata = substr($rdata, 4);
-			$exc_base_dates[] = $this->recurDataToUnixData($data["basedate"]);
-		}
+		return $ret;
+	}
 
-		if (strlen($rdata) < 4) {
-			return $ret;
-		}
-
-		$data = unpack("Vnumexceptmod", $rdata);
-		$rdata = substr($rdata, 4);
-
-		$ret["numexceptmod"] = $data["numexceptmod"];
-
-		// exc_changed are the base dates of *modified* occurrences. exactly what is modified
-		// is in the attachments *and* in the data further down this function.
-		$exc_changed = [];
-		for ($i = 0; $i < $ret["numexceptmod"]; ++$i) {
-			if (strlen($rdata) < 4) {
-				// We shouldn't arrive here, because that implies
-				// numexceptmod does not match the amount of data
-				// which is available for the exceptions.
-				return $ret;
-			}
-			$data = unpack("Vstartdate", $rdata);
-			$rdata = substr($rdata, 4);
-			$exc_changed[] = $this->recurDataToUnixData($data["startdate"]);
-		}
-
-		if (strlen($rdata) < 8) {
-			return $ret;
-		}
-
-		$data = unpack("Vstart/Vend", $rdata);
-		$rdata = substr($rdata, 8);
-
-		$ret["start"] = $this->recurDataToUnixData($data["start"]);
-		$ret["end"] = $this->recurDataToUnixData($data["end"]);
-
+	private function parseAppointmentRecurrence(string &$rdata, array &$ret, array $exc_base_dates): void {
 		// this is where task recurrence stop
 		if (strlen($rdata) < 16) {
-			return $ret;
+			return;
 		}
 
 		$data = unpack("Vreaderversion/Vwriterversion/Vstartmin/Vendmin", $rdata);
@@ -396,228 +234,354 @@ abstract class BaseRecurrence {
 		$ret["startocc"] = $data["startmin"];
 		$ret["endocc"] = $data["endmin"];
 		$writerversion = $data["writerversion"];
+		// base dates without an exception record are deleted occurrences
+		$ret["deleted_occurrences"] = $exc_base_dates;
 
+		if (strlen($rdata) < 2) {
+			return;
+		}
 		$data = unpack("vnumber", $rdata);
 		$rdata = substr($rdata, 2);
 
 		$nexceptions = $data["number"];
+		if ($nexceptions === 0) {
+			return;
+		}
 		$exc_changed_details = [];
 
-		// Parse n modified exceptions
 		for ($i = 0; $i < $nexceptions; ++$i) {
-			$item = [];
-
-			// Get exception startdate, enddate and basedate (the date at which the occurrence would have started)
-			$data = unpack("Vstartdate/Venddate/Vbasedate", $rdata);
-			$rdata = substr($rdata, 12);
-
-			// Convert recurtimestamp to unix timestamp
-			$startdate = $this->recurDataToUnixData($data["startdate"]);
-			$enddate = $this->recurDataToUnixData($data["enddate"]);
-			$basedate = $this->recurDataToUnixData($data["basedate"]);
-
-			// Set the right properties
-			$item["basedate"] = $this->dayStartOf($basedate);
-			$item["start"] = $startdate;
-			$item["end"] = $enddate;
-
-			$data = unpack("vbitmask", $rdata);
-			$rdata = substr($rdata, 2);
-			$item["bitmask"] = $data["bitmask"]; // save bitmask for extended exceptions
-
-			// Bitmask to verify what properties are changed
-			$bitmask = $data["bitmask"];
-
-			// ARO_SUBJECT: 0x0001
-			// Look for field: SubjectLength (2b), SubjectLength2 (2b) and Subject
-			if ($bitmask & (1 << 0)) {
-				$data = unpack("vnull_length/vlength", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$length = $data["length"];
-				$item["subject"] = ""; // Normalized subject
-				for ($j = 0; $j < $length && strlen($rdata); ++$j) {
-					$data = unpack("Cchar", $rdata);
-					$rdata = substr($rdata, 1);
-
-					$item["subject"] .= chr($data["char"]);
-				}
+			$item = $this->parseRecurrenceException($rdata);
+			if ($item === null) {
+				break;
 			}
-
-			// ARO_MEETINGTYPE: 0x0002
-			if ($bitmask & (1 << 1)) {
-				$rdata = substr($rdata, 4);
-				// Attendees modified: no data here (only in attachment)
-			}
-
-			// ARO_REMINDERDELTA: 0x0004
-			// Look for field: ReminderDelta (4b)
-			if ($bitmask & (1 << 2)) {
-				$data = unpack("Vremind_before", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["remind_before"] = $data["remind_before"];
-			}
-
-			// ARO_REMINDER: 0x0008
-			// Look field: ReminderSet (4b)
-			if ($bitmask & (1 << 3)) {
-				$data = unpack("Vreminder_set", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["reminder_set"] = $data["reminder_set"];
-			}
-
-			// ARO_LOCATION: 0x0010
-			// Look for fields: LocationLength (2b), LocationLength2 (2b) and Location
-			// Similar to ARO_SUBJECT above.
-			if ($bitmask & (1 << 4)) {
-				$data = unpack("vnull_length/vlength", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["location"] = "";
-
-				$length = $data["length"];
-				$data = substr($rdata, 0, $length);
-				$rdata = substr($rdata, $length);
-
-				$item["location"] .= $data;
-			}
-
-			// ARO_BUSYSTATUS: 0x0020
-			// Look for field: BusyStatus (4b)
-			if ($bitmask & (1 << 5)) {
-				$data = unpack("Vbusystatus", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["busystatus"] = $data["busystatus"];
-			}
-
-			// ARO_ATTACHMENT: 0x0040
-			if ($bitmask & (1 << 6)) {
-				// no data: RESERVED
-				$rdata = substr($rdata, 4);
-			}
-
-			// ARO_SUBTYPE: 0x0080
-			// Look for field: SubType (4b). Determines whether it is an allday event.
-			if ($bitmask & (1 << 7)) {
-				$data = unpack("Vallday", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["alldayevent"] = $data["allday"];
-			}
-
-			// ARO_APPTCOLOR: 0x0100
-			// Look for field: AppointmentColor (4b)
-			if ($bitmask & (1 << 8)) {
-				$data = unpack("Vlabel", $rdata);
-				$rdata = substr($rdata, 4);
-
-				$item["label"] = $data["label"];
-			}
-
-			// ARO_EXCEPTIONAL_BODY: 0x0200
-			if ($bitmask & (1 << 9)) {
-				// Notes or Attachments modified: no data here (only in attachment)
-			}
-
 			$exc_changed_details[] = $item;
 		}
 
-		/**
-		 * We now have $exc_changed, $exc_base_dates and $exc_changed_details
-		 * We will ignore $exc_changed, as this information is available in $exc_changed_details
-		 * also. If an item is in $exc_base_dates and NOT in $exc_changed_details, then the item
-		 * has been deleted.
-		 */
-
-		// Find deleted occurrences
-		$deleted_occurrences = [];
-
-		foreach ($exc_base_dates as $base_date) {
-			$found = false;
-
-			foreach ($exc_changed_details as $details) {
-				if ($details["basedate"] == $base_date) {
-					$found = true;
-					break;
-				}
-			}
-			if (!$found) {
-				// item was not in exc_changed_details, so it must be deleted
-				$deleted_occurrences[] = $base_date;
-			}
-		}
-
-		$ret["deleted_occurrences"] = $deleted_occurrences;
+		// Base dates without a modified exception represent deletions.
+		$changed_dates = array_fill_keys(array_column($exc_changed_details, "basedate"), true);
+		$ret["deleted_occurrences"] = array_values(array_filter(
+			$exc_base_dates,
+			static fn ($date) => !isset($changed_dates[$date])
+		));
 		$ret["changed_occurrences"] = $exc_changed_details;
 
-		// enough data for normal exception (no extended data)
-		if (strlen($rdata) < 8) {
-			return $ret;
+		// enough data for normal exception (no extended data); a cut record has none
+		if (count($exc_changed_details) < $nexceptions || strlen($rdata) < 8) {
+			return;
 		}
 
-		$data = unpack("Vreservedsize", $rdata);
-		$rdata = substr($rdata, 4 + $data["reservedsize"]);
+		if (!$this->skipRecurrenceBlock($rdata)) {
+			return;
+		}
 
 		for ($i = 0; $i < $nexceptions; ++$i) {
-			// subject and location in ucs-2 to utf-8
-			if ($writerversion >= 0x3009) {
-				$data = unpack("Vsize/Vvalue", $rdata); // size includes sizeof(value)==4
-				$rdata = substr($rdata, 4 + $data["size"]);
+			$item = $this->parseExtendedException(
+				$rdata,
+				$exc_changed_details[$i],
+				$writerversion
+			);
+			if ($item === null) {
+				break;
 			}
-
-			$data = unpack("Vreservedsize", $rdata);
-			$rdata = substr($rdata, 4 + $data["reservedsize"]);
-
-			// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
-			if ($exc_changed_details[$i]["bitmask"] & 0x11) {
-				$data = unpack("Vstart/Vend/Vorig", $rdata);
-				$rdata = substr($rdata, 4 * 3);
-
-				$exc_changed_details[$i]["ex_start_datetime"] = $data["start"];
-				$exc_changed_details[$i]["ex_end_datetime"] = $data["end"];
-				$exc_changed_details[$i]["ex_orig_date"] = $data["orig"];
-			}
-
-			// ARO_SUBJECT
-			if ($exc_changed_details[$i]["bitmask"] & 0x01) {
-				// decode ucs2 string to utf-8
-				$data = unpack("vlength", $rdata);
-				$rdata = substr($rdata, 2);
-				$length = $data["length"];
-				$data = substr($rdata, 0, $length * 2);
-				$rdata = substr($rdata, $length * 2);
-				$subject = iconv("UCS-2LE", "UTF-8", $data);
-				// replace subject with unicode subject
-				$exc_changed_details[$i]["subject"] = $subject;
-			}
-
-			// ARO_LOCATION
-			if ($exc_changed_details[$i]["bitmask"] & 0x10) {
-				// decode ucs2 string to utf-8
-				$data = unpack("vlength", $rdata);
-				$rdata = substr($rdata, 2);
-				$length = $data["length"];
-				$data = substr($rdata, 0, $length * 2);
-				$rdata = substr($rdata, $length * 2);
-				$location = iconv("UCS-2LE", "UTF-8", $data);
-				// replace subject with unicode subject
-				$exc_changed_details[$i]["location"] = $location;
-			}
-
-			// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
-			if ($exc_changed_details[$i]["bitmask"] & 0x11) {
-				$data = unpack("Vreservedsize", $rdata);
-				$rdata = substr($rdata, 4 + $data["reservedsize"]);
-			}
+			$exc_changed_details[$i] = $item;
 		}
 
 		// update with extended data
 		$ret["changed_occurrences"] = $exc_changed_details;
+	}
 
-		return $ret;
+	private function parseDailyPattern(string &$rdata, array &$ret): bool {
+		if (strlen($rdata) < 12) {
+			return false;
+		}
+
+		$data = unpack("Vunknown/Veveryn/Vregen", $rdata);
+		if ($data["everyn"] > 1438560) { // minutes for 999 days
+			return false;
+		}
+		$ret["everyn"] = $data["everyn"];
+		$ret["regen"] = $data["regen"];
+
+		switch ($ret["subtype"]) {
+			case rptDay:
+				$rdata = substr($rdata, 12);
+				break;
+
+			case rptWeek:
+				$rdata = substr($rdata, 16);
+				break;
+		}
+
+		return true;
+	}
+
+	private function parseWeeklyPattern(string &$rdata, array &$ret): bool {
+		if (strlen($rdata) < 16) {
+			return false;
+		}
+
+		$data = unpack("Vconst1/Veveryn/Vregen", $rdata);
+		if ($data["everyn"] > 99) {
+			return false;
+		}
+
+		$rdata = substr($rdata, 12);
+		$ret["everyn"] = $data["everyn"];
+		$ret["regen"] = $data["regen"];
+		$ret["weekdays"] = 0;
+
+		if ($data["regen"] == 0) {
+			$data = unpack("Vweekdays", $rdata);
+			$rdata = substr($rdata, 4);
+			$ret["weekdays"] = $data["weekdays"];
+		}
+
+		return true;
+	}
+
+	private function parseMonthlyPattern(string &$rdata, array &$ret, bool $yearly): bool {
+		if (strlen($rdata) < 16) {
+			return false;
+		}
+
+		$data = unpack("Vmonth/Veveryn/Vregen/Vmonthday", $rdata);
+		if ($yearly) {
+			// recurring yearly tasks and events have a period in months multiple by 12
+			if ($data["everyn"] % 12 != 0) {
+				return false;
+			}
+			$ret["month"] = $data["month"];
+			$ret["everyn"] = $data["everyn"] / 12;
+		}
+		else {
+			if ($data["everyn"] > 99) {
+				return false;
+			}
+			$ret["everyn"] = $data["everyn"];
+		}
+		$ret["regen"] = $data["regen"];
+		$rdata = substr($rdata, 16);
+
+		if ($ret["subtype"] != rptMonthNth) {
+			$ret["monthday"] = $data["monthday"];
+
+			return true;
+		}
+
+		$ret["weekdays"] = $data["monthday"];
+		if (strlen($rdata) < 4) {
+			return false;
+		}
+		$data = unpack("Vnday", $rdata);
+		// Sanity check for valid values (and opportunistically try to fix)
+		if ($data["nday"] == 0xFFFFFFFF || $data["nday"] == -1) {
+			$data["nday"] = 5;
+		}
+		elseif ($data["nday"] < 0 || $data["nday"] > 5) {
+			$data["nday"] = 0;
+		}
+		$ret["nday"] = $data["nday"];
+		$rdata = substr($rdata, 4);
+
+		return true;
+	}
+
+	private function parseRecurrenceRange(string &$rdata, array &$ret): ?array {
+		if (strlen($rdata) < 16) {
+			return null;
+		}
+
+		$data = unpack("Vterm/Vnumoccur/Vconst2/Vnumexcept", $rdata);
+		$rdata = substr($rdata, 16);
+		if (!in_array($data["term"], [IDC_RCEV_PAT_ERB_END, IDC_RCEV_PAT_ERB_AFTERNOCCUR, IDC_RCEV_PAT_ERB_NOEND, 0xFFFFFFFF], true)) {
+			return null;
+		}
+
+		$ret["term"] = (int) $data["term"] > 0x2000 ? (int) $data["term"] - 0x2000 : $data["term"];
+		$ret["numoccur"] = $data["numoccur"];
+		$ret["first_dow"] = $data["const2"];
+		$ret["numexcept"] = $data["numexcept"];
+
+		// exc_base_dates are *all* the base dates that have been either deleted or modified
+		$exc_base_dates = $this->parseRecurrenceDates($rdata, $ret["numexcept"]);
+		if ($exc_base_dates === null) {
+			return null;
+		}
+
+		if (strlen($rdata) < 4) {
+			return null;
+		}
+
+		$data = unpack("Vnumexceptmod", $rdata);
+		$rdata = substr($rdata, 4);
+
+		$ret["numexceptmod"] = $data["numexceptmod"];
+
+		// exc_changed are the base dates of *modified* occurrences. exactly what is modified
+		if ($this->parseRecurrenceDates($rdata, $ret["numexceptmod"]) === null) {
+			return null;
+		}
+
+		if (strlen($rdata) < 8) {
+			return null;
+		}
+
+		$data = unpack("Vstart/Vend", $rdata);
+		$rdata = substr($rdata, 8);
+
+		$ret["start"] = $this->recurDataToUnixData($data["start"]);
+		$ret["end"] = $this->recurDataToUnixData($data["end"]);
+
+		return $exc_base_dates;
+	}
+
+	private function parseRecurrenceDates(string &$rdata, int $count): ?array {
+		if ($count === 0) {
+			return [];
+		}
+		if ($count > intdiv(strlen($rdata), 4)) {
+			return null;
+		}
+		$dates = [];
+		for ($offset = 0; $offset < $count; $offset += 256) {
+			$length = min(256, $count - $offset);
+			foreach (unpack("V{$length}", $rdata, $offset * 4) as $value) {
+				$dates[] = $this->recurDataToUnixData($value);
+			}
+		}
+		$rdata = substr($rdata, $count * 4);
+
+		return $dates;
+	}
+
+	private function parseRecurrenceException(string &$rdata): ?array {
+		$dataLength = strlen($rdata);
+		if ($dataLength < 14) {
+			return null;
+		}
+		$data = unpack("Vstartdate/Venddate/Vbasedate/vbitmask", $rdata);
+		$offset = 14;
+		$bitmask = $data["bitmask"];
+		$item = [
+			"basedate" => $this->dayStartOf($this->recurDataToUnixData($data["basedate"])),
+			"start" => $this->recurDataToUnixData($data["startdate"]),
+			"end" => $this->recurDataToUnixData($data["enddate"]),
+			"bitmask" => $bitmask,
+		];
+
+		// ExceptionInfo fields in the order of MS-OXOCAL 2.2.1.44.2
+		$fields = [
+			0x01 => "subject", // ARO_SUBJECT
+			0x02 => null, // ARO_MEETINGTYPE
+			0x04 => "remind_before", // ARO_REMINDERDELTA
+			0x08 => "reminder_set", // ARO_REMINDER
+			0x10 => "location", // ARO_LOCATION
+			0x20 => "busystatus", // ARO_BUSYSTATUS
+			0x40 => null, // ARO_ATTACHMENT
+			0x80 => "alldayevent", // ARO_SUBTYPE
+			0x100 => "label", // ARO_APPTCOLOR
+		];
+		foreach ($fields as $flag => $name) {
+			if (!($bitmask & $flag)) {
+				continue;
+			}
+			if ($dataLength - $offset < 4) {
+				return null;
+			}
+			$length = 4;
+			if ($flag & 0x11) {
+				$size = unpack("vlength", $rdata, $offset + 2)["length"];
+				$length += $size;
+				if ($dataLength - $offset < $length) {
+					return null;
+				}
+				$item[$name] = substr($rdata, $offset + 4, $size);
+			}
+			elseif ($name !== null) {
+				$item[$name] = unpack("Vvalue", $rdata, $offset)["value"];
+			}
+			$offset += $length;
+		}
+		$rdata = substr($rdata, $offset);
+
+		return $item;
+	}
+
+	private function parseExtendedException(string &$rdata, array $item, int $writerversion): ?array {
+		// subject and location in ucs-2 to utf-8
+		if ($writerversion >= 0x3009) {
+			if (!$this->skipRecurrenceBlock($rdata)) {
+				return null;
+			}
+		}
+
+		if (!$this->skipRecurrenceBlock($rdata)) {
+			return null;
+		}
+
+		// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
+		if ($item["bitmask"] & 0x11) {
+			if (strlen($rdata) < 12) {
+				return null;
+			}
+			$data = unpack("Vstart/Vend/Vorig", $rdata);
+			$rdata = substr($rdata, 4 * 3);
+
+			$item["ex_start_datetime"] = $data["start"];
+			$item["ex_end_datetime"] = $data["end"];
+			$item["ex_orig_date"] = $data["orig"];
+		}
+
+		if ($item["bitmask"] & 0x01) {
+			$item["subject"] = $this->parseExceptionString($rdata);
+			if ($item["subject"] === null) {
+				return null;
+			}
+		}
+		if ($item["bitmask"] & 0x10) {
+			$item["location"] = $this->parseExceptionString($rdata);
+			if ($item["location"] === null) {
+				return null;
+			}
+		}
+
+		// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
+		if ($item["bitmask"] & 0x11) {
+			if (!$this->skipRecurrenceBlock($rdata)) {
+				return null;
+			}
+		}
+
+		return $item;
+	}
+
+	private function parseExceptionString(string &$rdata): false|string|null {
+		if (strlen($rdata) < 2) {
+			return null;
+		}
+		$data = unpack("vlength", $rdata);
+		$rdata = substr($rdata, 2);
+		$length = $data["length"];
+		if ($length > intdiv(strlen($rdata), 2)) {
+			return null;
+		}
+		$data = substr($rdata, 0, $length * 2);
+		$rdata = substr($rdata, $length * 2);
+
+		return iconv("UCS-2LE", "UTF-8", $data);
+	}
+
+	private function skipRecurrenceBlock(string &$rdata): bool {
+		if (strlen($rdata) < 4) {
+			return false;
+		}
+		$size = unpack("Vsize", $rdata)["size"];
+		if ($size > strlen($rdata) - 4) {
+			return false;
+		}
+		$rdata = substr($rdata, 4 + $size);
+
+		return true;
 	}
 
 	/**
@@ -653,595 +617,67 @@ abstract class BaseRecurrence {
 		}
 
 		$rdata = pack("vvvvv", 0x3004, 0x3004, $rtype, (int) $this->recur["subtype"], MAPI_CAL_DEFAULT);
-		$weekstart = $this->firstDayOfWeek;
 		$forwardcount = 0;
-		$count = 0;
 		$restocc = 0;
-		$dayofweek = (int) gmdate("w", (int) $this->recur["start"]); // 0 (for Sunday) through 6 (for Saturday)
 
 		// Terminate
 		$term = (int) $this->recur["term"] < 0x2000 ? 0x2000 + (int) $this->recur["term"] : (int) $this->recur["term"];
 
-		switch ($rtype) {
-			case IDC_RCEV_PAT_ORB_DAILY:
-				if (!isset($this->recur["everyn"]) || (int) $this->recur["everyn"] > 1438560 || (int) $this->recur["everyn"] < 0) { // minutes for 999 days
-					return;
-				}
-
-				// The interval of "every N days" divides the start below
-				if ($this->recur["subtype"] != rptWeek && (int) $this->recur["everyn"] == 0) {
-					return;
-				}
-
-				if ($this->recur["subtype"] == rptWeek) {
-					// Daily every workday
-					$rdata .= pack("VVVV", 6 * 24 * 60, 1, 0, 0x3E);
-				}
-				else {
-					// Calc first occ
-					$firstocc = $this->unixDataToRecurData($this->recur["start"]) % ((int) $this->recur["everyn"]);
-
-					$rdata .= pack("VVV", $firstocc, (int) $this->recur["everyn"], $this->recur["regen"] ? 1 : 0);
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_WEEKLY:
-				if (!isset($this->recur["everyn"]) || $this->recur["everyn"] > 99 || (int) $this->recur["everyn"] <= 0) {
-					return;
-				}
-
-				if (!$this->recur["regen"] && empty($this->recur["weekdays"])) {
-					return;
-				}
-
-				// No need to calculate startdate if sliding flag was set.
-				if (!$this->recur['regen']) {
-					// Calculate start date of recurrence
-
-					// Find the first day that matches one of the weekdays selected
-					$daycount = 0;
-					$dayskip = -1;
-					for ($j = 0; $j < 7; ++$j) {
-						if (((int) $this->recur["weekdays"]) & (1 << (($dayofweek + $j) % 7))) {
-							if ($dayskip == -1) {
-								$dayskip = $j;
-							}
-
-							++$daycount;
-						}
-					}
-
-					// $dayskip is the number of days to skip from the startdate until the first occurrence
-					// $daycount is the number of days per week that an occurrence occurs
-
-					$weekskip = 0;
-					if (($dayofweek < $weekstart && $dayskip > 0) || ($dayofweek + $dayskip) > 6) {
-						$weekskip = 1;
-					}
-
-					// Check if the recurrence ends after a number of occurrences, in that case we must calculate the
-					// remaining occurrences based on the start of the recurrence.
-					if ($term == IDC_RCEV_PAT_ERB_AFTERNOCCUR) {
-						// $weekskip is the amount of weeks to skip from the startdate before the first occurrence
-						// $forwardcount is the maximum number of week occurrences we can go ahead after the first occurrence that
-						// is still inside the recurrence. We subtract one to make sure that the last week is never forwarded over
-						// (eg when numoccur = 2, and daycount = 1)
-						$forwardcount = floor((int) ($this->recur["numoccur"] - 1) / $daycount);
-
-						// $restocc is the number of occurrences left after $forwardcount whole weeks of occurrences, minus one
-						// for the occurrence on the first day
-						$restocc = ((int) $this->recur["numoccur"]) - ($forwardcount * $daycount) - 1;
-
-						// $forwardcount is now the number of weeks we can go forward and still be inside the recurrence
-						$forwardcount *= (int) $this->recur["everyn"];
-					}
-
-					// The real start is start + dayskip + weekskip-1 (since dayskip will already bring us into the next week)
-					$this->recur["start"] = ((int) $this->recur["start"]) + ($dayskip * 24 * 60 * 60) + ($weekskip * (((int) $this->recur["everyn"]) - 1) * 7 * 24 * 60 * 60);
-				}
-
-				// Calc first occ
-				$firstocc = $this->unixDataToRecurData($this->recur["start"]) % (((int) $this->recur["everyn"]) * 7 * 24 * 60);
-
-				$firstocc -= (((int) gmdate("w", (int) $this->recur["start"])) - 1) * 24 * 60;
-
-				if ($this->recur["regen"]) {
-					$rdata .= pack("VVV", $firstocc, (int) $this->recur["everyn"], 1);
-				}
-				else {
-					$rdata .= pack("VVVV", $firstocc, (int) $this->recur["everyn"], 0, (int) $this->recur["weekdays"]);
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_MONTHLY:
-			case IDC_RCEV_PAT_ORB_YEARLY:
-				if (!isset($this->recur["everyn"])) {
-					return;
-				}
-				if ($rtype == IDC_RCEV_PAT_ORB_YEARLY && !isset($this->recur["month"])) {
-					return;
-				}
-
-				if ($rtype == IDC_RCEV_PAT_ORB_MONTHLY) {
-					$everyn = (int) $this->recur["everyn"];
-					if ($everyn > 99 || $everyn <= 0) {
-						return;
-					}
-				}
-				else {
-					if ((int) $this->recur["everyn"] <= 0) {
-						return;
-					}
-					$everyn = ((int) $this->recur["everyn"]) * 12;
-				}
-
-				// Get montday/month/year of original start
-				$curmonthday = (int) gmdate("j", (int) $this->recur["start"]);
-				$curyear = (int) gmdate("Y", (int) $this->recur["start"]);
-				$curmonth = (int) gmdate("n", (int) $this->recur["start"]);
-
-				// Check if the recurrence ends after a number of occurrences, in that case we must calculate the
-				// remaining occurrences based on the start of the recurrence.
-				if ($term == IDC_RCEV_PAT_ERB_AFTERNOCCUR) {
-					// $forwardcount is the number of occurrences we can skip and still be inside the recurrence range (minus
-					// one to make sure there are always at least one occurrence left)
-					$forwardcount = ((((int) $this->recur["numoccur"]) - 1) * $everyn);
-				}
-
-				// Get month for yearly on D'th day of month M
-				$selmonth = $curmonth;
-				if ($rtype == IDC_RCEV_PAT_ORB_YEARLY) {
-					$selmonth = floor(((int) $this->recur["month"]) / (24 * 60 * 29)) + 1; // 1=jan, 2=feb, eg
-				}
-
-				switch ((int) $this->recur["subtype"]) {
-					// on D day of every M month
-					case rptMonth:
-						if (!isset($this->recur["monthday"])) {
-							return;
-						}
-						// Recalc startdate
-
-						// Set on the right begin day
-
-						// Go the beginning of the month
-						$this->recur["start"] -= ($curmonthday - 1) * 24 * 60 * 60;
-						// Go the the correct month day
-						$this->recur["start"] += (((int) $this->recur["monthday"]) - 1) * 24 * 60 * 60;
-
-						// If the previous calculation gave us a start date different than the original start date, then we need to skip to the first occurrence
-						if (($rtype == IDC_RCEV_PAT_ORB_MONTHLY && ((int) $this->recur["monthday"]) < $curmonthday) ||
-							($rtype == IDC_RCEV_PAT_ORB_YEARLY && ($selmonth != $curmonth || ($selmonth == $curmonth && ((int) $this->recur["monthday"]) < $curmonthday)))) {
-							if ($rtype == IDC_RCEV_PAT_ORB_YEARLY) {
-								if ($curmonth > $selmonth) {// go to next occurrence in 'everyn' months minus difference in first occurrence and original date
-									$count = $everyn - ($curmonth - $selmonth);
-								}
-								elseif ($curmonth < $selmonth) {// go to next occurrence upto difference in first occurrence and original date
-									$count = $selmonth - $curmonth;
-								}
-								else {
-									// Go to next occurrence while recurrence start date is greater than occurrence date but within same month
-									if (((int) $this->recur["monthday"]) < $curmonthday) {
-										$count = $everyn;
-									}
-								}
-							}
-							else {
-								$count = $everyn; // Monthly, go to next occurrence in 'everyn' months
-							}
-
-							// Forward by $count months. This is done by getting the number of days in that month and forwarding that many days
-							for ($i = 0; $i < $count; ++$i) {
-								$this->recur["start"] += $this->getMonthInSeconds($curyear, $curmonth);
-
-								if ($curmonth == 12) {
-									++$curyear;
-									$curmonth = 0;
-								}
-								++$curmonth;
-							}
-						}
-
-						// "start" is now pointing to the first occurrence, except that it will overshoot if the
-						// month in which it occurs has less days than specified as the day of the month. So 31st
-						// of each month will overshoot in february (29 days). We compensate for that by checking
-						// if the day of the month we got is wrong, and then back up to the last day of the previous
-						// month.
-						if (((int) $this->recur["monthday"]) >= 28 && ((int) $this->recur["monthday"]) <= 31 &&
-							(int) gmdate("j", (int) $this->recur["start"]) < ((int) $this->recur["monthday"])) {
-							$this->recur["start"] -= (int) gmdate("j", (int) $this->recur["start"]) * 24 * 60 * 60;
-						}
-
-						// "start" is now the first occurrence
-						if ($rtype == IDC_RCEV_PAT_ORB_MONTHLY) {
-							// Calc first occ
-							$monthIndex = ((((12 % $everyn) * ((((int) gmdate("Y", $this->recur["start"])) - 1601) % $everyn)) % $everyn) + (((int) gmdate("n", $this->recur["start"])) - 1)) % $everyn;
-
-							$firstocc = 0;
-							for ($i = 0; $i < $monthIndex; ++$i) {
-								$firstocc += $this->getMonthInSeconds(1601 + floor($i / 12), ($i % 12) + 1) / 60;
-							}
-
-							$rdata .= pack("VVVV", $firstocc, $everyn, $this->recur["regen"], (int) $this->recur["monthday"]);
-						}
-						else {
-							// Calc first occ
-							$firstocc = 0;
-							$monthIndex = (int) gmdate("n", $this->recur["start"]);
-							for ($i = 1; $i < $monthIndex; ++$i) {
-								$firstocc += $this->getMonthInSeconds(1601 + floor($i / 12), $i) / 60;
-							}
-
-							$rdata .= pack("VVVV", $firstocc, $everyn, $this->recur["regen"], (int) $this->recur["monthday"]);
-						}
-						break;
-
-					case rptMonthNth:
-						// monthly: on Nth weekday of every M month
-						// yearly: on Nth weekday of M month
-						if (!isset($this->recur["weekdays"], $this->recur["nday"])) {
-							return;
-						}
-
-						$weekdays = (int) $this->recur["weekdays"];
-						$nday = (int) $this->recur["nday"];
-
-						// Calc startdate
-						$monthbegindow = (int) $this->recur["start"];
-
-						if ($nday == 5) {
-							// Set date on the last day of the last month
-							$monthbegindow += ((int) gmdate("t", $monthbegindow) - (int) gmdate("j", $monthbegindow)) * 24 * 60 * 60;
-						}
-						else {
-							// Set on the first day of the month
-							$monthbegindow -= (((int) gmdate("j", $monthbegindow) - 1) * 24 * 60 * 60);
-						}
-
-						if ($rtype == IDC_RCEV_PAT_ORB_YEARLY) {
-							// Set on right month
-							if ($selmonth < $curmonth) {
-								$tmp = 12 - $curmonth + $selmonth;
-							}
-							else {
-								$tmp = ($selmonth - $curmonth);
-							}
-
-							for ($i = 0; $i < $tmp; ++$i) {
-								$monthbegindow += $this->getMonthInSeconds($curyear, $curmonth);
-
-								if ($curmonth == 12) {
-									++$curyear;
-									$curmonth = 0;
-								}
-								++$curmonth;
-							}
-						}
-						else {
-							// Check or you exist in the right month
-
-							$dayofweek = (int) gmdate("w", $monthbegindow);
-							for ($i = 0; $i < 7; ++$i) {
-								if ($nday == 5 && (($dayofweek - $i) % 7 >= 0) && (1 << (($dayofweek - $i) % 7)) & $weekdays) {
-									$day = (int) gmdate("j", $monthbegindow) - $i;
-									break;
-								}
-								if ($nday != 5 && (1 << (($dayofweek + $i) % 7)) & $weekdays) {
-									$day = (($nday - 1) * 7) + ($i + 1);
-									break;
-								}
-							}
-
-							// Goto the next X month
-							if (isset($day) && ($day < (int) gmdate("j", (int) $this->recur["start"]))) {
-								if ($nday == 5) {
-									$monthbegindow += 24 * 60 * 60;
-									if ($curmonth == 12) {
-										++$curyear;
-										$curmonth = 0;
-									}
-									++$curmonth;
-								}
-
-								for ($i = 0; $i < $everyn; ++$i) {
-									$monthbegindow += $this->getMonthInSeconds($curyear, $curmonth);
-
-									if ($curmonth == 12) {
-										++$curyear;
-										$curmonth = 0;
-									}
-									++$curmonth;
-								}
-
-								if ($nday == 5) {
-									$monthbegindow -= 24 * 60 * 60;
-								}
-							}
-						}
-
-						// FIXME: weekstart?
-
-						$day = 0;
-						// Set start on the right day
-						$dayofweek = (int) gmdate("w", $monthbegindow);
-						for ($i = 0; $i < 7; ++$i) {
-							if ($nday == 5 && (($dayofweek - $i) % 7) >= 0 && (1 << (($dayofweek - $i) % 7)) & $weekdays) {
-								$day = $i;
-								break;
-							}
-							if ($nday != 5 && (1 << (($dayofweek + $i) % 7)) & $weekdays) {
-								$day = ($nday - 1) * 7 + ($i + 1);
-								break;
-							}
-						}
-						if ($nday == 5) {
-							$monthbegindow -= $day * 24 * 60 * 60;
-						}
-						else {
-							$monthbegindow += ($day - 1) * 24 * 60 * 60;
-						}
-
-						$firstocc = 0;
-						if ($rtype == IDC_RCEV_PAT_ORB_MONTHLY) {
-							// Calc first occ
-							$monthIndex = ((((12 % $everyn) * (((int) gmdate("Y", $this->recur["start"]) - 1601) % $everyn)) % $everyn) + (((int) gmdate("n", $this->recur["start"])) - 1)) % $everyn;
-
-							for ($i = 0; $i < $monthIndex; ++$i) {
-								$firstocc += $this->getMonthInSeconds(1601 + floor($i / 12), ($i % 12) + 1) / 60;
-							}
-
-							$rdata .= pack("VVVVV", $firstocc, $everyn, 0, $weekdays, $nday);
-						}
-						else {
-							// Calc first occ
-							$monthIndex = (int) gmdate("n", $this->recur["start"]);
-
-							for ($i = 1; $i < $monthIndex; ++$i) {
-								$firstocc += $this->getMonthInSeconds(1601 + floor($i / 12), $i) / 60;
-							}
-
-							$rdata .= pack("VVVVV", $firstocc, $everyn, 0, $weekdays, $nday);
-						}
-						break;
-				}
-				break;
-		}
-
-		if (!isset($this->recur["term"])) {
+		$pattern = match ($rtype) {
+			IDC_RCEV_PAT_ORB_DAILY => $this->serializeDailyPattern(),
+			IDC_RCEV_PAT_ORB_WEEKLY => $this->serializeWeeklyPattern($term, $forwardcount, $restocc),
+			default => $this->serializeMonthlyPattern($rtype, $term, $forwardcount),
+		};
+		if ($pattern === null) {
 			return;
 		}
+		$rdata .= $pattern;
 
-		$rdata .= pack("V", $term);
+		$range = $this->serializeRecurrenceRange($rtype, $term, $forwardcount, $restocc);
+		if ($range === null) {
+			return;
+		}
+		$rdata .= $range;
 
-		switch ($term) {
-			// After the given enddate
-			case IDC_RCEV_PAT_ERB_END:
-				$rdata .= pack("V", 10);
-				break;
+		$propsToSet = $this->getRecurrenceProperties();
 
-				// After a number of times
-			case IDC_RCEV_PAT_ERB_AFTERNOCCUR:
-				if (!isset($this->recur["numoccur"])) {
-					return;
-				}
-
-				$rdata .= pack("V", (int) $this->recur["numoccur"]);
-				break;
-
-				// Never ends
-			case IDC_RCEV_PAT_ERB_NOEND:
-				$rdata .= pack("V", 0);
-				break;
+		// Default data
+		// Second item (0x08) indicates the Outlook version (see documentation at the bottom of this file for more information)
+		if (isset($this->recur["startocc"], $this->recur["endocc"])) {
+			// Set start and endtime in minutes
+			$rdata .= pack("VVVV", 0x3006, 0x3009, (int) $this->recur["startocc"], (int) $this->recur["endocc"]);
+		}
+		else {
+			$rdata .= pack("VV", 0x3006, 0x3009);
 		}
 
-		// Persist first day of week (previously saved recurrences maintain the fdow)
-		$firstDow = $this->recur["first_dow"] ?? $this->firstDayOfWeek;
-		$rdata .= pack("V", (int) $firstDow);
+		$rdata .= $this->serializeRecurrenceExceptions($this->recur["changed_occurrences"]);
 
-		// Exception data
+		// Set props
+		$propsToSet[$this->proptags["recurring_data"]] = $rdata;
+		$propsToSet[$this->proptags["recurring"]] = true;
+		$propsToSet[$this->proptags["meetingrecurring"]] = true;
+		$this->setRecurrenceTimezone($propsToSet);
+		mapi_setprops($this->message, $propsToSet);
+	}
 
-		// Get all exceptions
-		$deleted_items = $this->recur["deleted_occurrences"];
-		$changed_items = $this->recur["changed_occurrences"];
-
-		// Merge deleted and changed items into one list
-		$items = $deleted_items;
-
-		foreach ($changed_items as $changed_item) {
-			$items[] = $this->dayStartOf($changed_item["basedate"]);
+	private function setRecurrenceTimezone(array &$propsToSet): void {
+		if (isset($this->tz) && $this->tz) {
+			$timezone = "GMT";
+			if ($this->tz["timezone"] != 0) {
+				// Create user readable timezone information
+				$timezone = sprintf(
+					"(GMT %s%02d:%02d)",-$this->tz["timezone"] > 0 ? "+" : "-",
+					abs($this->tz["timezone"] / 60),
+					abs($this->tz["timezone"] % 60)
+				);
+			}
+			$propsToSet[$this->proptags["timezone_data"]] = $this->getTimezoneData($this->tz);
+			$propsToSet[$this->proptags["timezone"]] = $timezone;
 		}
+	}
 
-		sort($items);
-
-		// Add the merged list in to the rdata
-		$rdata .= pack("V", count($items));
-		foreach ($items as $item) {
-			$rdata .= pack("V", $this->unixDataToRecurData($item));
-		}
-
-		// Loop through the changed exceptions (not deleted)
-		$rdata .= pack("V", count($changed_items));
-		$items = [];
-
-		foreach ($changed_items as $changed_item) {
-			$items[] = $this->dayStartOf($changed_item["start"]);
-		}
-
-		sort($items);
-
-		// Add the changed items list int the rdata
-		foreach ($items as $item) {
-			$rdata .= pack("V", $this->unixDataToRecurData($item));
-		}
-
-		// Set start date
-		$rdata .= pack("V", $this->unixDataToRecurData((int) $this->recur["start"]));
-
-		// Set enddate
-		switch ($term) {
-			// After the given enddate
-			case IDC_RCEV_PAT_ERB_END:
-				$rdata .= pack("V", $this->unixDataToRecurData((int) $this->recur["end"]));
-				break;
-
-				// After a number of times
-			case IDC_RCEV_PAT_ERB_AFTERNOCCUR:
-				// @todo: calculate enddate with intval($this->recur["startocc"]) + intval($this->recur["duration"]) > 24 hour
-				$occenddate = (int) $this->recur["start"];
-
-				switch ($rtype) {
-					case IDC_RCEV_PAT_ORB_DAILY:
-						if ($this->recur["subtype"] == rptWeek) {
-							// Daily every workday
-							$restocc = (int) $this->recur["numoccur"];
-
-							// Get starting weekday
-							$nowtime = $this->gmtime($occenddate);
-							$j = $nowtime["tm_wday"];
-
-							while (1) {
-								if (($j % 7) > 0 && ($j % 7) < 6) {
-									--$restocc;
-								}
-
-								++$j;
-
-								if ($restocc <= 0) {
-									break;
-								}
-
-								$occenddate += 24 * 60 * 60;
-							}
-						}
-						else {
-							// -1 because the first day already counts (from 1-1-1980 to 1-1-1980 is 1 occurrence)
-							$occenddate += (((int) $this->recur["everyn"]) * 60 * ((int) $this->recur["numoccur"] - 1));
-						}
-						break;
-
-					case IDC_RCEV_PAT_ORB_WEEKLY:
-						// Needed values
-						// $forwardcount - number of weeks we can skip forward
-						// $restocc - number of remaining occurrences after the week skip
-
-						// Add the weeks till the last item
-						$occenddate += ($forwardcount * 7 * 24 * 60 * 60);
-
-						$dayofweek = (int) gmdate("w", (int) $occenddate);
-
-						// Loop through the last occurrences until we have had them all
-						for ($j = 1; $restocc > 0; ++$j) {
-							// Jump to the next week (which may be N weeks away) when going over the week boundary
-							if ((($dayofweek + $j) % 7) == $weekstart) {
-								$occenddate += (((int) $this->recur["everyn"]) - 1) * 7 * 24 * 60 * 60;
-							}
-
-							// If this is a matching day, once less occurrence to process
-							if (((int) $this->recur["weekdays"]) & (1 << (($dayofweek + $j) % 7))) {
-								--$restocc;
-							}
-
-							// Next day
-							$occenddate += 24 * 60 * 60;
-						}
-
-						break;
-
-					case IDC_RCEV_PAT_ORB_MONTHLY:
-					case IDC_RCEV_PAT_ORB_YEARLY:
-						$curyear = (int) gmdate("Y", (int) $this->recur["start"]);
-						$curmonth = (int) gmdate("n", (int) $this->recur["start"]);
-						// $forwardcount = months
-
-						switch ((int) $this->recur["subtype"]) {
-							case rptMonth: // on D day of every M month
-								while ($forwardcount > 0) {
-									$occenddate += $this->getMonthInSeconds($curyear, $curmonth);
-
-									if ($curmonth >= 12) {
-										$curmonth = 1;
-										++$curyear;
-									}
-									else {
-										++$curmonth;
-									}
-									--$forwardcount;
-								}
-
-								// compensation between 28 and 31
-								if (((int) $this->recur["monthday"]) >= 28 && ((int) $this->recur["monthday"]) <= 31 &&
-									(int) gmdate("j", $occenddate) < ((int) $this->recur["monthday"])) {
-									if ((int) gmdate("j", $occenddate) < 28) {
-										$occenddate -= (int) gmdate("j", $occenddate) * 24 * 60 * 60;
-									}
-									else {
-										$occenddate += ((int) gmdate("t", $occenddate) - (int) gmdate("j", $occenddate)) * 24 * 60 * 60;
-									}
-								}
-
-								break;
-
-							case rptMonthNth: // on Nth weekday of every M month
-								$nday = (int) $this->recur["nday"]; // 1 tot 5
-								$weekdays = (int) $this->recur["weekdays"];
-
-								while ($forwardcount > 0) {
-									$occenddate += $this->getMonthInSeconds($curyear, $curmonth);
-									if ($curmonth >= 12) {
-										$curmonth = 1;
-										++$curyear;
-									}
-									else {
-										++$curmonth;
-									}
-
-									--$forwardcount;
-								}
-
-								if ($nday == 5) {
-									// Set date on the last day of the last month
-									$occenddate += ((int) gmdate("t", $occenddate) - (int) gmdate("j", $occenddate)) * 24 * 60 * 60;
-								}
-								else {
-									// Set date on the first day of the last month
-									$occenddate -= ((int) gmdate("j", $occenddate) - 1) * 24 * 60 * 60;
-								}
-
-								$dayofweek = (int) gmdate("w", (int) $occenddate);
-								for ($i = 0; $i < 7; ++$i) {
-									if ($nday == 5 && (($dayofweek - $i) % 7) >= 0 && (1 << (($dayofweek - $i) % 7)) & $weekdays) {
-										$occenddate -= $i * 24 * 60 * 60;
-										break;
-									}
-									if ($nday != 5 && (1 << (($dayofweek + $i) % 7)) & $weekdays) {
-										$occenddate += ($i + (($nday - 1) * 7)) * 24 * 60 * 60;
-										break;
-									}
-								}
-
-								break; // case rptMonthNth
-						}
-
-						break;
-				}
-
-				if (defined("PHP_INT_MAX") && $occenddate > PHP_INT_MAX) {
-					$occenddate = PHP_INT_MAX;
-				}
-
-				$this->recur["end"] = $occenddate;
-
-				$rdata .= pack("V", $this->unixDataToRecurData((int) $this->recur["end"]));
-				break;
-
-				// Never ends
-			case IDC_RCEV_PAT_ERB_NOEND:
-			default:
-				$this->recur["end"] = 0x7FFFFFFF; // max date -> 2038
-				$rdata .= pack("V", 0x5AE980DF);
-				break;
-		}
-
+	private function getRecurrenceProperties(): array {
 		// UTC date
 		$utcstart = $this->getClipProp("start");
 		$utcend = $this->getClipProp("end");
@@ -1275,6 +711,12 @@ abstract class BaseRecurrence {
 			$propsToSet[$this->proptags["side_effects"]] = 3441;
 		}
 
+		$this->setRecurrenceReminder($propsToSet);
+
+		return $propsToSet;
+	}
+
+	private function setRecurrenceReminder(array &$propsToSet): void {
 		// FlagDueBy is datetime of the first reminder occurrence. Outlook gives on this time a reminder popup dialog
 		// Any change of the recurrence (including changing and deleting exceptions) causes the flagdueby to be reset
 		// to the 'next' occurrence; this makes sure that deleting the next occurrence will correctly set the reminder to
@@ -1312,150 +754,561 @@ abstract class BaseRecurrence {
 				$propsToSet[$this->proptags["flagdueby"]] = 0x7FF00000;
 			}
 		}
+	}
 
-		// Default data
-		// Second item (0x08) indicates the Outlook version (see documentation at the bottom of this file for more information)
-		$rdata .= pack("VV", 0x3006, 0x3009);
-		if (isset($this->recur["startocc"], $this->recur["endocc"])) {
-			// Set start and endtime in minutes
-			$rdata .= pack("VV", (int) $this->recur["startocc"], (int) $this->recur["endocc"]);
+	private function serializeRecurrenceEnd(int $rtype, int $term, mixed $forwardcount, mixed $restocc): string {
+		// Set enddate
+		switch ($term) {
+			// After the given enddate
+			case IDC_RCEV_PAT_ERB_END:
+				$rdata = pack("V", $this->unixDataToRecurData((int) $this->recur["end"]));
+				break;
+
+				// After a number of times
+			case IDC_RCEV_PAT_ERB_AFTERNOCCUR:
+				// @todo: calculate enddate with intval($this->recur["startocc"]) + intval($this->recur["duration"]) > 24 hour
+				$occenddate = (int) $this->recur["start"];
+
+				$occenddate = match ($rtype) {
+					IDC_RCEV_PAT_ORB_DAILY => $this->getDailyEndDate($occenddate),
+					IDC_RCEV_PAT_ORB_WEEKLY => $this->getWeeklyEndDate($occenddate, $forwardcount, $restocc),
+					default => $this->getMonthlyEndDate($occenddate, $forwardcount),
+				};
+
+				if (defined("PHP_INT_MAX") && $occenddate > PHP_INT_MAX) {
+					$occenddate = PHP_INT_MAX;
+				}
+
+				$this->recur["end"] = $occenddate;
+
+				$rdata = pack("V", $this->unixDataToRecurData((int) $this->recur["end"]));
+				break;
+
+				// Never ends
+			case IDC_RCEV_PAT_ERB_NOEND:
+			default:
+				$this->recur["end"] = 0x7FFFFFFF; // max date -> 2038
+				$rdata = pack("V", 0x5AE980DF);
+				break;
 		}
 
-		// Detailed exception data
+		return $rdata;
+	}
 
-		$changed_items = $this->recur["changed_occurrences"];
+	private function getDailyEndDate(int $occenddate): float|int {
+		if ($this->recur["subtype"] == rptWeek) {
+			// Daily every workday
+			$restocc = (int) $this->recur["numoccur"];
 
-		$rdata .= pack("v", count($changed_items));
+			// Get starting weekday
+			$nowtime = $this->gmtime($occenddate);
+			$j = $nowtime["tm_wday"];
 
-		foreach ($changed_items as $changed_item) {
-			// Set start and end time of exception
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"])); // StartDateTime
-			$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"])); // EndDateTime
-			$rdata .= pack("V", $this->unixDataToRecurData(
-				$this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60
-			)); // OriginalStartDate
+			while (1) {
+				if (($j % 7) > 0 && ($j % 7) < 6) {
+					--$restocc;
+				}
 
-			// Bitmask
-			$bitmask = 0;
+				++$j;
 
-			// Check for changed strings
-			if (isset($changed_item["subject"])) {
-				$bitmask |= 1 << 0;
+				if ($restocc <= 0) {
+					break;
+				}
+
+				$occenddate += 24 * 60 * 60;
+			}
+		}
+		else {
+			// -1 because the first day already counts (from 1-1-1980 to 1-1-1980 is 1 occurrence)
+			$occenddate += (((int) $this->recur["everyn"]) * 60 * ((int) $this->recur["numoccur"] - 1));
+		}
+
+		return $occenddate;
+	}
+
+	private function getWeeklyEndDate(int $occenddate, mixed $forwardcount, mixed $restocc): float|int {
+		$weekstart = $this->firstDayOfWeek;
+		// Needed values
+		// $forwardcount - number of weeks we can skip forward
+		// $restocc - number of remaining occurrences after the week skip
+
+		// Add the weeks till the last item
+		$occenddate += ($forwardcount * 7 * 24 * 60 * 60);
+
+		$dayofweek = (int) gmdate("w", (int) $occenddate);
+
+		// Loop through the last occurrences until we have had them all
+		for ($j = 1; $restocc > 0; ++$j) {
+			// Jump to the next week (which may be N weeks away) when going over the week boundary
+			if ((($dayofweek + $j) % 7) == $weekstart) {
+				$occenddate += (((int) $this->recur["everyn"]) - 1) * 7 * 24 * 60 * 60;
 			}
 
-			if (isset($changed_item["remind_before"])) {
-				$bitmask |= 1 << 2;
+			// If this is a matching day, once less occurrence to process
+			if (((int) $this->recur["weekdays"]) & (1 << (($dayofweek + $j) % 7))) {
+				--$restocc;
 			}
 
-			if (isset($changed_item["reminder_set"])) {
-				$bitmask |= 1 << 3;
+			// Next day
+			$occenddate += 24 * 60 * 60;
+		}
+
+		return $occenddate;
+	}
+
+	private function getMonthlyEndDate(int $occenddate, mixed $forwardcount): float|int {
+		switch ((int) $this->recur["subtype"]) {
+			case rptMonth: // on D day of every M month
+				$occenddate = $this->advanceRecurrenceMonths($occenddate, $forwardcount);
+
+				// compensation between 28 and 31
+				if (((int) $this->recur["monthday"]) >= 28 && ((int) $this->recur["monthday"]) <= 31 &&
+					(int) gmdate("j", $occenddate) < ((int) $this->recur["monthday"])) {
+					if ((int) gmdate("j", $occenddate) < 28) {
+						$occenddate -= (int) gmdate("j", $occenddate) * 24 * 60 * 60;
+					}
+					else {
+						$occenddate += ((int) gmdate("t", $occenddate) - (int) gmdate("j", $occenddate)) * 24 * 60 * 60;
+					}
+				}
+
+				break;
+
+			case rptMonthNth: // on Nth weekday of every M month
+				$nday = (int) $this->recur["nday"]; // 1 tot 5
+				$weekdays = (int) $this->recur["weekdays"];
+
+				$occenddate = $this->advanceRecurrenceMonths($occenddate, $forwardcount);
+
+				$occenddate = $this->getMonthWeekdayEndDate($occenddate, $nday, $weekdays);
+
+				break; // case rptMonthNth
+		}
+
+		return $occenddate;
+	}
+
+	private function advanceRecurrenceMonths(int $occenddate, mixed $forwardcount): float|int {
+		$curyear = (int) gmdate("Y", (int) $this->recur["start"]);
+		$curmonth = (int) gmdate("n", (int) $this->recur["start"]);
+		// $forwardcount = months
+
+		while ($forwardcount > 0) {
+			$occenddate += $this->getMonthInSeconds($curyear, $curmonth);
+			if ($curmonth >= 12) {
+				$curmonth = 1;
+				++$curyear;
+			}
+			else {
+				++$curmonth;
 			}
 
-			if (isset($changed_item["location"])) {
-				$bitmask |= 1 << 4;
+			--$forwardcount;
+		}
+
+		return $occenddate;
+	}
+
+	private function getMonthWeekdayEndDate(float|int $occenddate, int $nday, int $weekdays): float|int {
+		if ($nday == 5) {
+			// Set date on the last day of the last month
+			$occenddate += ((int) gmdate("t", $occenddate) - (int) gmdate("j", $occenddate)) * 24 * 60 * 60;
+		}
+		else {
+			// Set date on the first day of the last month
+			$occenddate -= ((int) gmdate("j", $occenddate) - 1) * 24 * 60 * 60;
+		}
+
+		$dayofweek = (int) gmdate("w", (int) $occenddate);
+		for ($i = 0; $i < 7; ++$i) {
+			if ($nday == 5 && (($dayofweek - $i) % 7) >= 0 && (1 << (($dayofweek - $i) % 7)) & $weekdays) {
+				$occenddate -= $i * 24 * 60 * 60;
+				break;
 			}
-
-			if (isset($changed_item["busystatus"])) {
-				$bitmask |= 1 << 5;
-			}
-
-			if (isset($changed_item["alldayevent"])) {
-				$bitmask |= 1 << 7;
-			}
-
-			if (isset($changed_item["label"])) {
-				$bitmask |= 1 << 8;
-			}
-
-			$rdata .= pack("v", $bitmask);
-
-			// Set "subject"
-			if (isset($changed_item["subject"])) {
-				// convert utf-8 to non-unicode blob string (us-ascii?)
-				$subject = iconv("UTF-8", "windows-1252//TRANSLIT", $changed_item["subject"]);
-				$length = strlen($subject);
-				$rdata .= pack("vv", $length + 1, $length);
-				$rdata .= pack("a" . $length, $subject);
-			}
-
-			if (isset($changed_item["remind_before"])) {
-				$rdata .= pack("V", $changed_item["remind_before"]);
-			}
-
-			if (isset($changed_item["reminder_set"])) {
-				$rdata .= pack("V", $changed_item["reminder_set"]);
-			}
-
-			if (isset($changed_item["location"])) {
-				$location = iconv("UTF-8", "windows-1252//TRANSLIT", $changed_item["location"]);
-				$length = strlen($location);
-				$rdata .= pack("vv", $length + 1, $length);
-				$rdata .= pack("a" . $length, $location);
-			}
-
-			if (isset($changed_item["busystatus"])) {
-				$rdata .= pack("V", $changed_item["busystatus"]);
-			}
-
-			if (isset($changed_item["alldayevent"])) {
-				$rdata .= pack("V", $changed_item["alldayevent"]);
-			}
-
-			if (isset($changed_item["label"])) {
-				$rdata .= pack("V", $changed_item["label"]);
+			if ($nday != 5 && (1 << (($dayofweek + $i) % 7)) & $weekdays) {
+				$occenddate += ($i + (($nday - 1) * 7)) * 24 * 60 * 60;
+				break;
 			}
 		}
 
-		$rdata .= pack("V", 0);
+		return $occenddate;
+	}
 
-		// write extended data
-		foreach ($changed_items as $changed_item) {
-			$rdata .= pack("VVV", 4, 0, 0); // ChangeHighlightSize, ChangeHighlightValue, ReservedBlockEE1Size
-			if (isset($changed_item["subject"]) || isset($changed_item["location"])) {
-				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["start"]));
-				$rdata .= pack("V", $this->unixDataToRecurData($changed_item["end"]));
-				$rdata .= pack("V", $this->unixDataToRecurData($this->dayStartOf($changed_item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60));
-			}
+	private function serializeRecurrenceRange(int $rtype, int $term, mixed $forwardcount, mixed $restocc): ?string {
+		$rdata = "";
+		if (!isset($this->recur["term"])) {
+			return null;
+		}
 
-			if (isset($changed_item["subject"])) {
-				$subject = iconv("UTF-8", "UCS-2LE", $changed_item["subject"]);
-				$length = iconv_strlen($subject, "UCS-2LE");
-				$rdata .= pack("v", $length);
-				$rdata .= pack("a" . $length * 2, $subject);
-			}
+		$rdata .= pack("V", $term);
 
-			if (isset($changed_item["location"])) {
-				$location = iconv("UTF-8", "UCS-2LE", $changed_item["location"]);
-				$length = iconv_strlen($location, "UCS-2LE");
-				$rdata .= pack("v", $length);
-				$rdata .= pack("a" . $length * 2, $location);
-			}
+		switch ($term) {
+			// After the given enddate
+			case IDC_RCEV_PAT_ERB_END:
+				$rdata .= pack("V", 10);
+				break;
 
-			if (isset($changed_item["subject"]) || isset($changed_item["location"])) {
+				// After a number of times
+			case IDC_RCEV_PAT_ERB_AFTERNOCCUR:
+				if (!isset($this->recur["numoccur"])) {
+					return null;
+				}
+
+				$rdata .= pack("V", (int) $this->recur["numoccur"]);
+				break;
+
+				// Never ends
+			case IDC_RCEV_PAT_ERB_NOEND:
 				$rdata .= pack("V", 0);
+				break;
+		}
+
+		// Persist first day of week (previously saved recurrences maintain the fdow)
+		$firstDow = $this->recur["first_dow"] ?? $this->firstDayOfWeek;
+		$rdata .= pack("V", (int) $firstDow);
+
+		// Exception data
+
+		// Get all exceptions
+		$deleted_items = $this->recur["deleted_occurrences"];
+		$changed_items = $this->recur["changed_occurrences"];
+		if ($deleted_items === [] && $changed_items === []) {
+			$start = $this->unixDataToRecurData((int) $this->recur["start"]);
+
+			return $rdata . pack("VVV", 0, 0, $start) .
+				$this->serializeRecurrenceEnd($rtype, $term, $forwardcount, $restocc);
+		}
+
+		// Merge deleted and changed items into one list
+		$items = $deleted_items;
+
+		foreach ($changed_items as $changed_item) {
+			$items[] = $this->dayStartOf($changed_item["basedate"]);
+		}
+
+		sort($items);
+
+		// Add the merged list in to the rdata
+		$rdata .= pack("V", count($items));
+		foreach ($items as $item) {
+			$rdata .= pack("V", $this->unixDataToRecurData($item));
+		}
+
+		// Loop through the changed exceptions (not deleted)
+		$rdata .= pack("V", count($changed_items));
+		$items = [];
+
+		foreach ($changed_items as $changed_item) {
+			$items[] = $this->dayStartOf($changed_item["start"]);
+		}
+
+		sort($items);
+
+		// Add the changed items list int the rdata
+		foreach ($items as $item) {
+			$rdata .= pack("V", $this->unixDataToRecurData($item));
+		}
+
+		// Set start date
+		$rdata .= pack("V", $this->unixDataToRecurData((int) $this->recur["start"]));
+
+		$rdata .= $this->serializeRecurrenceEnd($rtype, $term, $forwardcount, $restocc);
+
+		return $rdata;
+	}
+
+	private function serializeDailyPattern(): ?string {
+		if (!isset($this->recur["everyn"]) || (int) $this->recur["everyn"] > 1438560 || (int) $this->recur["everyn"] < 0) { // minutes for 999 days
+			return null;
+		}
+
+		// The interval of "every N days" divides the start below
+		if ($this->recur["subtype"] != rptWeek && (int) $this->recur["everyn"] == 0) {
+			return null;
+		}
+
+		if ($this->recur["subtype"] == rptWeek) {
+			// Daily every workday
+			return pack("VVVV", 6 * 24 * 60, 1, 0, 0x3E);
+		}
+		$firstocc = $this->unixDataToRecurData($this->recur["start"]) % ((int) $this->recur["everyn"]);
+
+		return pack("VVV", $firstocc, (int) $this->recur["everyn"], $this->recur["regen"] ? 1 : 0);
+	}
+
+	private function serializeWeeklyPattern(int $term, mixed &$forwardcount, mixed &$restocc): ?string {
+		if (!isset($this->recur["everyn"]) || $this->recur["everyn"] > 99 || (int) $this->recur["everyn"] <= 0) {
+			return null;
+		}
+
+		if (!$this->recur["regen"] && empty($this->recur["weekdays"])) {
+			return null;
+		}
+
+		// No need to calculate startdate if sliding flag was set.
+		if (!$this->recur['regen']) {
+			$this->setWeeklyStart($term, $forwardcount, $restocc);
+		}
+
+		// Calc first occ
+		$firstocc = $this->unixDataToRecurData($this->recur["start"]) % (((int) $this->recur["everyn"]) * 7 * 24 * 60);
+
+		$firstocc -= (((int) gmdate("w", (int) $this->recur["start"])) - 1) * 24 * 60;
+
+		if ($this->recur["regen"]) {
+			return pack("VVV", $firstocc, (int) $this->recur["everyn"], 1);
+		}
+
+		return pack("VVVV", $firstocc, (int) $this->recur["everyn"], 0, (int) $this->recur["weekdays"]);
+	}
+
+	private function setWeeklyStart(int $term, mixed &$forwardcount, mixed &$restocc): void {
+		$weekstart = $this->firstDayOfWeek;
+		$dayofweek = (int) gmdate("w", (int) $this->recur["start"]);
+		// Calculate start date of recurrence
+
+		// Find the first day that matches one of the weekdays selected
+		$daycount = 0;
+		$dayskip = -1;
+		for ($j = 0; $j < 7; ++$j) {
+			if (((int) $this->recur["weekdays"]) & (1 << (($dayofweek + $j) % 7))) {
+				if ($dayskip == -1) {
+					$dayskip = $j;
+				}
+
+				++$daycount;
 			}
 		}
 
-		$rdata .= pack("V", 0); // ReservedBlock2Size
+		// $dayskip is the number of days to skip from the startdate until the first occurrence
+		// $daycount is the number of days per week that an occurrence occurs
 
-		// Set props
-		$propsToSet[$this->proptags["recurring_data"]] = $rdata;
-		$propsToSet[$this->proptags["recurring"]] = true;
-		$propsToSet[$this->proptags["meetingrecurring"]] = true;
-		if (isset($this->tz) && $this->tz) {
-			$timezone = "GMT";
-			if ($this->tz["timezone"] != 0) {
-				// Create user readable timezone information
-				$timezone = sprintf(
-					"(GMT %s%02d:%02d)",-$this->tz["timezone"] > 0 ? "+" : "-",
-					abs($this->tz["timezone"] / 60),
-					abs($this->tz["timezone"] % 60)
-				);
-			}
-			$propsToSet[$this->proptags["timezone_data"]] = $this->getTimezoneData($this->tz);
-			$propsToSet[$this->proptags["timezone"]] = $timezone;
+		$weekskip = 0;
+		if (($dayofweek < $weekstart && $dayskip > 0) || ($dayofweek + $dayskip) > 6) {
+			$weekskip = 1;
 		}
-		mapi_setprops($this->message, $propsToSet);
+
+		// Check if the recurrence ends after a number of occurrences, in that case we must calculate the
+		// remaining occurrences based on the start of the recurrence.
+		if ($term == IDC_RCEV_PAT_ERB_AFTERNOCCUR) {
+			// $weekskip is the amount of weeks to skip from the startdate before the first occurrence
+			// $forwardcount is the maximum number of week occurrences we can go ahead after the first occurrence that
+			// is still inside the recurrence. We subtract one to make sure that the last week is never forwarded over
+			// (eg when numoccur = 2, and daycount = 1)
+			$forwardcount = floor((int) ($this->recur["numoccur"] - 1) / $daycount);
+
+			// $restocc is the number of occurrences left after $forwardcount whole weeks of occurrences, minus one
+			// for the occurrence on the first day
+			$restocc = ((int) $this->recur["numoccur"]) - ($forwardcount * $daycount) - 1;
+
+			// $forwardcount is now the number of weeks we can go forward and still be inside the recurrence
+			$forwardcount *= (int) $this->recur["everyn"];
+		}
+
+		// The real start is start + dayskip + weekskip-1 (since dayskip will already bring us into the next week)
+		$this->recur["start"] = ((int) $this->recur["start"]) + ($dayskip * 24 * 60 * 60) + ($weekskip * (((int) $this->recur["everyn"]) - 1) * 7 * 24 * 60 * 60);
+	}
+
+	private function serializeMonthlyPattern(int $rtype, int $term, mixed &$forwardcount): ?string {
+		$rdata = "";
+		$everyn = $this->getMonthlyPeriod($rtype);
+		if ($everyn === null) {
+			return null;
+		}
+
+		// Check if the recurrence ends after a number of occurrences, in that case we must calculate the
+		// remaining occurrences based on the start of the recurrence.
+		if ($term == IDC_RCEV_PAT_ERB_AFTERNOCCUR) {
+			// $forwardcount is the number of occurrences we can skip and still be inside the recurrence range (minus
+			// one to make sure there are always at least one occurrence left)
+			$forwardcount = ((((int) $this->recur["numoccur"]) - 1) * $everyn);
+		}
+
+		// Get month for yearly on D'th day of month M
+		$selmonth = (int) gmdate("n", (int) $this->recur["start"]);
+		if ($rtype == IDC_RCEV_PAT_ORB_YEARLY) {
+			$selmonth = floor(((int) $this->recur["month"]) / (24 * 60 * 29)) + 1; // 1=jan, 2=feb, eg
+		}
+
+		switch ((int) $this->recur["subtype"]) {
+			// on D day of every M month
+			case rptMonth:
+				if (!isset($this->recur["monthday"])) {
+					return null;
+				}
+				$this->setMonthlyStart($rtype, $everyn, $selmonth);
+
+				$firstocc = $this->getMonthlyFirstOccurrence($rtype, $everyn);
+				$rdata .= pack("VVVV", $firstocc, $everyn, $this->recur["regen"], (int) $this->recur["monthday"]);
+				break;
+
+			case rptMonthNth:
+				// monthly: on Nth weekday of every M month
+				// yearly: on Nth weekday of M month
+				if (!isset($this->recur["weekdays"], $this->recur["nday"])) {
+					return null;
+				}
+
+				$weekdays = (int) $this->recur["weekdays"];
+				$nday = (int) $this->recur["nday"];
+
+				$firstocc = $this->getMonthlyFirstOccurrence($rtype, $everyn);
+				$rdata .= pack("VVVVV", $firstocc, $everyn, 0, $weekdays, $nday);
+				break;
+		}
+
+		return $rdata;
+	}
+
+	private function getMonthlyPeriod(int $rtype): ?int {
+		if (!isset($this->recur["everyn"])) {
+			return null;
+		}
+		if ($rtype == IDC_RCEV_PAT_ORB_YEARLY && !isset($this->recur["month"])) {
+			return null;
+		}
+
+		if ($rtype == IDC_RCEV_PAT_ORB_MONTHLY) {
+			$everyn = (int) $this->recur["everyn"];
+			if ($everyn > 99 || $everyn <= 0) {
+				return null;
+			}
+		}
+		else {
+			if ((int) $this->recur["everyn"] <= 0) {
+				return null;
+			}
+			$everyn = ((int) $this->recur["everyn"]) * 12;
+		}
+
+		return $everyn;
+	}
+
+	private function setMonthlyStart(int $rtype, int $everyn, mixed $selmonth): void {
+		$curmonthday = (int) gmdate("j", (int) $this->recur["start"]);
+		$curyear = (int) gmdate("Y", (int) $this->recur["start"]);
+		$curmonth = (int) gmdate("n", (int) $this->recur["start"]);
+		$monthday = (int) $this->recur["monthday"];
+		// Go the beginning of the month
+		$this->recur["start"] -= ($curmonthday - 1) * 24 * 60 * 60;
+		// Go the the correct month day
+		$this->recur["start"] += ($monthday - 1) * 24 * 60 * 60;
+
+		$count = 0;
+		if ($rtype == IDC_RCEV_PAT_ORB_YEARLY && $curmonth != $selmonth) {
+			$count = $selmonth - $curmonth;
+			if ($curmonth > $selmonth) {
+				$count += $everyn;
+			}
+		}
+		elseif ($monthday < $curmonthday) {
+			$count = $everyn;
+		}
+		for ($i = 0; $i < $count; ++$i) {
+			$this->recur["start"] += $this->getMonthInSeconds($curyear, $curmonth);
+
+			if ($curmonth == 12) {
+				++$curyear;
+				$curmonth = 0;
+			}
+			++$curmonth;
+		}
+
+		// "start" is now pointing to the first occurrence, except that it will overshoot if the
+		// month in which it occurs has less days than specified as the day of the month. So 31st
+		// of each month will overshoot in february (29 days). We compensate for that by checking
+		// if the day of the month we got is wrong, and then back up to the last day of the previous
+		// month.
+		if ($monthday >= 28 && $monthday <= 31 &&
+			(int) gmdate("j", (int) $this->recur["start"]) < $monthday) {
+			$this->recur["start"] -= (int) gmdate("j", (int) $this->recur["start"]) * 24 * 60 * 60;
+		}
+	}
+
+	private function getMonthlyFirstOccurrence(int $rtype, int $everyn): float|int {
+		$monthIndex = (int) gmdate("n", $this->recur["start"]) - 1;
+		if ($rtype == IDC_RCEV_PAT_ORB_MONTHLY) {
+			$year = (int) gmdate("Y", $this->recur["start"]) - 1601;
+			$monthIndex = (((12 % $everyn) * ($year % $everyn)) % $everyn + $monthIndex) % $everyn;
+		}
+		$firstocc = 0;
+		for ($i = 0; $i < $monthIndex; ++$i) {
+			$firstocc += $this->getMonthInSeconds(1601 + floor($i / 12), ($i % 12) + 1) / 60;
+		}
+
+		return $firstocc;
+	}
+
+	private function serializeRecurrenceExceptions(array $items): string {
+		if (!$items) {
+			return pack("vVV", 0, 0, 0);
+		}
+		$rdata = pack("v", count($items));
+		foreach ($items as $item) {
+			$rdata .= $this->serializeRecurrenceException($item);
+		}
+		$rdata .= pack("V", 0);
+		foreach ($items as $item) {
+			$rdata .= $this->serializeExtendedException($item);
+		}
+
+		return $rdata . pack("V", 0);
+	}
+
+	private function serializeRecurrenceException(array $item): string {
+		$rdata = $this->serializeExceptionDates($item);
+		$fields = [
+			"subject" => 0x01, "remind_before" => 0x04, "reminder_set" => 0x08,
+			"location" => 0x10, "busystatus" => 0x20,
+			"alldayevent" => 0x80, "label" => 0x100,
+		];
+		$bitmask = 0;
+		$values = "";
+		foreach ($fields as $field => $flag) {
+			if (!isset($item[$field])) {
+				continue;
+			}
+			$bitmask |= $flag;
+			if ($flag & 0x11) {
+				$value = iconv("UTF-8", "windows-1252//TRANSLIT", $item[$field]);
+				$length = strlen($value);
+				$values .= pack("vv", $length + 1, $length) . $value;
+			}
+			else {
+				$values .= pack("V", $item[$field]);
+			}
+		}
+
+		return $rdata . pack("v", $bitmask) . $values;
+	}
+
+	private function serializeExtendedException(array $item): string {
+		// ChangeHighlightSize, ChangeHighlightValue, ReservedBlockEE1Size.
+		$rdata = pack("VVV", 4, 0, 0);
+		if (!isset($item["subject"]) && !isset($item["location"])) {
+			return $rdata;
+		}
+		$rdata .= $this->serializeExceptionDates($item);
+		foreach (["subject", "location"] as $field) {
+			if (isset($item[$field])) {
+				$value = iconv("UTF-8", "UCS-2LE", $item[$field]);
+				$length = iconv_strlen($value, "UCS-2LE");
+				$rdata .= pack("v", $length) . $value;
+			}
+		}
+
+		return $rdata . pack("V", 0);
+	}
+
+	private function serializeExceptionDates(array $item): string {
+		return pack(
+			"VVV",
+			$this->unixDataToRecurData($item["start"]),
+			$this->unixDataToRecurData($item["end"]),
+			$this->unixDataToRecurData(
+				$this->dayStartOf($item["basedate"]) + ((int) $this->recur["startocc"] ?? 0) * 60
+			)
+		);
 	}
 
 	/**
