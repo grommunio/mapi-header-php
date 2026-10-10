@@ -369,6 +369,9 @@ abstract class BaseRecurrence {
 		}
 
 		$ret["weekdays"] = $data["monthday"];
+		if (strlen($rdata) < 4) {
+			return false;
+		}
 		$data = unpack("Vnday", $rdata);
 		// Sanity check for valid values (and opportunistically try to fix)
 		if ($data["nday"] == 0xFFFFFFFF || $data["nday"] == -1) {

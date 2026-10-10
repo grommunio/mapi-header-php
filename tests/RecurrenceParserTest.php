@@ -115,6 +115,26 @@ class RecurrenceParserTest extends TestCase {
 		}
 	}
 
+	public function testTruncatedNthWeekdayKeepsDecodedFields(): void {
+		foreach ([12, 13] as $type) {
+			$pattern = self::header($type, rptMonthNth) .
+				pack('V4', 0, 12, 0, 2);
+			$expected = ['changed_occurrences' => [],
+				'deleted_occurrences' => [], 'type' => $type,
+				'subtype' => rptMonthNth];
+			if ($type === 13) {
+				$expected['month'] = 0;
+			}
+			$expected += ['everyn' => $type === 13 ? 1 : 12,
+				'regen' => 0, 'weekdays' => 2];
+			for ($length = 0; $length < 4; ++$length) {
+				$this->assertSame($expected, $this->recurrence->parseRecurrence(
+					$pattern . substr(pack('V', 3), 0, $length)
+				));
+			}
+		}
+	}
+
 	public function testInvalidPeriodsKeepOnlyTheHeader(): void {
 		foreach ([[10, 1438561], [11, 100], [12, 100], [13, 13]] as [$type, $period]) {
 			$blob = self::header($type, 0) . pack('V4', 0, $period, 0, 1);
