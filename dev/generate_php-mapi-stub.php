@@ -18,22 +18,31 @@ function fetchAndGenerateStubs(string $url): string {
 	// Extract function definitions
 	preg_match_all('/function\s+(\w+)\s*\(([^)]*)\)\s*:\s*([\w|?\\\]+)\s*{}/', $stubFileContents, $matches, PREG_SET_ORDER);
 
-	$stubFunctions = "class resource {}\n\n";
+	$stubFunctions = '';
 
 	foreach ($matches as $match) {
 		$functionName = $match[1];
-		$parameters = str_replace('resource', 'resource', $match[2]);
-		$returnType = str_replace('resource', 'resource', $match[3]);
+		$parameters = $match[2];
+		$returnType = $match[3];
+		$docReturnType = match ($functionName) {
+			'mapi_getprops', 'mapi_ab_resolvename' => 'array|false',
+			default => str_replace('|bool', '|false', $returnType),
+		};
 
 		// Generate the return value based on the return type
 		$returnValue = generateReturnValue($returnType);
 
 		// Generate PHPDoc for function
-		$phpDoc = generatePHPDoc($parameters, $returnType);
+		$phpDoc = generatePHPDoc($parameters, $docReturnType);
+		// PHP resources can only be described in PHPDoc, not native type declarations.
+		$parameters = preg_replace('/\??resource\b/', 'mixed', $parameters);
+		$nativeReturnType = str_contains($returnType, 'resource') ? 'mixed' : $returnType;
 
 		$stubFunctions .= "{$phpDoc}\n";
-		$stubFunctions .= "function {$functionName}({$parameters}): {$returnType} {\n";
-		$stubFunctions .= "\treturn {$returnValue};\n";
+		$stubFunctions .= "function {$functionName}({$parameters}): {$nativeReturnType} {\n";
+		if ($returnType !== 'void') {
+			$stubFunctions .= "\treturn {$returnValue};\n";
+		}
 		$stubFunctions .= "}\n\n";
 	}
 
@@ -67,7 +76,7 @@ function generateReturnValue(string $returnType) {
 
 		case 'resource':
 		case 'resource|false':
-			return 'new resource()';
+			return "fopen('php://memory', 'r+')";
 
 		default:
 			if (str_contains($returnType, '|')) {
@@ -88,7 +97,6 @@ function generatePHPDoc(string $parameters, string $returnType): string {
 			$param = trim($param);
 			if (str_contains($param, ' ')) {
 				[$type, $name] = explode(' ', $param);
-				$type = str_replace('resource', 'resource', $type); // Ensure type remains resource
 				$paramDocs[] = " * @param {$type} {$name}";
 			}
 			else {
@@ -103,7 +111,7 @@ function generatePHPDoc(string $parameters, string $returnType): string {
 }
 
 // URL of the mapi.stub.php file
-$url = 'https://raw.githubusercontent.com/grommunio/gromox/master/php_mapi/mapi.stub.php';
+$url = $argv[1] ?? 'https://raw.githubusercontent.com/grommunio/gromox/master/php_mapi/mapi.stub.php';
 
 try {
 	$stubFunctions = fetchAndGenerateStubs($url);
@@ -147,9 +155,7 @@ try {
 		echo "The mapi module is not loaded.\n";
 	}
 
-	$autoloaderContent .= "?>";
-
-	file_put_contents('php-mapi-stub.php', $autoloaderContent);
+	file_put_contents($argv[2] ?? __DIR__ . '/php-mapi-stub.php', $autoloaderContent);
 
 	echo "php-mapi-stub.php has been generated successfully.\n";
 }
