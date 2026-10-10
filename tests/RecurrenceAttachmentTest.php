@@ -47,54 +47,62 @@ class RecurrenceAttachmentTest extends TestCase {
 	}
 
 	#[DataProvider('exceptionTimezones')]
-	public function testDeleteExceptionAttachment(string $zone, int $minutes): void {
-		$message = mapi_folder_createmessage($this->folder);
-		$r = new Recurrence($this->store, $message);
-		$r->tz = $r->parseTimezone(TimezoneUtil::GetTimezoneStructFromTz(TimezoneUtil::GetFullTZ($zone)));
-		$base = gmmktime(0, 0, 0, 10, 12, 2026);
-		$utc = $r->toGMT($r->tz, $base + $minutes * 60);
-		foreach ([$base, $base + 86400] as $day) {
-			$start = $r->toGMT($r->tz, $day + $minutes * 60);
-			$r->createExceptionAttachment([
-				$r->proptags['basedate'] => $start,
-				$r->proptags['startdate'] => $start,
-				$r->proptags['duedate'] => $start + 1800,
-			]);
+	public function testDeleteExceptionAttachment(string $zone, int $minutes, string $date): void {
+		// delete either day, the other one has to stay
+		foreach ([0, 1] as $deleted) {
+			$message = mapi_folder_createmessage($this->folder);
+			$r = new Recurrence($this->store, $message);
+			$r->tz = $r->parseTimezone(TimezoneUtil::GetTimezoneStructFromTz(TimezoneUtil::GetFullTZ($zone)));
+			$days = [strtotime($date . ' UTC'), strtotime($date . ' UTC') + 86400];
+			foreach ($days as $day) {
+				$start = $r->toGMT($r->tz, $day + $minutes * 60);
+				$r->createExceptionAttachment([
+					$r->proptags['basedate'] => $start,
+					$r->proptags['startdate'] => $start,
+					$r->proptags['duedate'] => $start + 1800,
+				]);
+			}
+			mapi_savechanges($message);
+			$this->assertIsResource($r->getExceptionAttachment($days[0]));
+			$this->assertIsResource($r->getExceptionAttachment($days[1]));
+
+			$r->deleteExceptionAttachment($r->toGMT($r->tz, $days[$deleted] + $minutes * 60));
+			mapi_savechanges($message);
+
+			$this->assertCount(1, mapi_table_queryallrows(mapi_message_getattachmenttable($message), [PR_ATTACH_NUM]));
+			$this->assertFalse($r->getExceptionAttachment($days[$deleted]));
+			$this->assertIsResource($r->getExceptionAttachment($days[1 - $deleted]));
 		}
-		mapi_savechanges($message);
-		$this->assertIsResource($r->getExceptionAttachment($base));
-		$this->assertIsResource($r->getExceptionAttachment($base + 86400));
-
-		$r->deleteExceptionAttachment($utc);
-		mapi_savechanges($message);
-
-		$this->assertCount(1, mapi_table_queryallrows(mapi_message_getattachmenttable($message), [PR_ATTACH_NUM]));
-		$this->assertFalse($r->getExceptionAttachment($base));
-		$this->assertIsResource($r->getExceptionAttachment($base + 86400));
 	}
 
 	public static function exceptionTimezones(): array {
 		return [
-			'UTC' => ['Etc/UTC', 30],
-			'Berlin early morning' => ['Europe/Berlin', 30],
-			'Auckland early morning' => ['Pacific/Auckland', 30],
-			'New York late evening' => ['America/New_York', 23 * 60 + 30],
+			'UTC' => ['Etc/UTC', 30, '2026-10-12'],
+			'Berlin early morning' => ['Europe/Berlin', 30, '2026-10-12'],
+			'Auckland early morning' => ['Pacific/Auckland', 30, '2026-10-12'],
+			'New York late evening' => ['America/New_York', 23 * 60 + 30, '2026-10-12'],
+			// Mar 7 23:00 is on Mar 8 in UTC, after the DST change of that day
+			'Toronto on the eve of DST' => ['America/Toronto', 23 * 60, '2026-03-07'],
 		];
 	}
 
+	/**
+	 * Restoring a missing exception attachment of a day must not delete the
+	 * attachments of the days around it.
+	 */
 	#[DataProvider('exceptionTimezones')]
-	public function testRestoreMissingExceptionAttachment(string $zone, int $minutes): void {
+	public function testRestoreMissingExceptionAttachment(string $zone, int $minutes, string $date): void {
 		$message = mapi_folder_createmessage($this->folder);
 		mapi_setprops($message, [PR_MESSAGE_CLASS => 'IPM.Appointment']);
 		$r = new Recurrence($this->store, $message);
-		$base = gmmktime(0, 0, 0, 10, 12, 2026);
+		$base = strtotime($date . ' UTC') + 86400;
 		$tz = $r->parseTimezone(TimezoneUtil::GetTimezoneStructFromTz(TimezoneUtil::GetFullTZ($zone)));
 		$r->setRecurrence($tz, [
 			'type' => 10, 'subtype' => rptDay, 'everyn' => 1440, 'regen' => 0,
 			'term' => 0x22, 'numoccur' => 5, 'start' => $base - 86400,
 			'end' => $base + 4 * 86400, 'startocc' => $minutes, 'endocc' => $minutes + 30,
 		]);
-		foreach ([$base - 86400, $base] as $day) {
+		foreach ([$base - 86400, $base, $base + 86400] as $day) {
 			$this->assertTrue($r->createException([PR_SUBJECT => 'exception'], $day));
 		}
 		$attach = $r->getExceptionAttachment($base);
@@ -106,8 +114,9 @@ class RecurrenceAttachmentTest extends TestCase {
 		$this->assertTrue($r->modifyException([PR_SUBJECT => 'restored'], $base, [], $source));
 		mapi_savechanges($message);
 
-		$this->assertCount(2, mapi_table_queryallrows(mapi_message_getattachmenttable($message), [PR_ATTACH_NUM]));
+		$this->assertCount(3, mapi_table_queryallrows(mapi_message_getattachmenttable($message), [PR_ATTACH_NUM]));
 		$this->assertIsResource($r->getExceptionAttachment($base - 86400));
 		$this->assertIsResource($r->getExceptionAttachment($base));
+		$this->assertIsResource($r->getExceptionAttachment($base + 86400));
 	}
 }
