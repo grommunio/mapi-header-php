@@ -1,4 +1,13 @@
 # package mirror: https://php-package-mirror.scrutinizer-ci.com/$VER.tar.bz2 
+filter:
+  excluded_paths:
+    - tests/
+    - dev/generate_*.php
+    - .php-cs-fixer.dist.php
+    - rector.php
+  dependency_paths:
+    - dev/php-mapi-stub.php
+    - vendor/
 build:
   image: default-bionic
   environment:
@@ -10,9 +19,11 @@ build:
     analysis:
       project_setup:
         override:
-          - true
+          - mkdir -p tools
+          - curl --fail --location https://phar.phpunit.de/phpunit-11.5.56.phar -o tools/phpunit.phar
       tests:
         override:
+          - php tools/phpunit.phar --configuration phpunit.xml
           - php-scrutinizer-run
           - command: phpcs-run
             use_website_config: true
