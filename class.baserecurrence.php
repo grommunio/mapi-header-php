@@ -801,26 +801,29 @@ abstract class BaseRecurrence {
 
 	private function getDailyEndDate(int $occenddate): float|int {
 		if ($this->recur["subtype"] == rptWeek) {
-			// Daily every workday
+			// Daily every workday: the start counts when it falls on a workday,
+			// every full week after that holds five
 			$restocc = (int) $this->recur["numoccur"];
+			if ($restocc <= 0) {
+				return $occenddate;
+			}
 
 			// Get starting weekday
 			$nowtime = $this->gmtime($occenddate);
-			$j = $nowtime["tm_wday"];
+			$wday = $nowtime["tm_wday"];
+			$days = match ($wday) {
+				0 => 1, // Sunday -> Monday
+				6 => 2, // Saturday -> Monday
+				default => 0,
+			};
+			$wday = ($wday + $days) % 7;
+			--$restocc;
 
-			while (1) {
-				if (($j % 7) > 0 && ($j % 7) < 6) {
-					--$restocc;
-				}
-
-				++$j;
-
-				if ($restocc <= 0) {
-					break;
-				}
-
-				$occenddate += 24 * 60 * 60;
+			$days += intdiv($restocc, 5) * 7 + $restocc % 5;
+			if ($wday + $restocc % 5 > 5) {
+				$days += 2; // skips a weekend
 			}
+			$occenddate += $days * 24 * 60 * 60;
 		}
 		else {
 			// -1 because the first day already counts (from 1-1-1980 to 1-1-1980 is 1 occurrence)
@@ -895,22 +898,21 @@ abstract class BaseRecurrence {
 	private function advanceRecurrenceMonths(int $occenddate, mixed $forwardcount): float|int {
 		$curyear = (int) gmdate("Y", (int) $this->recur["start"]);
 		$curmonth = (int) gmdate("n", (int) $this->recur["start"]);
-		// $forwardcount = months
-
-		while ($forwardcount > 0) {
-			$occenddate += $this->getMonthInSeconds($curyear, $curmonth);
-			if ($curmonth >= 12) {
-				$curmonth = 1;
-				++$curyear;
-			}
-			else {
-				++$curmonth;
-			}
-
-			--$forwardcount;
+		// $forwardcount = months; the stored end date is a 32-bit minute count
+		// that wraps long before the year 9999 anyway
+		$months = (int) min(max($forwardcount, 0), (10000 - $curyear) * 12);
+		if ($months <= 0) {
+			return $occenddate;
 		}
 
-		return $occenddate;
+		// gmmktime() takes a year up to 100 for a two-digit one, which gives
+		// the year 100 a leap day; a whole 400-year cycle has the same months
+		if ($curyear >= 0 && $curyear <= 100) {
+			$curyear += 400;
+		}
+
+		// the whole months from the first of the start month on
+		return $occenddate + gmmktime(0, 0, 0, $curmonth + $months, 1, $curyear) - gmmktime(0, 0, 0, $curmonth, 1, $curyear);
 	}
 
 	private function getMonthWeekdayEndDate(float|int $occenddate, int $nday, int $weekdays): float|int {
@@ -1179,10 +1181,13 @@ abstract class BaseRecurrence {
 			}
 		}
 		else {
-			if ((int) $this->recur["everyn"] <= 0) {
+			// the same bound as for months; setMonthlyStart() steps through
+			// the interval one month at a time
+			$everyn = (int) $this->recur["everyn"];
+			if ($everyn > 99 || $everyn <= 0) {
 				return null;
 			}
-			$everyn = ((int) $this->recur["everyn"]) * 12;
+			$everyn *= 12;
 		}
 
 		return $everyn;
