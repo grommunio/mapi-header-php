@@ -341,4 +341,32 @@ class RecurrenceParserTest extends TestCase {
 			);
 		}
 	}
+
+	public function testSeveralExtendedExceptionsAreReadInTurn(): void {
+		// Three modified occurrences, each with its own subject and location.
+		$prefix = self::header(10, 0) . pack('V3', 0, 1440, 0) .
+			pack('V4', 0x2022, 6, 1, 3) . pack('V3', 223655040, 223656480, 223657920) .
+			pack('V4', 3, 223655040, 223656480, 223657920) . pack('V2', 223655040, 223668000) .
+			pack('V4v', 0x3006, 0x3009, 600, 660, 3);
+		$records = $extended = '';
+		foreach ([223655040, 223656480, 223657920] as $index => $base) {
+			$records .= pack('V3v', $base + 600, $base + 660, $base, 0x11) .
+				pack('v2', 3, 2) . 'S' . $index . pack('v2', 3, 2) . 'L' . $index;
+			$extended .= pack('V2', 4, 0) . pack('V', 0) .
+				pack('V3', $base + 600, $base + 660, $base) .
+				pack('v', 2) . "S\0" . chr(0x30 + $index) . "\0" .
+				pack('v', 2) . "L\0" . chr(0x30 + $index) . "\0" . pack('V', 0);
+		}
+		$parsed = $this->recurrence->parseRecurrence(
+			$prefix . $records . pack('V', 0) . $extended . pack('V', 0)
+		);
+		$this->assertSame([], $parsed['deleted_occurrences']);
+		$this->assertCount(3, $parsed['changed_occurrences']);
+		foreach ($parsed['changed_occurrences'] as $index => $exception) {
+			$this->assertSame(1774828800 + 86400 * $index, $exception['basedate']);
+			$this->assertSame('S' . $index, $exception['subject']);
+			$this->assertSame('L' . $index, $exception['location']);
+			$this->assertSame(223655040 + 1440 * $index + 600, $exception['ex_start_datetime']);
+		}
+	}
 }
