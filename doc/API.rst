@@ -520,6 +520,48 @@ Timezone Definitions
         $utc = $localStart + $rule['bias'] * 60;
     }
 
+Timezone Conversion
+~~~~~~~~~~~~~~~~~~~
+
+``TimezoneUtil`` works on timezone arrays (bias, DST transitions) as used by
+``Recurrence``. Rules come from gromox (``mapi_ianatz_to_tzdef()``) or, when
+gromox has no definition, from the PHP timezone database.
+
+.. code-block:: php
+
+    <?php
+    // Optional: receive log messages, $level is one of TimezoneUtil::LOG_*
+    TimezoneUtil::SetLogger(function (string $level, string $message) {
+        error_log("[$level] $message");
+    });
+
+    // Timezone array of the server's, a php or a Windows timezone
+    $tz = TimezoneUtil::GetFullTZ();
+    $tz = TimezoneUtil::GetFullTZFromTZName('Europe/Vienna');
+    $tz = TimezoneUtil::GetFullTZFromTZName('W. Europe Standard Time');
+
+    // Convert between local time and UTC
+    $utc = TimezoneUtil::GetUtcTimeByTz($localtime, $tz);
+    $local = TimezoneUtil::GetLocalTimeByTz($utc, $tz);
+    $dst = TimezoneUtil::IsDstAtUtc($utc, $tz);
+
+    // PidLidTimeZoneStruct
+    $tz = TimezoneUtil::GetTzFromTimezoneStruct($props[$proptags['timezone_data']]);
+    $struct = TimezoneUtil::GetTimezoneStructFromTz($tz);
+
+    // Windows timezone of a PidLidTimeZoneDescription
+    $winTz = TimezoneUtil::GetTZNameFromWinTZ('(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna');
+
+    // PidLidAppointmentTimeZoneDefinitionStartDisplay/EndDisplay
+    $tzdef = TimezoneUtil::GetTimezoneDefinitionForTz($tz);
+    // PidLidAppointmentTimeZoneDefinitionRecur additionally needs
+    // TZRULE_FLAG_RECUR_CURRENT_TZREG on its effective rule
+    $tzdefRecur = TimezoneUtil::SetTimezoneDefinitionFlags($tzdef,
+        TZRULE_FLAG_EFFECTIVE_TZREG | TZRULE_FLAG_RECUR_CURRENT_TZREG);
+
+    // Move an all-day event to midnight of the same day in another timezone
+    $start = TimezoneUtil::ConvertAllDayStart($start, $fromTzdef, $toTzdef);
+
 Calendar Restriction
 ~~~~~~~~~~~~~~~~~~~~
 

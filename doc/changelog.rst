@@ -1,3 +1,73 @@
+2.4 (2026-10-10)
+================
+
+Fixes:
+
+* Yearly series no longer turn into series every 12 (then 144) years after
+  repeated expansion or after adding an exception.
+* Monthly and yearly occurrences no longer drift on servers west of UTC, and
+  days near the server's DST changes are no longer off by one.
+* Timezones whose DST transition is not on a Sunday (e.g. Asia/Jerusalem,
+  Africa/Cairo, America/Santiago) are now handled correctly; transition
+  weekdays are read and written in full.
+* The DST boundaries are cached per timezone instead of per year only.
+* A deleted occurrence is no longer reported as a regular one right after
+  being deleted, and the reminder of a new exception is now stored in the
+  recurrence blob.
+* Series with an interval of 0 are rejected instead of raising
+  DivisionByZeroError.
+* The recurrence pattern text for yearly series now states the interval in
+  years.
+* Recurrence no longer fails with an undefined pgettext() when loaded without
+  bootstrap.php (grommunio-sync).
+* A float-to-int deprecation warning when saving recurrences with seconds in
+  the start time has been resolved.
+* Meeting responses to an occurrence now name the right day in the GlobalId
+  on servers west of UTC.
+* PidLidStartRecurTime and related properties are no longer shifted by the
+  server's UTC offset.
+* Updates to a single occurrence now carry its original start time, so
+  Outlook for Mac no longer reverts the change and creates a duplicate.
+* Responding to a recurring request whose series is missing no longer opens
+  the store root as the series.
+* Resource booking no longer fails when the owner address is unknown or the
+  resource store cannot be opened.
+* Requests without update counter no longer emit "Undefined array key"
+  warnings in the outdatedness check.
+* Sending a meeting request with deleted attendees that lack PR_ENTRYID no
+  longer aborts with a TypeError (seen with ActiveSync).
+* Processing a cancellation for an occurrence already deleted by the attendee
+  no longer aborts with a TypeError.
+* Resending as self after a refused submit now drops the other user's SMTP
+  addresses, so the second submit is no longer refused as well.
+* Attendees (including the organizer and delegators) are no longer listed
+  multiple times after accepting a request or opening an occurrence; already
+  affected occurrences are cleaned up on their next update.
+* Accepting a request is only treated as a delegate's action for actual
+  delegates.
+* Recurring tasks without a body can be completed again, the completion date
+  no longer carries over to the next occurrence, and tasks regenerating after
+  completion get their next occurrence.
+* Invalid task recurrences no longer raise a TypeError.
+* Task requests no longer operate on a missing or foreign embedded task.
+* Free/busy lookups return false instead of the store root when the store has
+  no free/busy entryids.
+* MAPIException messages only get an error text appended for failing codes.
+
+Enhancements:
+
+* Added the TimezoneUtil class (taken over from grommunio-sync). Rules now
+  come from gromox (mapi_ianatz_to_tzdef()) or the PHP timezone database
+  instead of outdated tables, and DST transitions follow MS-OXOCAL.
+* Added helpers to build PidLidAppointmentTimeZoneDefinition* blobs and to
+  move all-day events between timezones.
+* Added the TZDEFINITION flag constants.
+* Meeting forward notifications are now processed: forwarded attendees are
+  added to the organizer's meeting or occurrence.
+* Forwarded meeting requests are now sent in the name of the organizer, as
+  described in MS-OXOCAL, and a local organizer is notified.
+* The test suite was migrated to PHPUnit 11.5.
+
 2.3 (2026-09-24)
 ================
 
@@ -22,8 +92,6 @@ Fixes:
 * Keycloak: On grant validations, refresh tokens are no longer validated.
 * Keycloak: Avoid raising an undefined index warning when a public client
   without realm public key connects.
-* readMapiPropStream() now returns aeturn an empty string when the property
-  stream cannot be opened.
 * readMapiPropStream() now returns an empty string when the stream cannot be
   opened.
 

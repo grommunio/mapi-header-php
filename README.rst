@@ -114,6 +114,7 @@ Core Components
 * ``class.mapiexception.php`` - MAPI-specific exception handling
 * ``class.recurrenceexception.php`` - Recurrence-specific exception handling
 * ``class.freebusy.php`` - Free/busy utilities
+* ``class.timezoneutil.php`` - Timezone conversion and TZDEFINITION helpers
 * ``class.keycloak.php`` - KeyCloak SSO integration
 * ``class.token.php`` - JWT token parsing and validation
 
