@@ -789,6 +789,7 @@ abstract class BaseRecurrence {
 				}
 
 				// Get month for yearly on D'th day of month M
+				$selmonth = $curmonth;
 				if ($rtype == IDC_RCEV_PAT_ORB_YEARLY) {
 					$selmonth = floor(((int) $this->recur["month"]) / (24 * 60 * 29)) + 1; // 1=jan, 2=feb, eg
 				}
@@ -1126,7 +1127,7 @@ abstract class BaseRecurrence {
 						// Add the weeks till the last item
 						$occenddate += ($forwardcount * 7 * 24 * 60 * 60);
 
-						$dayofweek = (int) gmdate("w", $occenddate);
+						$dayofweek = (int) gmdate("w", (int) $occenddate);
 
 						// Loop through the last occurrences until we have had them all
 						for ($j = 1; $restocc > 0; ++$j) {
@@ -1206,7 +1207,7 @@ abstract class BaseRecurrence {
 									$occenddate -= ((int) gmdate("j", $occenddate) - 1) * 24 * 60 * 60;
 								}
 
-								$dayofweek = (int) gmdate("w", $occenddate);
+								$dayofweek = (int) gmdate("w", (int) $occenddate);
 								for ($i = 0; $i < 7; ++$i) {
 									if ($nday == 5 && (($dayofweek - $i) % 7) >= 0 && (1 << (($dayofweek - $i) % 7)) & $weekdays) {
 										$occenddate -= $i * 24 * 60 * 60;

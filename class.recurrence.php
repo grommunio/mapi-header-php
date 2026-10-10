@@ -148,6 +148,7 @@ class Recurrence extends BaseRecurrence {
 		}
 
 		if (!$delete) {
+			$props = [];
 			$changed_item = [];
 			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date.
 			// The changed ones go into the recurrence blob under the names parseRecurrence() uses.
@@ -889,7 +890,7 @@ class Recurrence extends BaseRecurrence {
 		$new = [];
 
 		foreach ($this->recur["changed_occurrences"] as $entry) {
-			if (!$this->isSameDay($entry["basedate"], $base_date)) {
+			if (!$this->isSameDay($entry["basedate"], (int) $base_date)) {
 				$new[] = $entry;
 			}
 			else {
@@ -1138,7 +1139,7 @@ class Recurrence extends BaseRecurrence {
 			return true;
 		}
 
-		if ($this->getChangeException($basedate) != false) {
+		if ($this->getChangeException($basedate) !== false) {
 			return true;
 		}
 
