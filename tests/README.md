@@ -43,6 +43,15 @@ Run the complete test suite:
 vendor/bin/phpunit
 ```
 
+`RecurrenceAttachmentTest` also exercises a real MAPI store when
+`MAPI_TEST_USER` names a local test mailbox. Run it on the mail server with
+permission to use `mapi_logon_np`; it creates and removes a temporary folder:
+
+```bash
+MAPI_TEST_USER=test@example.org php -d auto_prepend_file=tests/bootstrap.php \
+  vendor/bin/phpunit tests/RecurrenceAttachmentTest.php
+```
+
 ### Specific Test File
 
 Run a single test file:

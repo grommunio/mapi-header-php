@@ -298,7 +298,7 @@ class Recurrence extends BaseRecurrence {
 		$attach = $this->getExceptionAttachment($baseday);
 		if (!$attach) {
 			if ($copy_attach_from) {
-				$this->deleteExceptionAttachment($base_date);
+				$this->deleteExceptionAttachment($this->getOccurrenceStart($baseday));
 				$this->createException($exception_props, $base_date, false, $exception_recips, $copy_attach_from);
 			}
 			else {
@@ -966,6 +966,8 @@ class Recurrence extends BaseRecurrence {
 	 *                         to check whether it's on the same day.
 	 */
 	public function deleteExceptionAttachment($base_date): void {
+		$baseday = $this->dayStartOf($this->fromGMT($this->tz, $base_date));
+		$this->exceptionAttachIndex = null;
 		$attachments = mapi_message_getattachmenttable($this->message);
 		// Retrieve only exceptions which are stored as embedded messages
 		$attach_res = $this->getEmbeddedMessageRestriction();
@@ -977,7 +979,8 @@ class Recurrence extends BaseRecurrence {
 
 			$data = mapi_getprops($exception, [$this->proptags["basedate"]]);
 
-			if ($this->dayStartOf($this->fromGMT($this->tz, $data[$this->proptags["basedate"]])) == $this->dayStartOf($base_date)) {
+			if (isset($data[$this->proptags["basedate"]]) &&
+				$this->dayStartOf($this->fromGMT($this->tz, $data[$this->proptags["basedate"]])) == $baseday) {
 				mapi_message_deleteattach($this->message, $attachRow[PR_ATTACH_NUM]);
 			}
 		}
