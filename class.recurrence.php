@@ -148,6 +148,7 @@ class Recurrence extends BaseRecurrence {
 		}
 
 		if (!$delete) {
+			$props = [];
 			$changed_item = [];
 			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date.
 			// The changed ones go into the recurrence blob under the names parseRecurrence() uses.
@@ -297,7 +298,7 @@ class Recurrence extends BaseRecurrence {
 		$attach = $this->getExceptionAttachment($baseday);
 		if (!$attach) {
 			if ($copy_attach_from) {
-				$this->deleteExceptionAttachment($base_date);
+				$this->deleteExceptionAttachment($this->getOccurrenceStart($baseday));
 				$this->createException($exception_props, $base_date, false, $exception_recips, $copy_attach_from);
 			}
 			else {
@@ -889,7 +890,7 @@ class Recurrence extends BaseRecurrence {
 		$new = [];
 
 		foreach ($this->recur["changed_occurrences"] as $entry) {
-			if (!$this->isSameDay($entry["basedate"], $base_date)) {
+			if (!$this->isSameDay($entry["basedate"], (int) $base_date)) {
 				$new[] = $entry;
 			}
 			else {
@@ -965,6 +966,8 @@ class Recurrence extends BaseRecurrence {
 	 *                         to check whether it's on the same day.
 	 */
 	public function deleteExceptionAttachment($base_date): void {
+		$baseday = $this->dayStartOf($this->fromGMT($this->tz, $base_date));
+		$this->exceptionAttachIndex = null;
 		$attachments = mapi_message_getattachmenttable($this->message);
 		// Retrieve only exceptions which are stored as embedded messages
 		$attach_res = $this->getEmbeddedMessageRestriction();
@@ -974,9 +977,10 @@ class Recurrence extends BaseRecurrence {
 			$tempattach = mapi_message_openattach($this->message, $attachRow[PR_ATTACH_NUM]);
 			$exception = mapi_attach_openobj($tempattach);
 
-			$data = mapi_message_getprops($exception, [$this->proptags["basedate"]]);
+			$data = mapi_getprops($exception, [$this->proptags["basedate"]]);
 
-			if ($this->dayStartOf($this->fromGMT($this->tz, $data[$this->proptags["basedate"]])) == $this->dayStartOf($base_date)) {
+			if (isset($data[$this->proptags["basedate"]]) &&
+				$this->dayStartOf($this->fromGMT($this->tz, $data[$this->proptags["basedate"]])) == $baseday) {
 				mapi_message_deleteattach($this->message, $attachRow[PR_ATTACH_NUM]);
 			}
 		}
@@ -1033,7 +1037,7 @@ class Recurrence extends BaseRecurrence {
 				foreach ($attachRows as $attachRow) {
 					$tempattach = mapi_message_openattach($this->message, $attachRow[PR_ATTACH_NUM]);
 					$exception = mapi_attach_openobj($tempattach);
-					$data = mapi_message_getprops($exception, [$this->proptags["basedate"]]);
+					$data = mapi_getprops($exception, [$this->proptags["basedate"]]);
 
 					if (isset($data[$this->proptags["basedate"]])) {
 						$key = $this->dayKey($this->fromGMT($this->tz, $data[$this->proptags["basedate"]]));
@@ -1138,7 +1142,7 @@ class Recurrence extends BaseRecurrence {
 			return true;
 		}
 
-		if ($this->getChangeException($basedate) != false) {
+		if ($this->getChangeException($basedate) !== false) {
 			return true;
 		}
 

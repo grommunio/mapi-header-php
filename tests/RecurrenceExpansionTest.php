@@ -52,6 +52,71 @@ class RecurrenceExpansionTest extends TestCase {
 		return array_map(fn ($item) => gmdate('Y-m-d H:i', $item[$r->proptags['startdate']]), $items);
 	}
 
+	#[DataProvider('expansionPatterns')]
+	public function testExpansionPatterns(array $pattern, string $start, array $dates): void {
+		$base = strtotime($start . ' UTC');
+		$r = $this->makeRecurrence($pattern + [
+			'regen' => 0, 'term' => 0x23, 'start' => $base,
+			'end' => gmmktime(0, 0, 0, 1, 1, 2030), 'startocc' => 600, 'endocc' => 660,
+		]);
+		$items = $r->getItems($base, $r->recur['end'], 3);
+
+		$this->assertSame($dates, array_map(fn ($item) => gmdate('Y-m-d', $item[$r->proptags['startdate']]), $items));
+	}
+
+	public static function expansionPatterns(): array {
+		return [
+			'daily' => [
+				['type' => 10, 'subtype' => rptDay, 'everyn' => 2880],
+				'2024-01-01', ['2024-01-01', '2024-01-03', '2024-01-05'],
+			],
+			'workdays' => [
+				['type' => 10, 'subtype' => rptWeek, 'everyn' => 1],
+				'2024-01-05', ['2024-01-05', '2024-01-08', '2024-01-09'],
+			],
+			'weekly with Sunday week start' => [
+				['type' => 11, 'subtype' => rptWeek, 'everyn' => 2, 'weekdays' => 0x0A, 'first_dow' => 0],
+				'2024-01-01', ['2024-01-01', '2024-01-03', '2024-01-15'],
+			],
+			'weekly regeneration' => [
+				['type' => 11, 'subtype' => rptWeek, 'everyn' => 2, 'regen' => 1],
+				'2024-01-01', ['2024-01-15'],
+			],
+			'monthly regeneration' => [
+				['type' => 12, 'subtype' => rptMonth, 'everyn' => 1, 'monthday' => 31, 'regen' => 1],
+				'2024-01-31', ['2024-02-29'],
+			],
+			'yearly regeneration' => [
+				['type' => 13, 'subtype' => rptMonth, 'everyn' => 2, 'monthday' => 15, 'month' => 59 * 1440, 'regen' => 1],
+				'2024-03-15', ['2026-03-15'],
+			],
+			'month end' => [
+				['type' => 12, 'subtype' => rptMonth, 'everyn' => 1, 'monthday' => 31],
+				'2024-01-01', ['2024-01-31', '2024-02-29', '2024-03-31'],
+			],
+			'second workday' => [
+				['type' => 12, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 0x3E, 'nday' => 2],
+				'2024-01-01', ['2024-01-02', '2024-02-02', '2024-03-04'],
+			],
+			'last Friday' => [
+				['type' => 12, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 0x20, 'nday' => 5],
+				'2024-01-01', ['2024-01-26', '2024-02-23', '2024-03-29'],
+			],
+			'yearly leap day' => [
+				['type' => 13, 'subtype' => rptMonth, 'everyn' => 1, 'monthday' => 29, 'month' => 31 * 1440],
+				'2024-01-01', ['2024-02-29', '2025-02-28', '2026-02-28'],
+			],
+			'last Monday in March' => [
+				['type' => 13, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 2, 'nday' => 5, 'month' => 59 * 1440],
+				'2024-01-01', ['2024-03-25', '2025-03-31', '2026-03-30'],
+			],
+			'every two years' => [
+				['type' => 13, 'subtype' => rptMonth, 'everyn' => 2, 'monthday' => 4, 'month' => 181 * 1440],
+				'2024-01-01', ['2024-07-04', '2026-07-04', '2028-07-04'],
+			],
+		];
+	}
+
 	public function testYearlyIntervalIsNotChangedByExpansion(): void {
 		$r = $this->makeRecurrence([
 			'type' => 13, 'subtype' => rptMonth, 'month' => (31 + 28) * 1440, 'monthday' => 15, 'everyn' => 1, 'regen' => 0,
@@ -145,6 +210,45 @@ class RecurrenceExpansionTest extends TestCase {
 
 	public static function meetingTimezones(): array {
 		return [['Europe/Berlin'], ['America/New_York'], ['Australia/Sydney'], ['Asia/Jerusalem'], ['Africa/Cairo'], ['America/Santiago'], ['Asia/Tokyo']];
+	}
+
+	#[DataProvider('meetingTimezones')]
+	public function testFromGmtIsTheInverseOfToGmt(string $zone): void {
+		$r = $this->makeRecurrence();
+		$tz = $this->timezone($r, $zone);
+		$dtz = new DateTimeZone($zone);
+		for ($utc = gmmktime(0, 0, 0, 1, 1, 2026); $utc < gmmktime(0, 0, 0, 1, 1, 2027); $utc += 1800) {
+			$local = $utc + $dtz->getOffset(new DateTime('@' . $utc));
+			$this->assertSame($local, $r->fromGMT($tz, $utc), gmdate('Y-m-d H:i', $utc));
+			// a local time in the hour repeated at the end of DST is ambiguous
+			if ($dtz->getOffset(new DateTime('@' . ($utc - 3600))) == $dtz->getOffset(new DateTime('@' . ($utc + 3600)))) {
+				$this->assertSame($utc, $r->toGMT($tz, $local), gmdate('Y-m-d H:i', $local));
+			}
+		}
+	}
+
+	public function testOccurrenceOnTheEveOfDst(): void {
+		$r = $this->makeRecurrence();
+		$tz = $this->timezone($r, 'America/Toronto');
+		// the evening before and of the DST change keep their own day
+		foreach ([7, 8] as $day) {
+			$local = gmmktime(23, 0, 0, 3, $day, 2026);
+			$this->assertSame($local, $r->fromGMT($tz, $r->toGMT($tz, $local)));
+		}
+	}
+
+	public function testTimeSkippedByDstMovesForward(): void {
+		$r = $this->makeRecurrence();
+		// Havana skips from 00:00 to 01:00, Berlin from 02:00 to 03:00
+		$tz = $this->timezone($r, 'America/Havana');
+		$this->assertSame(gmmktime(1, 30, 0, 3, 8, 2026), $r->fromGMT($tz, $r->toGMT($tz, gmmktime(0, 30, 0, 3, 8, 2026))));
+		$tz = $this->timezone($r, 'Europe/Berlin');
+		$this->assertSame(gmmktime(3, 30, 0, 3, 29, 2026), $r->fromGMT($tz, $r->toGMT($tz, gmmktime(2, 30, 0, 3, 29, 2026))));
+		$this->assertSame(gmmktime(1, 0, 0, 3, 29, 2026), $r->toGMT($tz, gmmktime(3, 0, 0, 3, 29, 2026)));
+		// Santiago skips from 24:00 to 01:00, the rule says 23:59:59.999
+		$tz = $this->timezone($r, 'America/Santiago');
+		$this->assertSame(gmmktime(1, 0, 0, 9, 6, 2026), $r->fromGMT($tz, $r->toGMT($tz, gmmktime(0, 0, 0, 9, 6, 2026))));
+		$this->assertSame(gmmktime(3, 30, 0, 9, 6, 2026), $r->toGMT($tz, gmmktime(23, 30, 0, 9, 5, 2026)));
 	}
 
 	public function testTimezoneOfAnotherZone(): void {

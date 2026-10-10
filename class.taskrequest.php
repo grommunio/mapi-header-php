@@ -583,7 +583,7 @@ class TaskRequest {
 			PR_ATTACHMENT_HIDDEN => true,
 			PR_DISPLAY_NAME => $messageprops[PR_SUBJECT], ]);
 
-		$sub = mapi_attach_openproperty($attach, PR_ATTACH_DATA_OBJ, IID_IMessage, 0, MAPI_MODIFY | MAPI_CREATE);
+		$sub = mapi_openproperty($attach, PR_ATTACH_DATA_OBJ, IID_IMessage, 0, MAPI_MODIFY | MAPI_CREATE);
 
 		mapi_copyto($this->message, [], [], $sub);
 		mapi_setprops($sub, [PR_MESSAGE_CLASS => 'IPM.Task']);
@@ -927,7 +927,7 @@ class TaskRequest {
 
 		$attach = mapi_message_createattach($outgoing);
 		mapi_setprops($attach, [PR_ATTACH_METHOD => ATTACH_EMBEDDED_MSG, PR_DISPLAY_NAME => $messageprops[PR_CONVERSATION_TOPIC], PR_ATTACHMENT_HIDDEN => true]);
-		$sub = mapi_attach_openproperty($attach, PR_ATTACH_DATA_OBJ, IID_IMessage, 0, MAPI_CREATE | MAPI_MODIFY);
+		$sub = mapi_openproperty($attach, PR_ATTACH_DATA_OBJ, IID_IMessage, 0, MAPI_CREATE | MAPI_MODIFY);
 
 		$message = !$this->isTaskRequest() ? $this->message : $this->getAssociatedTask(false);
 

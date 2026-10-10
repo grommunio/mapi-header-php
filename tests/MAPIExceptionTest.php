@@ -88,6 +88,9 @@ class MAPIExceptionTest extends TestCase {
 	}
 
 	public function testGetDisplayMessageWithUnknownError(): void {
+		if (!extension_loaded('mapi')) {
+			$this->markTestSkipped('Requires the MAPI error table');
+		}
 		$exception = new MAPIException('Test', 0x80040FFE);
 
 		$displayMessage = $exception->getDisplayMessage();
