@@ -82,6 +82,14 @@ class RecurrenceExpansionTest extends TestCase {
 				['type' => 11, 'subtype' => rptWeek, 'everyn' => 2, 'regen' => 1],
 				'2024-01-01', ['2024-01-15'],
 			],
+			'monthly regeneration' => [
+				['type' => 12, 'subtype' => rptMonth, 'everyn' => 1, 'monthday' => 31, 'regen' => 1],
+				'2024-01-31', ['2024-02-29'],
+			],
+			'yearly regeneration' => [
+				['type' => 13, 'subtype' => rptMonth, 'everyn' => 2, 'monthday' => 15, 'month' => 59 * 1440, 'regen' => 1],
+				'2024-03-15', ['2026-03-15'],
+			],
 			'month end' => [
 				['type' => 12, 'subtype' => rptMonth, 'everyn' => 1, 'monthday' => 31],
 				'2024-01-01', ['2024-01-31', '2024-02-29', '2024-03-31'],

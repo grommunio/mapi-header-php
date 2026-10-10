@@ -1932,6 +1932,10 @@ abstract class BaseRecurrence {
 			$this->recur["everyn"] = 1;
 		}
 
+		if ($this->recur['regen'] && !isset($this->recur["nday"], $this->recur["weekdays"])) {
+			return $this->getRegeneratedItem($daystart, $end, $dayend, (int) $this->recur["everyn"], $remindersonly);
+		}
+
 		// Loop through all months from start to end of occurrence, starting at beginning of first month
 		for ($now = $this->monthStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $this->recur["everyn"]) * 24 * 60 * 60) {
 			if (isset($this->recur["monthday"]) && ($this->recur['monthday'] != "undefined") && !$this->recur['regen']) { // Day M of every N months
@@ -1991,14 +1995,6 @@ abstract class BaseRecurrence {
 					$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
 				}
 			}
-			elseif ($this->recur['regen']) {
-				$next_month_start = $now + ($this->daysInMonth($now, 1) * 24 * 60 * 60);
-				$now = $daystart + ($this->daysInMonth($next_month_start, $this->recur['everyn']) * 24 * 60 * 60);
-
-				if ($now <= $dayend) {
-					$this->processOccurrenceItem($items, $daystart, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-				}
-			}
 		}
 
 		return $items;
@@ -2011,6 +2007,10 @@ abstract class BaseRecurrence {
 		// everyn is the period in years, but it is calculated in months.
 		// Keep that out of $this->recur, which saveRecurrence() writes back.
 		$everyn = $this->recur["everyn"] <= 0 ? 12 : $this->recur["everyn"] * 12;
+
+		if ($this->recur['regen'] && !isset($this->recur["nday"], $this->recur["weekdays"])) {
+			return $this->getRegeneratedItem($daystart, $end, $dayend, (int) $everyn, $remindersonly);
+		}
 
 		for ($now = $this->yearStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $everyn) * 24 * 60 * 60) {
 			if (isset($this->recur["monthday"]) && !$this->recur['regen']) { // same as monthly, but in a specific month
@@ -2048,15 +2048,25 @@ abstract class BaseRecurrence {
 
 				$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
 			}
-			elseif ($this->recur['regen']) {
-				$year_starttime = $this->gmtime($now);
-				$is_next_leapyear = $this->isLeapYear($year_starttime['tm_year'] + 1900 + 1);	// +1 next year
-				$now = $daystart + ($is_next_leapyear ? 31622400 /* Leap year in seconds */ : 31536000 /* year in seconds */);
+		}
 
-				if ($now <= $dayend) {
-					$this->processOccurrenceItem($items, $daystart, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-				}
-			}
+		return $items;
+	}
+
+	/**
+	 * A regenerating series has a single occurrence, the interval after its
+	 * start, like the weekly one. The day of month is limited to the last day
+	 * of the target month.
+	 */
+	private function getRegeneratedItem(int $daystart, int $end, int $dayend, int $months, mixed $remindersonly): array {
+		$items = [];
+		$time = $this->gmtime($daystart);
+		$month = $time['tm_mon'] + 1 + $months;
+		$year = $time['tm_year'] + 1900;
+		$day = min($time['tm_mday'], (int) gmdate('t', gmmktime(0, 0, 0, $month, 1, $year)));
+		$daynow = gmmktime(0, 0, 0, $month, $day, $year);
+		if ($daynow <= $dayend) {
+			$this->processOccurrenceItem($items, $daystart, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
 		}
 
 		return $items;
