@@ -1593,22 +1593,7 @@ abstract class BaseRecurrence {
 			return 0;
 		}
 
-		$gmdate = $this->gmtime($date);
-		$year = $gmdate["tm_year"];
-
-		// The timezone of the object may change (setRecurrence()), and getTimezone()
-		// may be asked for another one, so the rules are part of the key
-		$key = $year . ':' . implode(',', [
-			$tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"],
-			$tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"],
-		]);
-		if (!isset($this->dstBoundaryCache[$key])) {
-			$this->dstBoundaryCache[$key] = [
-				$this->getDateByYearMonthWeekDayHour($year, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"]),
-				$this->getDateByYearMonthWeekDayHour($year, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"]),
-			];
-		}
-		[$dststart, $dstend] = $this->dstBoundaryCache[$key];
+		[$dststart, $dstend] = $this->getDstBoundaries($tz, $date);
 
 		$dst = false;
 		if ($dststart <= $dstend) {
@@ -1629,6 +1614,32 @@ abstract class BaseRecurrence {
 		}
 
 		return $tz["timezone"];
+	}
+
+	/**
+	 * Returns the local start and end of DST in the year of the given local date.
+	 */
+	private function getDstBoundaries(mixed $tz, int $date): array {
+		$gmdate = $this->gmtime($date);
+		$year = $gmdate["tm_year"];
+
+		// The timezone of the object may change (setRecurrence()), and getTimezone()
+		// may be asked for another one, so the rules are part of the key
+		$key = $year . ':' . implode(',', [
+			$tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"], $tz["dststartminute"] ?? 0, $tz["dststartsecond"] ?? 0, $tz["dststartmillis"] ?? 0,
+			$tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"], $tz["dstendminute"] ?? 0, $tz["dstendsecond"] ?? 0, $tz["dstendmillis"] ?? 0,
+		]);
+		if (!isset($this->dstBoundaryCache[$key])) {
+			// a rule may change at 23:59:59.999, eg America/Santiago
+			$this->dstBoundaryCache[$key] = [
+				$this->getDateByYearMonthWeekDayHour($year, $tz["dststartmonth"], $tz["dststartweek"], $tz["dststartday"] ?? 0, $tz["dststarthour"]) +
+					(int) ceil(($tz["dststartminute"] ?? 0) * 60 + ($tz["dststartsecond"] ?? 0) + ($tz["dststartmillis"] ?? 0) / 1000),
+				$this->getDateByYearMonthWeekDayHour($year, $tz["dstendmonth"], $tz["dstendweek"], $tz["dstendday"] ?? 0, $tz["dstendhour"]) +
+					(int) ceil(($tz["dstendminute"] ?? 0) * 60 + ($tz["dstendsecond"] ?? 0) + ($tz["dstendmillis"] ?? 0) / 1000),
+			];
+		}
+
+		return $this->dstBoundaryCache[$key];
 	}
 
 	/**
@@ -1682,6 +1693,12 @@ abstract class BaseRecurrence {
 			return $date;
 		}
 		$offset = $this->getTimezone($tz, $date);
+		// A time skipped at the start of DST is moved forward like Outlook does,
+		// and not back, eg to the previous day in America/Havana.
+		[$dststart] = $this->getDstBoundaries($tz, $date);
+		if ($date > $dststart && $date < $dststart - ($tz['timezonedst'] ?? 0) * 60) {
+			$offset = $tz['timezone'];
+		}
 
 		return $date + $offset * 60;
 	}
@@ -1690,9 +1707,22 @@ abstract class BaseRecurrence {
 	 * fromGMT returns a timestamp in the local timezone given from the GMT time given.
 	 */
 	public function fromGMT(mixed $tz, int $date): int {
-		$offset = $this->getTimezone($tz, $date);
+		if (!isset($tz['timezone'])) {
+			return $date;
+		}
+		$standard = $date - $tz['timezone'] * 60;
+		$daylight = $standard - ($tz['timezonedst'] ?? 0) * 60;
+		if ($daylight == $standard) {
+			return $standard;
+		}
+		// The DST rules are in local time: DST starts at a standard time and
+		// ends at a daylight time. Transitions are not at the turn of a year.
+		[$dststart, $dstend] = $this->getDstBoundaries($tz, $standard);
+		$dst = $dststart <= $dstend ?
+			$standard >= $dststart && $daylight < $dstend :
+			$standard >= $dststart || $daylight < $dstend;
 
-		return $date - $offset * 60;
+		return $dst ? $daylight : $standard;
 	}
 
 	/**

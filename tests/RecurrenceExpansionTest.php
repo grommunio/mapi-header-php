@@ -204,6 +204,45 @@ class RecurrenceExpansionTest extends TestCase {
 		return [['Europe/Berlin'], ['America/New_York'], ['Australia/Sydney'], ['Asia/Jerusalem'], ['Africa/Cairo'], ['America/Santiago'], ['Asia/Tokyo']];
 	}
 
+	#[DataProvider('meetingTimezones')]
+	public function testFromGmtIsTheInverseOfToGmt(string $zone): void {
+		$r = $this->makeRecurrence();
+		$tz = $this->timezone($r, $zone);
+		$dtz = new DateTimeZone($zone);
+		for ($utc = gmmktime(0, 0, 0, 1, 1, 2026); $utc < gmmktime(0, 0, 0, 1, 1, 2027); $utc += 1800) {
+			$local = $utc + $dtz->getOffset(new DateTime('@' . $utc));
+			$this->assertSame($local, $r->fromGMT($tz, $utc), gmdate('Y-m-d H:i', $utc));
+			// a local time in the hour repeated at the end of DST is ambiguous
+			if ($dtz->getOffset(new DateTime('@' . ($utc - 3600))) == $dtz->getOffset(new DateTime('@' . ($utc + 3600)))) {
+				$this->assertSame($utc, $r->toGMT($tz, $local), gmdate('Y-m-d H:i', $local));
+			}
+		}
+	}
+
+	public function testOccurrenceOnTheEveOfDst(): void {
+		$r = $this->makeRecurrence();
+		$tz = $this->timezone($r, 'America/Toronto');
+		// the evening before and of the DST change keep their own day
+		foreach ([7, 8] as $day) {
+			$local = gmmktime(23, 0, 0, 3, $day, 2026);
+			$this->assertSame($local, $r->fromGMT($tz, $r->toGMT($tz, $local)));
+		}
+	}
+
+	public function testTimeSkippedByDstMovesForward(): void {
+		$r = $this->makeRecurrence();
+		// Havana skips from 00:00 to 01:00, Berlin from 02:00 to 03:00
+		$tz = $this->timezone($r, 'America/Havana');
+		$this->assertSame(gmmktime(1, 30, 0, 3, 8, 2026), $r->fromGMT($tz, $r->toGMT($tz, gmmktime(0, 30, 0, 3, 8, 2026))));
+		$tz = $this->timezone($r, 'Europe/Berlin');
+		$this->assertSame(gmmktime(3, 30, 0, 3, 29, 2026), $r->fromGMT($tz, $r->toGMT($tz, gmmktime(2, 30, 0, 3, 29, 2026))));
+		$this->assertSame(gmmktime(1, 0, 0, 3, 29, 2026), $r->toGMT($tz, gmmktime(3, 0, 0, 3, 29, 2026)));
+		// Santiago skips from 24:00 to 01:00, the rule says 23:59:59.999
+		$tz = $this->timezone($r, 'America/Santiago');
+		$this->assertSame(gmmktime(1, 0, 0, 9, 6, 2026), $r->fromGMT($tz, $r->toGMT($tz, gmmktime(0, 0, 0, 9, 6, 2026))));
+		$this->assertSame(gmmktime(3, 30, 0, 9, 6, 2026), $r->toGMT($tz, gmmktime(23, 30, 0, 9, 5, 2026)));
+	}
+
 	public function testTimezoneOfAnotherZone(): void {
 		$r = $this->makeRecurrence();
 		$t = gmmktime(12, 0, 0, 3, 20, 2026); // New York is in DST already, Berlin not yet
