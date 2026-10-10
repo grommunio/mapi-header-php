@@ -617,8 +617,8 @@ class TimezoneUtil {
 	/**
 	 * Returns the UTC time of a local time in the given timezone.
 	 *
-	 * @param int        $localtime
-	 * @param null|array $tz
+	 * @param int              $localtime
+	 * @param null|array|false $tz
 	 *
 	 * @return int
 	 */
@@ -633,8 +633,8 @@ class TimezoneUtil {
 	/**
 	 * Returns the local time of a UTC time in the given timezone.
 	 *
-	 * @param int        $utctime
-	 * @param null|array $tz
+	 * @param int              $utctime
+	 * @param null|array|false $tz
 	 *
 	 * @return int
 	 */
@@ -650,8 +650,8 @@ class TimezoneUtil {
 	 * Returns the bias in effect at a UTC time in the given timezone,
 	 * so that UTC = local time + bias.
 	 *
-	 * @param int   $utctime
-	 * @param array $tz
+	 * @param int              $utctime
+	 * @param null|array|false $tz
 	 *
 	 * @return int bias in minutes
 	 */
@@ -671,8 +671,8 @@ class TimezoneUtil {
 	 * switch back in local daylight time (MS-OXOCAL 2.2.1.41.1), which is how
 	 * a wall clock shows them.
 	 *
-	 * @param int   $localtime
-	 * @param array $tz
+	 * @param int              $localtime
+	 * @param null|array|false $tz
 	 *
 	 * @return bool
 	 */
@@ -694,8 +694,8 @@ class TimezoneUtil {
 	 * Returns true if daylight saving time is in effect at a UTC time in the
 	 * given timezone.
 	 *
-	 * @param int   $utctime
-	 * @param array $tz
+	 * @param int              $utctime
+	 * @param null|array|false $tz
 	 *
 	 * @return bool
 	 */
@@ -717,8 +717,8 @@ class TimezoneUtil {
 	 * Returns true if two timezone arrays describe the same offsets and
 	 * daylight saving time transitions.
 	 *
-	 * @param array $tz1
-	 * @param array $tz2
+	 * @param null|array|false $tz1
+	 * @param null|array|false $tz2
 	 *
 	 * @return bool
 	 */
@@ -823,7 +823,7 @@ class TimezoneUtil {
 		$offset = 8 + strlen($parsed['keyname']) + 2;
 		foreach ($parsed['rules'] as $rule) {
 			$ruleFlags = ($rule['tzruleflags'] & TZRULE_FLAG_EFFECTIVE_TZREG) ? $flags : 0;
-			$tzdef = substr_replace($tzdef, pack("v", $ruleFlags), $offset + 4, 2);
+			$tzdef = (string) substr_replace($tzdef, pack("v", $ruleFlags), $offset + 4, 2);
 			$offset += 66;
 		}
 
