@@ -31,6 +31,7 @@ checks:
   php:
     code_rating: true
     duplication: true
+    security_vulnerabilities: true
     excluded_dependencies:
       - phpunit/phpunit
 tools:
