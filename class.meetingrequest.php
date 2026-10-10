@@ -3107,7 +3107,7 @@ class Meetingrequest {
 
 				for ($j = 0, $len = count($resourceRecipData); $j < $len; ++$j) {
 					// Get the EntryID
-					$props = mapi_message_getprops($resourceRecipData[$j]['msg']);
+					$props = mapi_getprops($resourceRecipData[$j]['msg']);
 
 					mapi_folder_deletemessages($resourceRecipData[$j]['folder'], [$props[PR_ENTRYID]], DELETE_HARD_DELETE);
 				}

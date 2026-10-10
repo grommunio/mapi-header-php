@@ -974,7 +974,7 @@ class Recurrence extends BaseRecurrence {
 			$tempattach = mapi_message_openattach($this->message, $attachRow[PR_ATTACH_NUM]);
 			$exception = mapi_attach_openobj($tempattach);
 
-			$data = mapi_message_getprops($exception, [$this->proptags["basedate"]]);
+			$data = mapi_getprops($exception, [$this->proptags["basedate"]]);
 
 			if ($this->dayStartOf($this->fromGMT($this->tz, $data[$this->proptags["basedate"]])) == $this->dayStartOf($base_date)) {
 				mapi_message_deleteattach($this->message, $attachRow[PR_ATTACH_NUM]);
@@ -1033,7 +1033,7 @@ class Recurrence extends BaseRecurrence {
 				foreach ($attachRows as $attachRow) {
 					$tempattach = mapi_message_openattach($this->message, $attachRow[PR_ATTACH_NUM]);
 					$exception = mapi_attach_openobj($tempattach);
-					$data = mapi_message_getprops($exception, [$this->proptags["basedate"]]);
+					$data = mapi_getprops($exception, [$this->proptags["basedate"]]);
 
 					if (isset($data[$this->proptags["basedate"]])) {
 						$key = $this->dayKey($this->fromGMT($this->tz, $data[$this->proptags["basedate"]]));
