@@ -1739,7 +1739,6 @@ abstract class BaseRecurrence {
 	 */
 	public function getItems(int $start, int $end, mixed $limit = 0, mixed $remindersonly = false): array {
 		$items = [];
-		$firstday = 0;
 
 		if (!isset($this->recur)) {
 			return $items;
@@ -1803,199 +1802,13 @@ abstract class BaseRecurrence {
 		// Loop through the entire recurrence range of dates, and check for each occurrence whether it is in the view range.
 		$recurType = (int) $this->recur["type"] < 0x2000 ? (int) $this->recur["type"] + 0x2000 : (int) $this->recur["type"];
 
-		switch ($recurType) {
-			case IDC_RCEV_PAT_ORB_DAILY:
-				if ($this->recur["everyn"] <= 0) {
-					$this->recur["everyn"] = 1440;
-				}
-
-				if ($this->recur["subtype"] == rptDay) {
-					// Every Nth day
-					for ($now = $daystart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += 60 * $this->recur["everyn"]) {
-						$this->processOccurrenceItem($items, $start, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-					}
-					break;
-				}
-				// Every workday
-				for ($now = $daystart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += 60 * 1440) {
-					$nowtime = $this->gmtime($now);
-					if ($nowtime["tm_wday"] > 0 && $nowtime["tm_wday"] < 6) { // only add items in the given timespace
-						$this->processOccurrenceItem($items, $start, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-					}
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_WEEKLY:
-				if ($this->recur["everyn"] <= 0) {
-					$this->recur["everyn"] = 1;
-				}
-
-				// If sliding flag is set then move to 'n' weeks
-				$weekSeconds = 60 * 60 * 24 * 7;
-				if ($this->recur['regen']) {
-					$daystart += ($weekSeconds * $this->recur["everyn"]);
-				}
-
-				$loopStart = $daystart;
-				if (!$this->recur['regen']) {
-					$weekStartDow = isset($this->recur["first_dow"]) ? (int) $this->recur["first_dow"] : 1;
-					$weekStartDow = ($weekStartDow % 7 + 7) % 7;
-					$currentDow = (int) $this->gmtime($loopStart)["tm_wday"];
-					$offset = ($currentDow - $weekStartDow + 7) % 7;
-					$loopStart -= $offset * 24 * 60 * 60;
-				}
-
-				for ($now = $loopStart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += ($weekSeconds * $this->recur["everyn"])) {
-					if ($this->recur['regen']) {
-						$this->processOccurrenceItem($items, $start, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-						break;
-					}
-					// Loop through the whole following week to the first occurrence of the week, add each day that is specified
-					for ($wday = 0; $wday < 7 && ($limit == 0 || count($items) < $limit); ++$wday) {
-						$daynow = $now + $wday * 60 * 60 * 24;
-						if ($daynow < $daystart) {
-							continue; // @phpcs:ignore - intentional continue, not break
-						}
-						// checks whether the next coming day in recurring pattern is less than or equal to end day of the recurring item
-						if ($daynow > $dayend) {
-							break; // @phpcs:ignore - intentional break, not continue
-						}
-						$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
-						if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
-							$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-						}
-					}
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_MONTHLY:
-				if ($this->recur["everyn"] <= 0) {
-					$this->recur["everyn"] = 1;
-				}
-
-				// Loop through all months from start to end of occurrence, starting at beginning of first month
-				for ($now = $this->monthStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $this->recur["everyn"]) * 24 * 60 * 60) {
-					if (isset($this->recur["monthday"]) && ($this->recur['monthday'] != "undefined") && !$this->recur['regen']) { // Day M of every N months
-						$difference = 1;
-						if ($this->daysInMonth($now, $this->recur["everyn"]) < $this->recur["monthday"]) {
-							$difference = $this->recur["monthday"] - $this->daysInMonth($now, $this->recur["everyn"]) + 1;
-						}
-						$daynow = $now + (($this->recur["monthday"] - $difference) * 24 * 60 * 60);
-						// checks weather the next coming day in recurrence pattern is less than or equal to end day of the recurring item
-						if ($daynow <= $dayend) {
-							$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-						}
-					}
-					elseif (isset($this->recur["nday"], $this->recur["weekdays"])) { // Nth [weekday] of every N months
-						// Sanitize input
-						if ($this->recur["weekdays"] == 0) {
-							$this->recur["weekdays"] = 1;
-						}
-
-						// If nday is not set to the last day in the month
-						if ($this->recur["nday"] < 5) {
-							// keep the track of no. of time correct selection pattern (like 2nd weekday, 4th friday, etc.) is matched
-							$ndaycounter = 0;
-							// Find matching weekday in this month
-							for ($day = 0, $total = $this->daysInMonth($now, 1); $day < $total; ++$day) {
-								$daynow = $now + $day * 60 * 60 * 24;
-								$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
-
-								if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
-									++$ndaycounter;
-								}
-								// check the selected pattern is same as asked Nth weekday,If so set the firstday
-								if ($this->recur["nday"] == $ndaycounter) {
-									$firstday = $day;
-									break;
-								}
-							}
-							// $firstday is the day of the month on which the asked pattern of nth weekday matches
-							$daynow = $now + $firstday * 60 * 60 * 24;
-						}
-						else {
-							// Find last day in the month ($now is the firstday of the month)
-							$NumDaysInMonth = $this->daysInMonth($now, 1);
-							$daynow = $now + (($NumDaysInMonth - 1) * 24 * 60 * 60);
-
-							$nowtime = $this->gmtime($daynow);
-							while (($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) == 0) {
-								$daynow -= SECONDS_PER_DAY;
-								$nowtime = $this->gmtime($daynow);
-							}
-						}
-
-						/*
-						* checks weather the next coming day in recurrence pattern is less than or equal to end day of the			* recurring item.Also check weather the coming day in recurrence pattern is greater than or equal to start * of recurring pattern, so that appointment that fall under the recurrence range are only displayed.
-						*/
-						if ($daynow <= $dayend && $daynow >= $daystart) {
-							$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-						}
-					}
-					elseif ($this->recur['regen']) {
-						$next_month_start = $now + ($this->daysInMonth($now, 1) * 24 * 60 * 60);
-						$now = $daystart + ($this->daysInMonth($next_month_start, $this->recur['everyn']) * 24 * 60 * 60);
-
-						if ($now <= $dayend) {
-							$this->processOccurrenceItem($items, $daystart, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-						}
-					}
-				}
-				break;
-
-			case IDC_RCEV_PAT_ORB_YEARLY:
-				// everyn is the period in years, but it is calculated in months.
-				// Keep that out of $this->recur, which saveRecurrence() writes back.
-				$everyn = $this->recur["everyn"] <= 0 ? 12 : $this->recur["everyn"] * 12;
-
-				for ($now = $this->yearStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $everyn) * 24 * 60 * 60) {
-					if (isset($this->recur["monthday"]) && !$this->recur['regen']) { // same as monthly, but in a specific month
-						// recur["month"] is in minutes since the beginning of the year
-						$month = $this->monthOfYear($this->recur["month"]); // $month is now month of year [0..11]
-						$monthday = $this->recur["monthday"]; // $monthday is day of the month [1..31]
-						$monthstart = $now + $this->daysInMonth($now, $month) * 24 * 60 * 60; // $monthstart is the timestamp of the beginning of the month
-						if ($monthday > $this->daysInMonth($monthstart, 1)) {
-							$monthday = $this->daysInMonth($monthstart, 1);
-						}	// Cap $monthday on month length (eg 28 feb instead of 29 feb)
-						$daynow = $monthstart + ($monthday - 1) * 24 * 60 * 60;
-						$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-					}
-					elseif (isset($this->recur["nday"], $this->recur["weekdays"])) { // Nth [weekday] in month X of every N years
-						// Go the correct month
-						$monthnow = $now + $this->daysInMonth($now, $this->monthOfYear($this->recur["month"])) * 24 * 60 * 60;
-
-						// Find first matching weekday in this month
-						for ($wday = 0; $wday < 7; ++$wday) {
-							$daynow = $monthnow + $wday * 60 * 60 * 24;
-							$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
-
-							if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
-								$firstday = $wday;
-								break;
-							}
-						}
-
-						// Same as above (monthly)
-						$daynow = $monthnow + ($firstday + ($this->recur["nday"] - 1) * 7) * 60 * 60 * 24;
-
-						while ($this->monthStartOf($daynow) != $this->monthStartOf($monthnow)) {
-							$daynow -= 7 * 60 * 60 * 24;
-						}
-
-						$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-					}
-					elseif ($this->recur['regen']) {
-						$year_starttime = $this->gmtime($now);
-						$is_next_leapyear = $this->isLeapYear($year_starttime['tm_year'] + 1900 + 1);	// +1 next year
-						$now = $daystart + ($is_next_leapyear ? 31622400 /* Leap year in seconds */ : 31536000 /* year in seconds */);
-
-						if ($now <= $dayend) {
-							$this->processOccurrenceItem($items, $daystart, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-						}
-					}
-				}
-				break;
-		}
+		$items = match ($recurType) {
+			IDC_RCEV_PAT_ORB_DAILY => $this->getDailyItems($start, $end, $daystart, $dayend, $limit, $remindersonly),
+			IDC_RCEV_PAT_ORB_WEEKLY => $this->getWeeklyItems($start, $end, $daystart, $dayend, $limit, $remindersonly),
+			IDC_RCEV_PAT_ORB_MONTHLY => $this->getMonthlyItems($start, $end, $daystart, $dayend, $limit, $remindersonly),
+			IDC_RCEV_PAT_ORB_YEARLY => $this->getYearlyItems($start, $end, $daystart, $dayend, $limit, $remindersonly),
+			default => [],
+		};
 		// to get all exception items
 		if (!empty($this->recur['changed_occurrences'])) {
 			$this->processExceptionItems($items, $start, $end);
@@ -2005,6 +1818,217 @@ abstract class BaseRecurrence {
 		usort($items, $this->sortStarttime(...));
 
 		// Return the MAPI-compatible list of items for this object
+		return $items;
+	}
+
+	private function getDailyItems(int $start, int $end, int $daystart, int $dayend, mixed $limit, mixed $remindersonly): array {
+		$items = [];
+
+		if ($this->recur["everyn"] <= 0) {
+			$this->recur["everyn"] = 1440;
+		}
+
+		if ($this->recur["subtype"] == rptDay) {
+			// Every Nth day
+			for ($now = $daystart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += 60 * $this->recur["everyn"]) {
+				$this->processOccurrenceItem($items, $start, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+			}
+
+			return $items;
+		}
+		// Every workday
+		for ($now = $daystart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += 60 * 1440) {
+			$nowtime = $this->gmtime($now);
+			if ($nowtime["tm_wday"] > 0 && $nowtime["tm_wday"] < 6) { // only add items in the given timespace
+				$this->processOccurrenceItem($items, $start, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+			}
+		}
+
+		return $items;
+	}
+
+	private function getWeeklyItems(int $start, int $end, int $daystart, int $dayend, mixed $limit, mixed $remindersonly): array {
+		$items = [];
+
+		if ($this->recur["everyn"] <= 0) {
+			$this->recur["everyn"] = 1;
+		}
+
+		// If sliding flag is set then move to 'n' weeks
+		$weekSeconds = 60 * 60 * 24 * 7;
+		if ($this->recur['regen']) {
+			$daystart += ($weekSeconds * $this->recur["everyn"]);
+		}
+
+		$loopStart = $daystart;
+		if (!$this->recur['regen']) {
+			$weekStartDow = isset($this->recur["first_dow"]) ? (int) $this->recur["first_dow"] : 1;
+			$weekStartDow = ($weekStartDow % 7 + 7) % 7;
+			$currentDow = (int) $this->gmtime($loopStart)["tm_wday"];
+			$offset = ($currentDow - $weekStartDow + 7) % 7;
+			$loopStart -= $offset * 24 * 60 * 60;
+		}
+
+		for ($now = $loopStart; $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += ($weekSeconds * $this->recur["everyn"])) {
+			if ($this->recur['regen']) {
+				$this->processOccurrenceItem($items, $start, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+				break;
+			}
+			// Loop through the whole following week to the first occurrence of the week, add each day that is specified
+			for ($wday = 0; $wday < 7 && ($limit == 0 || count($items) < $limit); ++$wday) {
+				$daynow = $now + $wday * 60 * 60 * 24;
+				if ($daynow < $daystart) {
+					continue; // @phpcs:ignore - intentional continue, not break
+				}
+				// checks whether the next coming day in recurring pattern is less than or equal to end day of the recurring item
+				if ($daynow > $dayend) {
+					break; // @phpcs:ignore - intentional break, not continue
+				}
+				$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
+				if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
+					$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+				}
+			}
+		}
+
+		return $items;
+	}
+
+	private function getMonthlyItems(int $start, int $end, int $daystart, int $dayend, mixed $limit, mixed $remindersonly): array {
+		$items = [];
+		$firstday = 0;
+
+		if ($this->recur["everyn"] <= 0) {
+			$this->recur["everyn"] = 1;
+		}
+
+		// Loop through all months from start to end of occurrence, starting at beginning of first month
+		for ($now = $this->monthStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $this->recur["everyn"]) * 24 * 60 * 60) {
+			if (isset($this->recur["monthday"]) && ($this->recur['monthday'] != "undefined") && !$this->recur['regen']) { // Day M of every N months
+				$difference = 1;
+				if ($this->daysInMonth($now, $this->recur["everyn"]) < $this->recur["monthday"]) {
+					$difference = $this->recur["monthday"] - $this->daysInMonth($now, $this->recur["everyn"]) + 1;
+				}
+				$daynow = $now + (($this->recur["monthday"] - $difference) * 24 * 60 * 60);
+				// checks weather the next coming day in recurrence pattern is less than or equal to end day of the recurring item
+				if ($daynow <= $dayend) {
+					$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+				}
+			}
+			elseif (isset($this->recur["nday"], $this->recur["weekdays"])) { // Nth [weekday] of every N months
+				// Sanitize input
+				if ($this->recur["weekdays"] == 0) {
+					$this->recur["weekdays"] = 1;
+				}
+
+				// If nday is not set to the last day in the month
+				if ($this->recur["nday"] < 5) {
+					// keep the track of no. of time correct selection pattern (like 2nd weekday, 4th friday, etc.) is matched
+					$ndaycounter = 0;
+					// Find matching weekday in this month
+					for ($day = 0, $total = $this->daysInMonth($now, 1); $day < $total; ++$day) {
+						$daynow = $now + $day * 60 * 60 * 24;
+						$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
+
+						if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
+							++$ndaycounter;
+						}
+						// check the selected pattern is same as asked Nth weekday,If so set the firstday
+						if ($this->recur["nday"] == $ndaycounter) {
+							$firstday = $day;
+							break;
+						}
+					}
+					// $firstday is the day of the month on which the asked pattern of nth weekday matches
+					$daynow = $now + $firstday * 60 * 60 * 24;
+				}
+				else {
+					// Find last day in the month ($now is the firstday of the month)
+					$NumDaysInMonth = $this->daysInMonth($now, 1);
+					$daynow = $now + (($NumDaysInMonth - 1) * 24 * 60 * 60);
+
+					$nowtime = $this->gmtime($daynow);
+					while (($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) == 0) {
+						$daynow -= SECONDS_PER_DAY;
+						$nowtime = $this->gmtime($daynow);
+					}
+				}
+
+				/*
+				* checks weather the next coming day in recurrence pattern is less than or equal to end day of the			* recurring item.Also check weather the coming day in recurrence pattern is greater than or equal to start * of recurring pattern, so that appointment that fall under the recurrence range are only displayed.
+				*/
+				if ($daynow <= $dayend && $daynow >= $daystart) {
+					$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+				}
+			}
+			elseif ($this->recur['regen']) {
+				$next_month_start = $now + ($this->daysInMonth($now, 1) * 24 * 60 * 60);
+				$now = $daystart + ($this->daysInMonth($next_month_start, $this->recur['everyn']) * 24 * 60 * 60);
+
+				if ($now <= $dayend) {
+					$this->processOccurrenceItem($items, $daystart, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+				}
+			}
+		}
+
+		return $items;
+	}
+
+	private function getYearlyItems(int $start, int $end, int $daystart, int $dayend, mixed $limit, mixed $remindersonly): array {
+		$items = [];
+		$firstday = 0;
+
+		// everyn is the period in years, but it is calculated in months.
+		// Keep that out of $this->recur, which saveRecurrence() writes back.
+		$everyn = $this->recur["everyn"] <= 0 ? 12 : $this->recur["everyn"] * 12;
+
+		for ($now = $this->yearStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $everyn) * 24 * 60 * 60) {
+			if (isset($this->recur["monthday"]) && !$this->recur['regen']) { // same as monthly, but in a specific month
+				// recur["month"] is in minutes since the beginning of the year
+				$month = $this->monthOfYear($this->recur["month"]); // $month is now month of year [0..11]
+				$monthday = $this->recur["monthday"]; // $monthday is day of the month [1..31]
+				$monthstart = $now + $this->daysInMonth($now, $month) * 24 * 60 * 60; // $monthstart is the timestamp of the beginning of the month
+				if ($monthday > $this->daysInMonth($monthstart, 1)) {
+					$monthday = $this->daysInMonth($monthstart, 1);
+				}	// Cap $monthday on month length (eg 28 feb instead of 29 feb)
+				$daynow = $monthstart + ($monthday - 1) * 24 * 60 * 60;
+				$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+			}
+			elseif (isset($this->recur["nday"], $this->recur["weekdays"])) { // Nth [weekday] in month X of every N years
+				// Go the correct month
+				$monthnow = $now + $this->daysInMonth($now, $this->monthOfYear($this->recur["month"])) * 24 * 60 * 60;
+
+				// Find first matching weekday in this month
+				for ($wday = 0; $wday < 7; ++$wday) {
+					$daynow = $monthnow + $wday * 60 * 60 * 24;
+					$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
+
+					if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
+						$firstday = $wday;
+						break;
+					}
+				}
+
+				// Same as above (monthly)
+				$daynow = $monthnow + ($firstday + ($this->recur["nday"] - 1) * 7) * 60 * 60 * 24;
+
+				while ($this->monthStartOf($daynow) != $this->monthStartOf($monthnow)) {
+					$daynow -= 7 * 60 * 60 * 24;
+				}
+
+				$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+			}
+			elseif ($this->recur['regen']) {
+				$year_starttime = $this->gmtime($now);
+				$is_next_leapyear = $this->isLeapYear($year_starttime['tm_year'] + 1900 + 1);	// +1 next year
+				$now = $daystart + ($is_next_leapyear ? 31622400 /* Leap year in seconds */ : 31536000 /* year in seconds */);
+
+				if ($now <= $dayend) {
+					$this->processOccurrenceItem($items, $daystart, $end, $now, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
+				}
+			}
+		}
+
 		return $items;
 	}
 

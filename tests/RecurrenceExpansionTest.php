@@ -52,6 +52,63 @@ class RecurrenceExpansionTest extends TestCase {
 		return array_map(fn ($item) => gmdate('Y-m-d H:i', $item[$r->proptags['startdate']]), $items);
 	}
 
+	#[DataProvider('expansionPatterns')]
+	public function testExpansionPatterns(array $pattern, string $start, array $dates): void {
+		$base = strtotime($start . ' UTC');
+		$r = $this->makeRecurrence($pattern + [
+			'regen' => 0, 'term' => 0x23, 'start' => $base,
+			'end' => gmmktime(0, 0, 0, 1, 1, 2030), 'startocc' => 600, 'endocc' => 660,
+		]);
+		$items = $r->getItems($base, $r->recur['end'], 3);
+
+		$this->assertSame($dates, array_map(fn ($item) => gmdate('Y-m-d', $item[$r->proptags['startdate']]), $items));
+	}
+
+	public static function expansionPatterns(): array {
+		return [
+			'daily' => [
+				['type' => 10, 'subtype' => rptDay, 'everyn' => 2880],
+				'2024-01-01', ['2024-01-01', '2024-01-03', '2024-01-05'],
+			],
+			'workdays' => [
+				['type' => 10, 'subtype' => rptWeek, 'everyn' => 1],
+				'2024-01-05', ['2024-01-05', '2024-01-08', '2024-01-09'],
+			],
+			'weekly with Sunday week start' => [
+				['type' => 11, 'subtype' => rptWeek, 'everyn' => 2, 'weekdays' => 0x0A, 'first_dow' => 0],
+				'2024-01-01', ['2024-01-01', '2024-01-03', '2024-01-15'],
+			],
+			'weekly regeneration' => [
+				['type' => 11, 'subtype' => rptWeek, 'everyn' => 2, 'regen' => 1],
+				'2024-01-01', ['2024-01-15'],
+			],
+			'month end' => [
+				['type' => 12, 'subtype' => rptMonth, 'everyn' => 1, 'monthday' => 31],
+				'2024-01-01', ['2024-01-31', '2024-02-29', '2024-03-31'],
+			],
+			'second workday' => [
+				['type' => 12, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 0x3E, 'nday' => 2],
+				'2024-01-01', ['2024-01-02', '2024-02-02', '2024-03-04'],
+			],
+			'last Friday' => [
+				['type' => 12, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 0x20, 'nday' => 5],
+				'2024-01-01', ['2024-01-26', '2024-02-23', '2024-03-29'],
+			],
+			'yearly leap day' => [
+				['type' => 13, 'subtype' => rptMonth, 'everyn' => 1, 'monthday' => 29, 'month' => 31 * 1440],
+				'2024-01-01', ['2024-02-29', '2025-02-28', '2026-02-28'],
+			],
+			'last Monday in March' => [
+				['type' => 13, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 2, 'nday' => 5, 'month' => 59 * 1440],
+				'2024-01-01', ['2024-03-25', '2025-03-31', '2026-03-30'],
+			],
+			'every two years' => [
+				['type' => 13, 'subtype' => rptMonth, 'everyn' => 2, 'monthday' => 4, 'month' => 181 * 1440],
+				'2024-01-01', ['2024-07-04', '2026-07-04', '2028-07-04'],
+			],
+		];
+	}
+
 	public function testYearlyIntervalIsNotChangedByExpansion(): void {
 		$r = $this->makeRecurrence([
 			'type' => 13, 'subtype' => rptMonth, 'month' => (31 + 28) * 1440, 'monthday' => 15, 'everyn' => 1, 'regen' => 0,
