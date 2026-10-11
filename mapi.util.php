@@ -465,7 +465,7 @@ function simplifyCommentProps(mixed $props): mixed {
 /**
  * Converts the operands of a RES_AND or RES_OR.
  */
-function simplifyRestrictionOperands(array $restriction): array {
+function simplifyRestrictionOperands(array &$restriction): void {
 	if (isset($restriction[1][0]) && is_array($restriction[1][0])) {
 		foreach ($restriction[1] as &$res) {
 			$res = simplifyRestriction($res);
@@ -475,8 +475,6 @@ function simplifyRestrictionOperands(array $restriction): array {
 	elseif (isset($restriction[1]) && $restriction[1]) {
 		$restriction[1] = simplifyRestriction($restriction[1]);
 	}
-
-	return $restriction;
 }
 
 /**
@@ -574,7 +572,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 		case RES_AND:
 		case RES_OR:
 			$restriction[0] = $type == RES_AND ? "RES_AND" : "RES_OR";
-			$restriction = simplifyRestrictionOperands($restriction);
+			simplifyRestrictionOperands($restriction);
 			break;
 
 		case RES_NOT:
