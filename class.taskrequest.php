@@ -372,13 +372,39 @@ class TaskRequest {
 		}
 
 		$isReceivedItem = $this->isReceivedItem($messageProps);
+		$isCreateAssociatedTask = false;
+		$isAllowUpdateAssociatedTask = $subProps[$this->props["taskupdates"]];
+		$props = $this->getTaskStateProps($isReceivedItem);
 
+		// A decline hands the task back to the assigner, who gets it created
+		// if it is gone and updated whether or not updates were requested;
+		// the assignee's own copy of the decline leaves the task alone
+		if ($props[$this->props['taskhistory']] == thDeclined) {
+			$isCreateAssociatedTask = $isReceivedItem;
+			$isAllowUpdateAssociatedTask = $isReceivedItem;
+		}
+
+		// Get the task for this response
+		$task = $this->getAssociatedTask($isCreateAssociatedTask);
+		if ($task && $isAllowUpdateAssociatedTask) {
+			$this->updateAssociatedTask($task, $sub, $props, $isReceivedItem);
+		}
+
+		mapi_setprops($this->message, $props);
+		mapi_savechanges($this->message);
+
+		if ($isReceivedItem) {
+			$this->updateSentTaskRequest();
+		}
+
+		return true;
+	}
+
+	private function getTaskStateProps(bool $isReceivedItem): array {
 		$taskHistory = 0;
 		$taskState = 0;
 		$taskAcceptanceState = 0;
 		$taskOwner = 0;
-		$isCreateAssociatedTask = false;
-		$isAllowUpdateAssociatedTask = $subProps[$this->props["taskupdates"]];
 		$props = mapi_getprops($this->message, [PR_MESSAGE_CLASS]);
 
 		// Set correct taskmode and taskhistory depending on response type
@@ -391,8 +417,6 @@ class TaskRequest {
 				break;
 
 			case 'IPM.TaskRequest.Decline':
-				$isCreateAssociatedTask = $isReceivedItem;
-				$isAllowUpdateAssociatedTask = $isReceivedItem;
 				$taskHistory = thDeclined;
 				$taskState = $isReceivedItem ? tdsDEC : tdsACC;
 				$taskOwner = $isReceivedItem ? olOwnTask : olDelegatedTask;
@@ -408,73 +432,62 @@ class TaskRequest {
 				break;
 		}
 
-		$props = [
+		return [
 			$this->props['taskhistory'] => $taskHistory,
 			$this->props['taskstate'] => $taskState,
 			$this->props['task_acceptance_state'] => $taskAcceptanceState,
 			$this->props['ownership'] => $taskOwner,
 		];
+	}
 
-		// Get the task for this response
-		$task = $this->getAssociatedTask($isCreateAssociatedTask);
-		if ($task && $isAllowUpdateAssociatedTask) {
-			// To avoid duplication of attachments in associated task. we simple remove the
-			// all attachments from associated task.
-			$taskAttachTable = mapi_message_getattachmenttable($task);
-			$taskAttachments = mapi_table_queryallrows($taskAttachTable, [PR_ATTACH_NUM]);
-			foreach ($taskAttachments as $taskAttach) {
-				mapi_message_deleteattach($task, $taskAttach[PR_ATTACH_NUM]);
-			}
-
-			$ignoreProps = [
-				$this->props['taskstate'],
-				$this->props['taskhistory'],
-				$this->props['taskmode'],
-				$this->props['taskfcreator'],
-			];
-			// Ignore PR_ICON_INDEX when task request response
-			// is not received item.
-			if ($isReceivedItem === false) {
-				$ignoreProps[] = PR_ICON_INDEX;
-			}
-
-			// We copy all properties except taskstate, taskhistory, taskmode and taskfcreator properties
-			// from $sub message to $task even also we copy all attachments from $sub to $task message.
-			mapi_copyto($sub, [], $ignoreProps, $task);
-			$senderProps = mapi_getprops($this->message, [
-				PR_SENDER_NAME,
-				PR_SENDER_EMAIL_ADDRESS,
-				PR_SENDER_ENTRYID,
-				PR_SENDER_ADDRTYPE,
-				PR_SENDER_SEARCH_KEY,
-				PR_MESSAGE_DELIVERY_TIME,
-				PR_SENT_REPRESENTING_NAME,
-				PR_SENT_REPRESENTING_EMAIL_ADDRESS,
-				PR_SENT_REPRESENTING_ADDRTYPE,
-				PR_SENT_REPRESENTING_ENTRYID,
-				PR_SENT_REPRESENTING_SEARCH_KEY, ]);
-
-			mapi_setprops($task, $senderProps);
-
-			// Update taskstate and task history (last action done by the assignee)
-			mapi_setprops($task, $props);
-
-			// Copy missing properties from embedded task
-			$subProperties = $this->getSubProperties();
-			$subprops = mapi_getprops($sub, $subProperties);
-			mapi_setprops($task, $subprops);
-
-			mapi_savechanges($task);
+	private function updateAssociatedTask(mixed $task, mixed $sub, array $props, bool $isReceivedItem): void {
+		// To avoid duplication of attachments in associated task. we simple remove the
+		// all attachments from associated task.
+		$taskAttachTable = mapi_message_getattachmenttable($task);
+		$taskAttachments = mapi_table_queryallrows($taskAttachTable, [PR_ATTACH_NUM]);
+		foreach ($taskAttachments as $taskAttach) {
+			mapi_message_deleteattach($task, $taskAttach[PR_ATTACH_NUM]);
 		}
 
-		mapi_setprops($this->message, $props);
-		mapi_savechanges($this->message);
-
-		if ($isReceivedItem) {
-			$this->updateSentTaskRequest();
+		$ignoreProps = [
+			$this->props['taskstate'],
+			$this->props['taskhistory'],
+			$this->props['taskmode'],
+			$this->props['taskfcreator'],
+		];
+		// Ignore PR_ICON_INDEX when task request response
+		// is not received item.
+		if ($isReceivedItem === false) {
+			$ignoreProps[] = PR_ICON_INDEX;
 		}
 
-		return true;
+		// We copy all properties except taskstate, taskhistory, taskmode and taskfcreator properties
+		// from $sub message to $task even also we copy all attachments from $sub to $task message.
+		mapi_copyto($sub, [], $ignoreProps, $task);
+		$senderProps = mapi_getprops($this->message, [
+			PR_SENDER_NAME,
+			PR_SENDER_EMAIL_ADDRESS,
+			PR_SENDER_ENTRYID,
+			PR_SENDER_ADDRTYPE,
+			PR_SENDER_SEARCH_KEY,
+			PR_MESSAGE_DELIVERY_TIME,
+			PR_SENT_REPRESENTING_NAME,
+			PR_SENT_REPRESENTING_EMAIL_ADDRESS,
+			PR_SENT_REPRESENTING_ADDRTYPE,
+			PR_SENT_REPRESENTING_ENTRYID,
+			PR_SENT_REPRESENTING_SEARCH_KEY, ]);
+
+		mapi_setprops($task, $senderProps);
+
+		// Update taskstate and task history (last action done by the assignee)
+		mapi_setprops($task, $props);
+
+		// Copy missing properties from embedded task
+		$subProperties = $this->getSubProperties();
+		$subprops = mapi_getprops($sub, $subProperties);
+		mapi_setprops($task, $subprops);
+
+		mapi_savechanges($task);
 	}
 
 	/**
