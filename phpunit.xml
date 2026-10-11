@@ -6,7 +6,10 @@
          failOnWarning="true"
          failOnRisky="true"
          failOnEmptyTestSuite="true"
-         beStrictAboutOutputDuringTests="true">
+         beStrictAboutOutputDuringTests="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerWarnings="true">
     <testsuites>
         <testsuite name="MAPI Header Library Test Suite">
             <directory>tests</directory>

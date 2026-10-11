@@ -19,7 +19,12 @@ class MapiStreamWriteTest extends TestCase {
 			escapeshellarg(dirname(__DIR__));
 		exec($command . ' 2>&1', $output, $status);
 		$this->assertSame(0, $status, implode("\n", $output));
-		$results = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+		try {
+			$results = json_decode(implode("\n", $output), true, 512, JSON_THROW_ON_ERROR);
+		}
+		catch (JsonException $e) {
+			$this->fail("The fixture did not print JSON:\n" . implode("\n", $output));
+		}
 		$this->assertSame([false, ['open']], $results['open failure']);
 		$this->assertSame([false, ['open', 'resize']], $results['resize failure']);
 		foreach (['write failure', 'short write', 'zero write'] as $case) {

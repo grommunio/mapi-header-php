@@ -24,7 +24,7 @@ class RecurrenceWriterTest extends TestCase {
 
 	private function writeCases(array $cases): array {
 		$process = proc_open([
-			PHP_BINARY, '-n',
+			PHP_BINARY, '-n', '-d', 'display_errors=stderr',
 			__DIR__ . '/fixtures/recurrence_writer.php', dirname(__DIR__),
 		], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 		$this->assertIsResource($process);
@@ -35,8 +35,14 @@ class RecurrenceWriterTest extends TestCase {
 		fclose($pipes[1]);
 		fclose($pipes[2]);
 		$this->assertSame(0, proc_close($process), $errors . $output);
+		$this->assertSame('', $errors);
 
-		return json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+		try {
+			return json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+		}
+		catch (JsonException $e) {
+			$this->fail("The writer did not print JSON:\n" . $output);
+		}
 	}
 
 	public function testPatternSerialization(): void {
