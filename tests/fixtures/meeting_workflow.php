@@ -1026,6 +1026,52 @@ switch ($argv[2] ?? '') {
 		}
 		break;
 
+	case 'notification-many':
+		// a forward to many addresses: duplicates in different case, blanks,
+		// attendees already on the meeting and one local user among them
+		$count = (int) ($argv[3] ?? 300);
+		$mailbox = new Mailbox();
+		$request = $mailbox->request($mailbox->inbox, [PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Notification.Forward']);
+		$tags = $request->proptags;
+		$addresses = [];
+		$names = [];
+		for ($i = 0; $i < $count; ++$i) {
+			$addresses[] = "person{$i}@example.invalid";
+			$names[] = "Person {$i}";
+		}
+		foreach ([0, 1, 2] as $i) {
+			$addresses[] = strtoupper("person{$i}@example.invalid");
+			$names[] = "Person {$i} again";
+		}
+		$addresses[] = ' ';
+		$names[] = 'Blank';
+		$addresses[] = 'attendee@example.invalid';
+		$names[] = 'Attendee';
+		$addresses[] = 'colleague@example.invalid';
+		$names[] = 'Colleague';
+		mapi_setprops($request->message, [$tags['forward_recipients'] => $addresses, $tags['forward_recipient_names'] => $names]);
+		$attendees = [$mailbox->recipient('Attendee', 'attendee@example.invalid'), $mailbox->recipient('Person 5', 'person5@example.invalid')];
+		$item = $mailbox->calendarItem([
+			$tags['goid'] => $mailbox->goid('A'),
+			$tags['goid2'] => $mailbox->goid('A'),
+			$tags['meetingstatus'] => olMeeting,
+			$tags['responsestatus'] => olResponseOrganized,
+			$tags['recurring'] => false,
+			$tags['startdate'] => 1774864800,
+			$tags['duedate'] => 1774868400,
+		], $attendees);
+		$results[] = run_case(['count' => $count, 'tags' => $tags], function () use ($request, $item) {
+			$start = hrtime(true);
+			$return = $request->processMeetingForwardNotification();
+
+			return [
+				'return' => $return,
+				'seconds' => (hrtime(true) - $start) / 1e9,
+				'calendar' => array_column(recipients_of($item), PR_EMAIL_ADDRESS),
+			];
+		});
+		break;
+
 	case 'notification':
 		$names = ['not-notification', 'processed', 'no-goid', 'in-sentmail', 'in-outbox', 'no-calendar-item', 'not-organized',
 			'single-new', 'single-known', 'single-local', 'single-no-names', 'series', 'occurrence-deleted', 'occurrence-new',

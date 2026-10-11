@@ -291,4 +291,27 @@ class MeetingWorkflowModelTest extends TestCase {
 			$this->assertSame($exception === [] ? [] : [$exception], array_map(static fn ($rows) => array_column($rows, PR_EMAIL_ADDRESS), $case['result']['exceptions']), $name);
 		}
 	}
+
+	public function testForwardNotificationWithManyAddresses(): void {
+		[$case] = $this->runCases('notification-many');
+		$this->assertArrayNotHasKey('error', $case);
+		$this->assertNoWarnings($case);
+		$this->assertTrue($case['result']['return']);
+		// the two attendees stay, every address is added once whatever its case,
+		// the blank and the ones already attending are left out
+		$expected = ['attendee@example.invalid', 'person5@example.invalid'];
+		for ($i = 0; $i < $case['count']; ++$i) {
+			if ($i !== 5) {
+				$expected[] = "person{$i}@example.invalid";
+			}
+		}
+		// the local user is resolved to the address book entry
+		$expected[] = '/o=grommunio/ou=first/cn=Recipients/cn=colleague';
+		$this->assertSame($expected, $case['result']['calendar']);
+		// the address book is opened once and each new address resolved once
+		$opened = array_filter($case['calls'], static fn ($call) => str_starts_with($call, 'mapi_openaddressbook('));
+		$resolved = array_filter($case['calls'], static fn ($call) => str_starts_with($call, 'mapi_ab_resolvename('));
+		$this->assertCount(1, $opened);
+		$this->assertCount($case['count'], $resolved);
+	}
 }
