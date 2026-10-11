@@ -367,8 +367,17 @@ function mapi_folder_getcontentstable(MapiObject $folder, int $flags = 0): MapiO
 	return model_create('table', ['source' => $folder, 'rows' => 'messages']);
 }
 
+// a case may let the calendar refuse new messages
+function model_refuse(MapiObject $folder): void {
+	if (($GLOBALS['model']['fail'] ?? null) === 'calendar' &&
+		model_object($folder)['props'][PR_ENTRYID] === model_object($GLOBALS['model']['calendar'])['props'][PR_ENTRYID]) {
+		throw new MAPIException('calendar refused the message', MAPI_E_CALL_FAILED);
+	}
+}
+
 function mapi_folder_createmessage(MapiObject $folder, int $flags = 0): MapiObject {
 	model_record(__FUNCTION__, [$folder]);
+	model_refuse($folder);
 	$message = model_create('message', [PR_PARENT_ENTRYID => model_object($folder)['props'][PR_ENTRYID]]);
 	$data = &model_object($folder);
 	$data['messages'][] = $message;
@@ -377,6 +386,7 @@ function mapi_folder_createmessage(MapiObject $folder, int $flags = 0): MapiObje
 }
 
 function mapi_folder_copymessages(MapiObject $source, array $entryids, MapiObject $target, int $flags = 0): bool {
+	model_refuse($target);
 	model_record(__FUNCTION__, [$source, $entryids, $target, $flags]);
 	$from = &model_object($source);
 	$to = &model_object($target);
@@ -1070,6 +1080,27 @@ switch ($argv[2] ?? '') {
 				'calendar' => array_column(recipients_of($item), PR_EMAIL_ADDRESS),
 			];
 		});
+		break;
+
+	case 'accept-response':
+		// accept() runs for real here: the response may only go out once the meeting is stored
+		foreach (['single', 'single-move', 'recurring', 'calendar-refuses', 'calendar-refuses-move'] as $name) {
+			$mailbox = new Mailbox();
+			$request = $mailbox->request($mailbox->inbox);
+			$tags = $request->proptags;
+			if ($name === 'recurring') {
+				$mailbox->makeRecurring($request->message, $tags);
+			}
+			$GLOBALS['model']['calendar'] = $mailbox->calendar;
+			$GLOBALS['model']['fail'] = str_starts_with($name, 'calendar-refuses') ? 'calendar' : null;
+			$case = run_case(['name' => $name, 'tags' => $tags], function () use ($request, $name) {
+				return $request->doAccept(false, true, str_ends_with($name, '-move'), false, false, false, true);
+			});
+			$case['calendar'] = array_map('model_digest', model_object($mailbox->calendar)['messages']);
+			$case['outbox'] = submitted_messages($mailbox);
+			$results[] = $case;
+		}
+		$GLOBALS['model']['fail'] = null;
 		break;
 
 	case 'notification':
