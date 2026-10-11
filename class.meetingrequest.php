@@ -2441,83 +2441,151 @@ class Meetingrequest {
 		]);
 
 		$props = [];
+		$this->setResponseRecurrenceProperties($store, $basedate, $calFolder, $messageprops, $props);
 
+		// Create a response message
+		$recip = $this->getOrganizerRecipient($messageprops);
+		$this->setResponseSubjectAndClass($props, $status, $proposeNewTimeProps, $messageprops);
+		$this->setResponseMeetingProperties($props, $proposeNewTimeProps, $body, $basedate, $messageprops);
+
+		$message = $this->createOutgoingMessage($store);
+
+		mapi_setprops($message, $props);
+		mapi_message_modifyrecipients($message, MODRECIP_ADD, [$recip]);
+		mapi_savechanges($message);
+		mapi_message_submitmessage($message);
+	}
+
+	/**
+	 * Sets the properties that say which meeting the response answers for: the occurrence of
+	 * a recurring calendar item, or the request with the recurrence of its series.
+	 *
+	 * @param mixed $store        store of the calendar
+	 * @param mixed $basedate     date of the occurrence which the attendee has responded, else false
+	 * @param mixed $calFolder    calendar folder
+	 * @param array $messageprops properties of the message, timed like the occurrence afterwards
+	 * @param array $props        properties of the response
+	 */
+	private function setResponseRecurrenceProperties(mixed $store, mixed $basedate, mixed $calFolder, array &$messageprops, array &$props): void {
 		if ($basedate !== false && !$this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS])) {
 			// we are creating response from a recurring calendar item object
 			// We found basedate,so opened occurrence and get properties.
 			$recurr = new Recurrence($store, $this->message);
-			$exception = $recurr->getExceptionAttachment($basedate);
-
-			if ($exception) {
-				// Exception found, Now retrieve properties
-				$imessage = mapi_attach_openobj($exception, 0);
-				$imsgprops = mapi_getprops($imessage);
-
-				// If location is provided, copy it to the response
-				if (isset($imsgprops[$this->proptags['location']])) {
-					$messageprops[$this->proptags['location']] = $imsgprops[$this->proptags['location']];
-				}
-
-				// Update $messageprops with timings of occurrence
-				$messageprops[$this->proptags['startdate']] = $imsgprops[$this->proptags['startdate']];
-				$messageprops[$this->proptags['duedate']] = $imsgprops[$this->proptags['duedate']];
-
-				// Meeting related properties
-				$props[$this->proptags['meetingstatus']] = $imsgprops[$this->proptags['meetingstatus']];
-				$props[$this->proptags['responsestatus']] = $imsgprops[$this->proptags['responsestatus']];
-				$props[PR_SUBJECT] = $imsgprops[PR_SUBJECT];
-			}
-			else {
-				// Exceptions is deleted.
-				// Update $messageprops with timings of occurrence
-				$messageprops[$this->proptags['startdate']] = $recurr->getOccurrenceStart($basedate);
-				$messageprops[$this->proptags['duedate']] = $recurr->getOccurrenceEnd($basedate);
-
-				$props[$this->proptags['meetingstatus']] = olNonMeeting;
-				$props[$this->proptags['responsestatus']] = olResponseNone;
-			}
-
-			$props[$this->proptags['recurring']] = false;
-			$props[$this->proptags['is_exception']] = true;
+			$this->copyOccurrenceToResponse($recurr, $basedate, $messageprops, $props);
 		}
 		else {
 			// we are creating a response from meeting request mail (it could be recurring or non-recurring)
 			// Send all recurrence info in response, if this is a recurrence meeting.
-			$isRecurring = !empty($messageprops[$this->proptags['recurring']]);
-			$isException = !empty($messageprops[$this->proptags['is_exception']]);
-			if ($isRecurring || $isException) {
-				if ($isRecurring) {
-					$props[$this->proptags['recurring']] = $messageprops[$this->proptags['recurring']];
-				}
-				if ($isException) {
-					$props[$this->proptags['is_exception']] = $messageprops[$this->proptags['is_exception']];
-				}
-				// The series may be gone from the calendar (or not be there yet),
-				// the request carries the recurrence then.
-				$calendaritems = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder);
-				$recurr = !empty($calendaritems) ?
-					new Recurrence($store, mapi_msgstore_openentry($store, $calendaritems[0])) :
-					new Recurrence($store, $this->message);
-			}
+			$recurr = $this->getRequestRecurrence($store, $calFolder, $messageprops, $props);
 		}
 
 		// we are sending a response for recurring meeting request (or exception), so set some required properties
-		if (isset($recurr) && $recurr) {
-			if (!empty($messageprops[$this->proptags['recurring_pattern']])) {
-				$props[$this->proptags['recurring_pattern']] = $messageprops[$this->proptags['recurring_pattern']];
+		if ($recurr !== null) {
+			$this->copyRecurrenceToResponse($recurr, $messageprops, $props);
+		}
+	}
+
+	/**
+	 * Takes the times, the location and the status of the occurrence a calendar item answers
+	 * for into the response, which is for that occurrence alone.
+	 *
+	 * @param Recurrence $recurr       recurrence of the calendar item
+	 * @param mixed      $basedate     date of the occurrence
+	 * @param array      $messageprops properties of the message, timed like the occurrence afterwards
+	 * @param array      $props        properties of the response
+	 */
+	private function copyOccurrenceToResponse(Recurrence $recurr, mixed $basedate, array &$messageprops, array &$props): void {
+		$exception = $recurr->getExceptionAttachment($basedate);
+
+		if ($exception) {
+			// Exception found, Now retrieve properties
+			$imessage = mapi_attach_openobj($exception, 0);
+			$imsgprops = mapi_getprops($imessage);
+
+			// If location is provided, copy it to the response
+			if (isset($imsgprops[$this->proptags['location']])) {
+				$messageprops[$this->proptags['location']] = $imsgprops[$this->proptags['location']];
 			}
 
-			if (!empty($messageprops[$this->proptags['recurrence_data']])) {
-				$props[$this->proptags['recurrence_data']] = $messageprops[$this->proptags['recurrence_data']];
-			}
+			// Update $messageprops with timings of occurrence
+			$messageprops[$this->proptags['startdate']] = $imsgprops[$this->proptags['startdate']];
+			$messageprops[$this->proptags['duedate']] = $imsgprops[$this->proptags['duedate']];
 
-			$props[$this->proptags['timezone_data']] = $messageprops[$this->proptags['timezone_data']];
-			$props[$this->proptags['timezone']] = $messageprops[$this->proptags['timezone']];
+			// Meeting related properties
+			$props[$this->proptags['meetingstatus']] = $imsgprops[$this->proptags['meetingstatus']];
+			$props[$this->proptags['responsestatus']] = $imsgprops[$this->proptags['responsestatus']];
+			$props[PR_SUBJECT] = $imsgprops[PR_SUBJECT];
+		}
+		else {
+			// Exceptions is deleted.
+			// Update $messageprops with timings of occurrence
+			$messageprops[$this->proptags['startdate']] = $recurr->getOccurrenceStart($basedate);
+			$messageprops[$this->proptags['duedate']] = $recurr->getOccurrenceEnd($basedate);
 
-			$this->generateRecurDates($recurr, $messageprops, $props);
+			$props[$this->proptags['meetingstatus']] = olNonMeeting;
+			$props[$this->proptags['responsestatus']] = olResponseNone;
 		}
 
-		// Create a response message
+		$props[$this->proptags['recurring']] = false;
+		$props[$this->proptags['is_exception']] = true;
+	}
+
+	/**
+	 * The recurrence a response to a recurring request or to an exception carries, null for
+	 * a single meeting. The response is flagged as recurring or as exception like the request.
+	 *
+	 * @param mixed $store        store of the calendar
+	 * @param mixed $calFolder    calendar folder
+	 * @param array $messageprops properties of the request
+	 * @param array $props        properties of the response
+	 */
+	private function getRequestRecurrence(mixed $store, mixed $calFolder, array $messageprops, array &$props): ?Recurrence {
+		$isRecurring = !empty($messageprops[$this->proptags['recurring']]);
+		$isException = !empty($messageprops[$this->proptags['is_exception']]);
+		if (!$isRecurring && !$isException) {
+			return null;
+		}
+		if ($isRecurring) {
+			$props[$this->proptags['recurring']] = $messageprops[$this->proptags['recurring']];
+		}
+		if ($isException) {
+			$props[$this->proptags['is_exception']] = $messageprops[$this->proptags['is_exception']];
+		}
+		// The series may be gone from the calendar (or not be there yet),
+		// the request carries the recurrence then.
+		$calendaritems = $this->findCalendarItems($messageprops[$this->proptags['goid2']], $calFolder);
+
+		return !empty($calendaritems) ?
+			new Recurrence($store, mapi_msgstore_openentry($store, $calendaritems[0])) :
+			new Recurrence($store, $this->message);
+	}
+
+	/**
+	 * Sends the recurrence of the series along in the response.
+	 *
+	 * @param Recurrence $recurr       recurrence of the series
+	 * @param array      $messageprops properties of the message
+	 * @param array      $props        properties of the response
+	 */
+	private function copyRecurrenceToResponse(Recurrence $recurr, array $messageprops, array &$props): void {
+		if (!empty($messageprops[$this->proptags['recurring_pattern']])) {
+			$props[$this->proptags['recurring_pattern']] = $messageprops[$this->proptags['recurring_pattern']];
+		}
+
+		if (!empty($messageprops[$this->proptags['recurrence_data']])) {
+			$props[$this->proptags['recurrence_data']] = $messageprops[$this->proptags['recurrence_data']];
+		}
+
+		$props[$this->proptags['timezone_data']] = $messageprops[$this->proptags['timezone_data']];
+		$props[$this->proptags['timezone']] = $messageprops[$this->proptags['timezone']];
+
+		$this->generateRecurDates($recurr, $messageprops, $props);
+	}
+
+	/**
+	 * The organizer of the meeting as the recipient of the response.
+	 */
+	private function getOrganizerRecipient(array $messageprops): array {
 		$recip = [];
 		$recip[PR_ENTRYID] = $messageprops[PR_SENT_REPRESENTING_ENTRYID];
 		$recip[PR_EMAIL_ADDRESS] = $messageprops[PR_SENT_REPRESENTING_EMAIL_ADDRESS];
@@ -2526,6 +2594,18 @@ class Meetingrequest {
 		$recip[PR_RECIPIENT_TYPE] = MAPI_TO;
 		$recip[PR_SEARCH_KEY] = $messageprops[PR_SENT_REPRESENTING_SEARCH_KEY];
 
+		return $recip;
+	}
+
+	/**
+	 * The subject and the message class of the response say how the attendee answered.
+	 *
+	 * @param array $props               properties of the response
+	 * @param mixed $status              response status of attendee
+	 * @param mixed $proposeNewTimeProps properties of attendee's proposal
+	 * @param array $messageprops        properties of the message
+	 */
+	private function setResponseSubjectAndClass(array &$props, mixed $status, mixed $proposeNewTimeProps, array $messageprops): void {
 		$subjectprefix = '';
 		$classpostfix = '';
 
@@ -2554,6 +2634,19 @@ class Meetingrequest {
 		$props[PR_SUBJECT] = $subjectprefix . ': ' . $messageprops[PR_SUBJECT];
 
 		$props[PR_MESSAGE_CLASS] = 'IPM.Schedule.Meeting.Resp.' . $classpostfix;
+	}
+
+	/**
+	 * Sets which meeting the response is about, when it was given, what the attendee proposes
+	 * and says, and the time and place of the meeting.
+	 *
+	 * @param array $props               properties of the response
+	 * @param mixed $proposeNewTimeProps properties of attendee's proposal
+	 * @param mixed $body                text of the response
+	 * @param mixed $basedate            date of the occurrence which the attendee has responded, else false
+	 * @param array $messageprops        properties of the message
+	 */
+	private function setResponseMeetingProperties(array &$props, mixed $proposeNewTimeProps, mixed $body, mixed $basedate, array $messageprops): void {
 		if (isset($messageprops[PR_OWNER_APPT_ID])) {
 			$props[PR_OWNER_APPT_ID] = $messageprops[PR_OWNER_APPT_ID];
 		}
@@ -2598,13 +2691,6 @@ class Meetingrequest {
 			$props[$this->proptags['responselocation']] = $messageprops[$this->proptags['location']];
 			$props[$this->proptags['location']] = $messageprops[$this->proptags['location']];
 		}
-
-		$message = $this->createOutgoingMessage($store);
-
-		mapi_setprops($message, $props);
-		mapi_message_modifyrecipients($message, MODRECIP_ADD, [$recip]);
-		mapi_savechanges($message);
-		mapi_message_submitmessage($message);
 	}
 
 	/**
