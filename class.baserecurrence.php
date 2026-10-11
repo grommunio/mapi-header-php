@@ -197,6 +197,7 @@ abstract class BaseRecurrence {
 
 		$ret["type"] = (int) $data["rtype"] > 0x2000 ? (int) $data["rtype"] - 0x2000 : $data["rtype"];
 		$ret["subtype"] = $data["rtype2"];
+		$blob = $rdata;
 		$rdata = substr($rdata, 10);
 
 		$valid = match ($data["rtype"]) {
@@ -217,19 +218,25 @@ abstract class BaseRecurrence {
 			return $ret;
 		}
 
-		$this->parseAppointmentRecurrence($rdata, $ret, $exc_base_dates);
+		// the exception section is read from the original blob; drop the
+		// pattern tail so only one copy of the blob is alive during the walk
+		$offset = strlen($blob) - strlen($rdata);
+		unset($rdata);
+		$this->parseAppointmentRecurrence($blob, $ret, $exc_base_dates, $offset);
 
 		return $ret;
 	}
 
-	private function parseAppointmentRecurrence(string &$rdata, array &$ret, array $exc_base_dates): void {
+	private function parseAppointmentRecurrence(string $rdata, array &$ret, array $exc_base_dates, int $offset): void {
+		$length = strlen($rdata);
 		// this is where task recurrence stop
-		if (strlen($rdata) < 16) {
+		if ($length - $offset < 16) {
 			return;
 		}
 
-		$data = unpack("Vreaderversion/Vwriterversion/Vstartmin/Vendmin", $rdata);
-		$rdata = substr($rdata, 16);
+		$data = unpack("Vreaderversion/Vwriterversion/Vstartmin/Vendmin", $rdata, $offset);
+		// the exception records are read in place; $offset walks the blob
+		$offset += 16;
 
 		$ret["startocc"] = $data["startmin"];
 		$ret["endocc"] = $data["endmin"];
@@ -237,20 +244,18 @@ abstract class BaseRecurrence {
 		// base dates without an exception record are deleted occurrences
 		$ret["deleted_occurrences"] = $exc_base_dates;
 
-		if (strlen($rdata) < 2) {
+		if ($length - $offset < 2) {
 			return;
 		}
-		$data = unpack("vnumber", $rdata);
-		$rdata = substr($rdata, 2);
-
-		$nexceptions = $data["number"];
+		$nexceptions = unpack("vnumber", $rdata, $offset)["number"];
+		$offset += 2;
 		if ($nexceptions === 0) {
 			return;
 		}
 		$exc_changed_details = [];
 
 		for ($i = 0; $i < $nexceptions; ++$i) {
-			$item = $this->parseRecurrenceException($rdata);
+			$item = $this->parseRecurrenceException($rdata, $offset);
 			if ($item === null) {
 				break;
 			}
@@ -266,17 +271,18 @@ abstract class BaseRecurrence {
 		$ret["changed_occurrences"] = $exc_changed_details;
 
 		// enough data for normal exception (no extended data); a cut record has none
-		if (count($exc_changed_details) < $nexceptions || strlen($rdata) < 8) {
+		if (count($exc_changed_details) < $nexceptions || $length - $offset < 8) {
 			return;
 		}
 
-		if (!$this->skipRecurrenceBlock($rdata)) {
+		if (!$this->skipRecurrenceBlock($rdata, $offset)) {
 			return;
 		}
 
 		for ($i = 0; $i < $nexceptions; ++$i) {
 			$item = $this->parseExtendedException(
 				$rdata,
+				$offset,
 				$exc_changed_details[$i],
 				$writerversion
 			);
@@ -454,13 +460,13 @@ abstract class BaseRecurrence {
 		return $dates;
 	}
 
-	private function parseRecurrenceException(string &$rdata): ?array {
+	private function parseRecurrenceException(string $rdata, int &$offset): ?array {
 		$dataLength = strlen($rdata);
-		if ($dataLength < 14) {
+		if ($dataLength - $offset < 14) {
 			return null;
 		}
-		$data = unpack("Vstartdate/Venddate/Vbasedate/vbitmask", $rdata);
-		$offset = 14;
+		$data = unpack("Vstartdate/Venddate/Vbasedate/vbitmask", $rdata, $offset);
+		$offset += 14;
 		$bitmask = $data["bitmask"];
 		$item = [
 			"basedate" => $this->dayStartOf($this->recurDataToUnixData($data["basedate"])),
@@ -490,7 +496,7 @@ abstract class BaseRecurrence {
 			}
 			$length = 4;
 			if ($flag & 0x11) {
-				$size = unpack("vlength", $rdata, $offset + 2)["length"];
+				$size = (int) unpack("vlength", $rdata, $offset + 2)["length"];
 				$length += $size;
 				if ($dataLength - $offset < $length) {
 					return null;
@@ -502,30 +508,29 @@ abstract class BaseRecurrence {
 			}
 			$offset += $length;
 		}
-		$rdata = substr($rdata, $offset);
 
 		return $item;
 	}
 
-	private function parseExtendedException(string &$rdata, array $item, int $writerversion): ?array {
+	private function parseExtendedException(string $rdata, int &$offset, array $item, int $writerversion): ?array {
 		// subject and location in ucs-2 to utf-8
 		if ($writerversion >= 0x3009) {
-			if (!$this->skipRecurrenceBlock($rdata)) {
+			if (!$this->skipRecurrenceBlock($rdata, $offset)) {
 				return null;
 			}
 		}
 
-		if (!$this->skipRecurrenceBlock($rdata)) {
+		if (!$this->skipRecurrenceBlock($rdata, $offset)) {
 			return null;
 		}
 
 		// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
 		if ($item["bitmask"] & 0x11) {
-			if (strlen($rdata) < 12) {
+			if (strlen($rdata) - $offset < 12) {
 				return null;
 			}
-			$data = unpack("Vstart/Vend/Vorig", $rdata);
-			$rdata = substr($rdata, 4 * 3);
+			$data = unpack("Vstart/Vend/Vorig", $rdata, $offset);
+			$offset += 4 * 3;
 
 			$item["ex_start_datetime"] = $data["start"];
 			$item["ex_end_datetime"] = $data["end"];
@@ -533,13 +538,13 @@ abstract class BaseRecurrence {
 		}
 
 		if ($item["bitmask"] & 0x01) {
-			$item["subject"] = $this->parseExceptionString($rdata);
+			$item["subject"] = $this->parseExceptionString($rdata, $offset);
 			if ($item["subject"] === null) {
 				return null;
 			}
 		}
 		if ($item["bitmask"] & 0x10) {
-			$item["location"] = $this->parseExceptionString($rdata);
+			$item["location"] = $this->parseExceptionString($rdata, $offset);
 			if ($item["location"] === null) {
 				return null;
 			}
@@ -547,7 +552,7 @@ abstract class BaseRecurrence {
 
 		// ARO_SUBJECT(0x01) | ARO_LOCATION(0x10)
 		if ($item["bitmask"] & 0x11) {
-			if (!$this->skipRecurrenceBlock($rdata)) {
+			if (!$this->skipRecurrenceBlock($rdata, $offset)) {
 				return null;
 			}
 		}
@@ -555,31 +560,30 @@ abstract class BaseRecurrence {
 		return $item;
 	}
 
-	private function parseExceptionString(string &$rdata): false|string|null {
-		if (strlen($rdata) < 2) {
+	private function parseExceptionString(string $rdata, int &$offset): false|string|null {
+		if (strlen($rdata) - $offset < 2) {
 			return null;
 		}
-		$data = unpack("vlength", $rdata);
-		$rdata = substr($rdata, 2);
-		$length = $data["length"];
-		if ($length > intdiv(strlen($rdata), 2)) {
+		$length = (int) unpack("vlength", $rdata, $offset)["length"];
+		$offset += 2;
+		if ($length > intdiv(strlen($rdata) - $offset, 2)) {
 			return null;
 		}
-		$data = substr($rdata, 0, $length * 2);
-		$rdata = substr($rdata, $length * 2);
+		$data = substr($rdata, $offset, $length * 2);
+		$offset += $length * 2;
 
 		return iconv("UCS-2LE", "UTF-8", $data);
 	}
 
-	private function skipRecurrenceBlock(string &$rdata): bool {
-		if (strlen($rdata) < 4) {
+	private function skipRecurrenceBlock(string $rdata, int &$offset): bool {
+		if (strlen($rdata) - $offset < 4) {
 			return false;
 		}
-		$size = unpack("Vsize", $rdata)["size"];
-		if ($size > strlen($rdata) - 4) {
+		$size = (int) unpack("Vsize", $rdata, $offset)["size"];
+		if ($size > strlen($rdata) - $offset - 4) {
 			return false;
 		}
-		$rdata = substr($rdata, 4 + $size);
+		$offset += 4 + $size;
 
 		return true;
 	}
@@ -797,26 +801,29 @@ abstract class BaseRecurrence {
 
 	private function getDailyEndDate(int $occenddate): float|int {
 		if ($this->recur["subtype"] == rptWeek) {
-			// Daily every workday
+			// Daily every workday: the start counts when it falls on a workday,
+			// every full week after that holds five
 			$restocc = (int) $this->recur["numoccur"];
+			if ($restocc <= 0) {
+				return $occenddate;
+			}
 
 			// Get starting weekday
 			$nowtime = $this->gmtime($occenddate);
-			$j = $nowtime["tm_wday"];
+			$wday = $nowtime["tm_wday"];
+			$days = match ($wday) {
+				0 => 1, // Sunday -> Monday
+				6 => 2, // Saturday -> Monday
+				default => 0,
+			};
+			$wday = ($wday + $days) % 7;
+			--$restocc;
 
-			while (1) {
-				if (($j % 7) > 0 && ($j % 7) < 6) {
-					--$restocc;
-				}
-
-				++$j;
-
-				if ($restocc <= 0) {
-					break;
-				}
-
-				$occenddate += 24 * 60 * 60;
+			$days += intdiv($restocc, 5) * 7 + $restocc % 5;
+			if ($wday + $restocc % 5 > 5) {
+				$days += 2; // skips a weekend
 			}
+			$occenddate += $days * 24 * 60 * 60;
 		}
 		else {
 			// -1 because the first day already counts (from 1-1-1980 to 1-1-1980 is 1 occurrence)
@@ -891,22 +898,21 @@ abstract class BaseRecurrence {
 	private function advanceRecurrenceMonths(int $occenddate, mixed $forwardcount): float|int {
 		$curyear = (int) gmdate("Y", (int) $this->recur["start"]);
 		$curmonth = (int) gmdate("n", (int) $this->recur["start"]);
-		// $forwardcount = months
-
-		while ($forwardcount > 0) {
-			$occenddate += $this->getMonthInSeconds($curyear, $curmonth);
-			if ($curmonth >= 12) {
-				$curmonth = 1;
-				++$curyear;
-			}
-			else {
-				++$curmonth;
-			}
-
-			--$forwardcount;
+		// $forwardcount = months; the stored end date is a 32-bit minute count
+		// that wraps long before the year 9999 anyway
+		$months = (int) min(max($forwardcount, 0), (10000 - $curyear) * 12);
+		if ($months <= 0) {
+			return $occenddate;
 		}
 
-		return $occenddate;
+		// gmmktime() takes a year up to 100 for a two-digit one, which gives
+		// the year 100 a leap day; a whole 400-year cycle has the same months
+		if ($curyear >= 0 && $curyear <= 100) {
+			$curyear += 400;
+		}
+
+		// the whole months from the first of the start month on
+		return $occenddate + gmmktime(0, 0, 0, $curmonth + $months, 1, $curyear) - gmmktime(0, 0, 0, $curmonth, 1, $curyear);
 	}
 
 	private function getMonthWeekdayEndDate(float|int $occenddate, int $nday, int $weekdays): float|int {
@@ -1175,10 +1181,13 @@ abstract class BaseRecurrence {
 			}
 		}
 		else {
-			if ((int) $this->recur["everyn"] <= 0) {
+			// the same bound as for months; setMonthlyStart() steps through
+			// the interval one month at a time
+			$everyn = (int) $this->recur["everyn"];
+			if ($everyn > 99 || $everyn <= 0) {
 				return null;
 			}
-			$everyn = ((int) $this->recur["everyn"]) * 12;
+			$everyn *= 12;
 		}
 
 		return $everyn;
