@@ -248,18 +248,11 @@ class Recurrence extends BaseRecurrence {
 
 		$this->invalidateExceptionIndex();
 		$baseday = $this->dayStartOf($base_date);
-		$extomodify = false;
-
-		for ($i = 0, $len = count($this->recur["changed_occurrences"]); $i < $len; ++$i) {
-			if ($this->isSameDay($this->recur["changed_occurrences"][$i]["basedate"], $baseday)) {
-				$extomodify = &$this->recur["changed_occurrences"][$i];
-				break;
-			}
-		}
-
-		if (!$extomodify) {
+		$index = $this->findChangedOccurrence($baseday);
+		if ($index === false) {
 			return false;
 		}
+		$extomodify = &$this->recur["changed_occurrences"][$index];
 
 		if ($this->applyCategoriesToSeries($exception_props)) {
 			return true;
@@ -269,6 +262,44 @@ class Recurrence extends BaseRecurrence {
 		// client will send basedate with time part as zero, so discard that value
 		unset($exception_props[$this->proptags["basedate"]]);
 
+		$this->updateChangedOccurrence($extomodify, $exception_props);
+
+		$exception_props[PR_MESSAGE_CLASS] = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
+		$this->syncCommonStartEnd($exception_props);
+
+		$attach = $this->getExceptionAttachment($baseday);
+		if (!$attach) {
+			if ($copy_attach_from) {
+				$this->deleteExceptionAttachment($this->getOccurrenceStart($baseday));
+				$this->createException($exception_props, $base_date, false, $exception_recips, $copy_attach_from);
+			}
+			else {
+				$this->createExceptionAttachment($exception_props, $exception_recips, $copy_attach_from);
+			}
+		}
+		else {
+			$this->updateExceptionAttachment($attach, $exception_props, $exception_recips);
+		}
+		// $extomodify changed after the index was invalidated above
+		$this->invalidateExceptionIndex();
+
+		// Save recurrence data to message
+		$this->saveRecurrence();
+
+		return true;
+	}
+
+	private function findChangedOccurrence(int $baseday): false|int {
+		for ($i = 0, $len = count($this->recur["changed_occurrences"]); $i < $len; ++$i) {
+			if ($this->isSameDay($this->recur["changed_occurrences"][$i]["basedate"], $baseday)) {
+				return $i;
+			}
+		}
+
+		return false;
+	}
+
+	private function updateChangedOccurrence(array &$extomodify, array $exception_props): void {
 		// Map of property keys to their target keys in $extomodify, with optional transformation
 		$propertyMappings = [
 			"startdate" => ["target" => "start", "transform" => true],
@@ -290,58 +321,30 @@ class Recurrence extends BaseRecurrence {
 					$exception_props[$propTag];
 			}
 		}
+	}
 
-		$exception_props[PR_MESSAGE_CLASS] = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
+	private function updateExceptionAttachment(mixed $attach, array $exception_props, array $exception_recips): void {
+		$message = mapi_attach_openobj($attach, MAPI_MODIFY);
 
-		// synchronize commonstart/commonend with startdate/duedate
+		// Set exception properties on embedded message and save
+		mapi_setprops($message, $exception_props);
+		$this->setExceptionRecipients($message, $exception_recips, false);
+		mapi_savechanges($message);
+
+		// If a new start or duedate is provided, we update the properties 'PR_EXCEPTION_STARTTIME' and 'PR_EXCEPTION_ENDTIME'
+		// on the attachment which holds the embedded msg and save everything.
+		$props = [];
 		if (isset($exception_props[$this->proptags["startdate"]])) {
-			$exception_props[$this->proptags["commonstart"]] = $exception_props[$this->proptags["startdate"]];
+			$props[PR_EXCEPTION_STARTTIME] = $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]);
 		}
-
 		if (isset($exception_props[$this->proptags["duedate"]])) {
-			$exception_props[$this->proptags["commonend"]] = $exception_props[$this->proptags["duedate"]];
+			$props[PR_EXCEPTION_ENDTIME] = $this->fromGMT($this->tz, $exception_props[$this->proptags["duedate"]]);
+		}
+		if (!empty($props)) {
+			mapi_setprops($attach, $props);
 		}
 
-		$attach = $this->getExceptionAttachment($baseday);
-		if (!$attach) {
-			if ($copy_attach_from) {
-				$this->deleteExceptionAttachment($this->getOccurrenceStart($baseday));
-				$this->createException($exception_props, $base_date, false, $exception_recips, $copy_attach_from);
-			}
-			else {
-				$this->createExceptionAttachment($exception_props, $exception_recips, $copy_attach_from);
-			}
-		}
-		else {
-			$message = mapi_attach_openobj($attach, MAPI_MODIFY);
-
-			// Set exception properties on embedded message and save
-			mapi_setprops($message, $exception_props);
-			$this->setExceptionRecipients($message, $exception_recips, false);
-			mapi_savechanges($message);
-
-			// If a new start or duedate is provided, we update the properties 'PR_EXCEPTION_STARTTIME' and 'PR_EXCEPTION_ENDTIME'
-			// on the attachment which holds the embedded msg and save everything.
-			$props = [];
-			if (isset($exception_props[$this->proptags["startdate"]])) {
-				$props[PR_EXCEPTION_STARTTIME] = $this->fromGMT($this->tz, $exception_props[$this->proptags["startdate"]]);
-			}
-			if (isset($exception_props[$this->proptags["duedate"]])) {
-				$props[PR_EXCEPTION_ENDTIME] = $this->fromGMT($this->tz, $exception_props[$this->proptags["duedate"]]);
-			}
-			if (!empty($props)) {
-				mapi_setprops($attach, $props);
-			}
-
-			mapi_savechanges($attach);
-		}
-		// $extomodify changed after the index was invalidated above
-		$this->invalidateExceptionIndex();
-
-		// Save recurrence data to message
-		$this->saveRecurrence();
-
-		return true;
+		mapi_savechanges($attach);
 	}
 
 	/**
