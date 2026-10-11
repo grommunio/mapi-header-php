@@ -1,0 +1,176 @@
+[
+  {
+    "name": "create: subject differs from the series",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series", "location": "Room", "busystatus": 2},
+    "recipients": ["a@x.invalid", "b@x.invalid"],
+    "call": "create", "day": 2,
+    "props": {"subject": "Changed", "busystatus": 2}
+  },
+  {
+    "name": "create: the series values are not a change",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series", "location": "Room", "reminder": true, "reminder_minutes": 15},
+    "call": "create", "day": 2,
+    "props": {"subject": "Series", "location": "Elsewhere", "reminder": false, "label": 3}
+  },
+  {
+    "name": "create: moved within its day",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "call": "create", "day": 2, "minute": 90,
+    "props": {"startdate": {"t": [2, 630]}, "duedate": {"t": [2, 690]}, "basedate": {"t": [2, 0]}, "PR_MESSAGE_CLASS": "IPM.Appointment", "PR_ICON_INDEX": 1025}
+  },
+  {
+    "name": "create: moved onto the next occurrence",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "call": "create", "day": 2,
+    "props": {"startdate": {"t": [3, 600]}, "duedate": {"t": [3, 660]}}
+  },
+  {
+    "name": "create: deletes the occurrence and its exception",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 2, "props": {"subject": "Changed"}}, {"day": 3, "props": {"subject": "Other"}}],
+    "call": "create", "day": 2, "delete": true,
+    "props": {"subject": "Ignored"}
+  },
+  {
+    "name": "create: replaces the exception of its day",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 2, "props": {"subject": "Changed"}}],
+    "call": "create", "day": 2,
+    "props": {"location": "Elsewhere"}
+  },
+  {
+    "name": "create: categories go to the series",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series", "categories": ["Blue"]},
+    "existing": [{"day": 3, "props": {"subject": "Other"}}],
+    "call": "create", "day": 2,
+    "props": {"categories": ["Green"]}
+  },
+  {
+    "name": "create: removed categories with a subject",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series", "categories": ["Blue"]},
+    "call": "create", "day": 2,
+    "props": {"categories": null, "subject": "Changed"}
+  },
+  {
+    "name": "create: with the attachments of a source message",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "call": "create", "day": 2,
+    "props": {"subject": "Changed"},
+    "copyFrom": true
+  },
+  {
+    "name": "create: recipient delta",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "recipients": ["a@x.invalid", "b@x.invalid"],
+    "call": "create", "day": 2,
+    "props": {"subject": "Changed"},
+    "recips": {"add": ["c@x.invalid"], "remove": ["a@x.invalid"], "modify": ["b@x.invalid"]}
+  },
+  {
+    "name": "create: drops a null multi-value property",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "recipients": ["a@x.invalid"],
+    "call": "create", "day": 2,
+    "props": {"subject": "Changed", "contacts": null},
+    "recips": ["a@x.invalid", "c@x.invalid"]
+  },
+  {
+    "name": "create: without a timezone",
+    "series": {"subject": "Series", "reminder": true, "reminder_minutes": 15},
+    "call": "create", "day": 0,
+    "props": {"subject": "Changed", "startdate": {"t": [0, 1380]}, "duedate": {"t": [0, 1410]}}
+  },
+  {
+    "name": "modify: subject and location of an exception",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series", "location": "Room"},
+    "existing": [{"day": 2, "props": {"subject": "Changed"}}],
+    "call": "modify", "day": 2, "minute": 90,
+    "props": {"subject": "Changed again", "location": "Elsewhere", "basedate": {"t": [2, 0]}}
+  },
+  {
+    "name": "modify: moved within its day",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 2, "props": {"subject": "Changed"}}],
+    "call": "modify", "day": 2,
+    "props": {"startdate": {"t": [2, 660]}, "duedate": {"t": [2, 720]}}
+  },
+  {
+    "name": "modify: moved onto the next occurrence",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 2, "props": {"subject": "Changed"}}],
+    "call": "modify", "day": 2,
+    "props": {"startdate": {"t": [3, 600]}, "duedate": {"t": [3, 660]}}
+  },
+  {
+    "name": "modify: no exception on that day",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 2, "delete": true}, {"day": 3, "props": {"subject": "Other"}}],
+    "call": "modify", "day": 2,
+    "props": {"subject": "Changed", "categories": ["Green"]}
+  },
+  {
+    "name": "modify: categories only",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 2, "props": {"subject": "Changed"}}, {"day": 3, "props": {"subject": "Other"}}],
+    "call": "modify", "day": 2,
+    "props": {"categories": ["Green"]}
+  },
+  {
+    "name": "modify: picks the exception of its day",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 1, "props": {"subject": "First"}}, {"day": 2, "props": {"subject": "Second"}}, {"day": 3, "props": {"subject": "Third"}}],
+    "call": "modify", "day": 2,
+    "props": {"label": 5}
+  },
+  {
+    "name": "modify: restores a missing attachment from the source",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 2, "props": {"subject": "Changed"}, "orphan": true}],
+    "call": "modify", "day": 2,
+    "props": {"subject": "Restored"},
+    "copyFrom": true
+  },
+  {
+    "name": "modify: recreates a missing attachment",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "existing": [{"day": 2, "props": {"subject": "Changed"}, "orphan": true}],
+    "call": "modify", "day": 2,
+    "props": {"subject": "Restored", "startdate": {"t": [2, 600]}, "duedate": {"t": [2, 660]}}
+  },
+  {
+    "name": "modify: recipient delta",
+    "zone": "Europe/Berlin",
+    "series": {"subject": "Series"},
+    "recipients": ["a@x.invalid", "b@x.invalid"],
+    "existing": [{"day": 2, "props": {"subject": "Changed"}, "recips": []}],
+    "call": "modify", "day": 2,
+    "props": {},
+    "recips": {"add": ["c@x.invalid"], "remove": ["a@x.invalid"]}
+  },
+  {
+    "name": "modify: without a timezone",
+    "series": {"subject": "Series", "reminder": true, "reminder_minutes": 15},
+    "existing": [{"day": 0, "props": {"subject": "Changed"}}],
+    "call": "modify", "day": 0,
+    "props": {"startdate": {"t": [0, 1380]}, "duedate": {"t": [0, 1410]}, "reminder": false}
+  }
+]

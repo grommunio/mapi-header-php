@@ -119,4 +119,47 @@ class RecurrenceAttachmentTest extends TestCase {
 		$this->assertIsResource($r->getExceptionAttachment($base));
 		$this->assertIsResource($r->getExceptionAttachment($base + 86400));
 	}
+
+	/**
+	 * Modifying an exception that still has its attachment writes the embedded
+	 * message, the times of the attachment and the occurrence in the blob.
+	 */
+	#[DataProvider('exceptionTimezones')]
+	public function testModifyExceptionUpdatesItsAttachment(string $zone, int $minutes, string $date): void {
+		$message = mapi_folder_createmessage($this->folder);
+		mapi_setprops($message, [PR_MESSAGE_CLASS => 'IPM.Appointment']);
+		$r = new Recurrence($this->store, $message);
+		$base = strtotime($date . ' UTC') + 86400;
+		$tz = $r->parseTimezone(TimezoneUtil::GetTimezoneStructFromTz(TimezoneUtil::GetFullTZ($zone)));
+		$r->setRecurrence($tz, [
+			'type' => 10, 'subtype' => rptDay, 'everyn' => 1440, 'regen' => 0,
+			'term' => 0x22, 'numoccur' => 5, 'start' => $base - 86400,
+			'end' => $base + 4 * 86400, 'startocc' => $minutes, 'endocc' => $minutes + 30,
+		]);
+		$this->assertTrue($r->createException([PR_SUBJECT => 'exception'], $base));
+		// an hour away, still on the same day
+		$start = $base + ($minutes < 12 * 60 ? $minutes + 60 : $minutes - 60) * 60;
+		$this->assertTrue($r->modifyException([
+			PR_SUBJECT => 'moved',
+			$r->proptags['startdate'] => $r->toGMT($tz, $start),
+			$r->proptags['duedate'] => $r->toGMT($tz, $start + 1800),
+		], $base));
+		mapi_savechanges($message);
+
+		$attach = $r->getExceptionAttachment($base);
+		$this->assertIsResource($attach);
+		$props = mapi_getprops($attach, [PR_EXCEPTION_STARTTIME, PR_EXCEPTION_ENDTIME]);
+		$this->assertSame($start, $props[PR_EXCEPTION_STARTTIME]);
+		$this->assertSame($start + 1800, $props[PR_EXCEPTION_ENDTIME]);
+		$embedded = mapi_getprops(mapi_attach_openobj($attach), [PR_SUBJECT, $r->proptags['startdate'], $r->proptags['commonstart']]);
+		$this->assertSame('moved', $embedded[PR_SUBJECT]);
+		$this->assertSame($r->toGMT($tz, $start), $embedded[$r->proptags['startdate']]);
+		$this->assertSame($r->toGMT($tz, $start), $embedded[$r->proptags['commonstart']]);
+		$this->assertCount(1, mapi_table_queryallrows(mapi_message_getattachmenttable($message), [PR_ATTACH_NUM]));
+
+		$reread = (new Recurrence($this->store, $message))->getChangeException($base);
+		$this->assertSame('moved', $reread['subject']);
+		$this->assertSame($start, $reread['start']);
+		$this->assertSame($start + 1800, $reread['end']);
+	}
 }
