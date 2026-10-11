@@ -803,10 +803,7 @@ class Meetingrequest {
 			PR_SENT_REPRESENTING_ENTRYID, PR_RECEIVED_BY_ENTRYID]);
 
 		// do not process meeting requests in sent items folder
-		$sentItemsEntryid = $this->getDefaultSentmailEntryID();
-		if (isset($messageprops[PR_PARENT_ENTRYID]) &&
-			$sentItemsEntryid !== false &&
-			$sentItemsEntryid == $messageprops[PR_PARENT_ENTRYID]) {
+		if ($this->isInSentItems($messageprops)) {
 			return false;
 		}
 
@@ -815,36 +812,8 @@ class Meetingrequest {
 		// check for calendar access
 		$this->ensureCalendarWriteAccess($store);
 
-		// if meeting is out dated then don't process it
-		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && $this->isMeetingOutOfDate()) {
+		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && !$this->isRequestToProcess($messageprops, $userAction)) {
 			return false;
-		}
-
-		/*
-		 *	if this function is called automatically with meeting request object then there will be
-		 *	two possibilitites
-		 *	1) meeting request is opened first time, in this case make a tentative appointment in
-		 *		recipient's calendar
-		 *	2) after this every subsequent request to open meeting request will not do any processing
-		 */
-		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && $userAction === false) {
-			if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] === true) {
-				// if meeting request is already processed then don't do anything
-				return false;
-			}
-
-			// if correspondent calendar item is already processed then don't do anything
-			$calendarItem = $this->getCorrespondentCalendarItem();
-			if ($calendarItem) {
-				$calendarItemProps = mapi_getprops($calendarItem, [PR_PROCESSED]);
-				if (isset($calendarItemProps[PR_PROCESSED]) && $calendarItemProps[PR_PROCESSED] === true) {
-					// mark meeting-request mail as processed as well
-					mapi_setprops($this->message, [PR_PROCESSED => true]);
-					mapi_savechanges($this->message);
-
-					return false;
-				}
-			}
 		}
 
 		// Retrieve basedate from globalID, if it is not received as argument
@@ -853,18 +822,11 @@ class Meetingrequest {
 		}
 
 		// set counter proposal properties in calendar item when proposing new time
-		$proposeNewTimeProps = [];
-		if ($newProposedStartTime && $newProposedEndTime) {
-			$proposeNewTimeProps[$this->proptags['proposed_start_whole']] = $newProposedStartTime;
-			$proposeNewTimeProps[$this->proptags['proposed_end_whole']] = $newProposedEndTime;
-			$proposeNewTimeProps[$this->proptags['proposed_duration']] = round($newProposedEndTime - $newProposedStartTime) / 60;
-			$proposeNewTimeProps[$this->proptags['counter_proposal']] = true;
-		}
+		$proposeNewTimeProps = $this->getCounterProposalProperties($newProposedStartTime, $newProposedEndTime);
 
 		// While sender is receiver then we have to process the meeting request as per the intended busy status
 		// instead of tentative, and accept the same as per the intended busystatus.
-		$senderEntryId = $messageprops[PR_SENT_REPRESENTING_ENTRYID] ?? $messageprops[PR_SENDER_ENTRYID];
-		if (isset($messageprops[PR_RECEIVED_BY_ENTRYID]) && compareEntryIds($senderEntryId, $messageprops[PR_RECEIVED_BY_ENTRYID])) {
+		if ($this->isSentToSelf($messageprops)) {
 			$entryid = $this->accept(false, $sendresponse, $move, $proposeNewTimeProps, $body, true, $store, $calFolder, $basedate);
 		}
 		else {
@@ -877,15 +839,102 @@ class Meetingrequest {
 		}
 
 		// if we have first time processed this meeting then set PR_PROCESSED property
-		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && $userAction === false && $isImported === false) {
-			if (!isset($messageprops[PR_PROCESSED]) || $messageprops[PR_PROCESSED] != true) {
-				// set processed flag
+		$this->setRequestProcessed($messageprops, $userAction, $isImported);
+
+		return $entryid;
+	}
+
+	private function isInSentItems(array $messageprops): bool {
+		$sentItemsEntryid = $this->getDefaultSentmailEntryID();
+
+		return isset($messageprops[PR_PARENT_ENTRYID]) &&
+			$sentItemsEntryid !== false &&
+			$sentItemsEntryid == $messageprops[PR_PARENT_ENTRYID];
+	}
+
+	/**
+	 * Whether a meeting request is still to be processed: not an out of date one, and not
+	 * one that is opened automatically after it or its calendar item was processed.
+	 *
+	 * @param array $messageprops properties of the meeting request
+	 * @param mixed $userAction   false when the request is processed automatically on opening
+	 */
+	private function isRequestToProcess(array $messageprops, mixed $userAction): bool {
+		// if meeting is out dated then don't process it
+		if ($this->isMeetingOutOfDate()) {
+			return false;
+		}
+
+		/*
+		 *	if this function is called automatically with meeting request object then there will be
+		 *	two possibilitites
+		 *	1) meeting request is opened first time, in this case make a tentative appointment in
+		 *		recipient's calendar
+		 *	2) after this every subsequent request to open meeting request will not do any processing
+		 */
+		if ($userAction !== false) {
+			return true;
+		}
+		if (isset($messageprops[PR_PROCESSED]) && $messageprops[PR_PROCESSED] === true) {
+			// if meeting request is already processed then don't do anything
+			return false;
+		}
+
+		// if correspondent calendar item is already processed then don't do anything
+		$calendarItem = $this->getCorrespondentCalendarItem();
+		if ($calendarItem) {
+			$calendarItemProps = mapi_getprops($calendarItem, [PR_PROCESSED]);
+			if (isset($calendarItemProps[PR_PROCESSED]) && $calendarItemProps[PR_PROCESSED] === true) {
+				// mark meeting-request mail as processed as well
 				mapi_setprops($this->message, [PR_PROCESSED => true]);
 				mapi_savechanges($this->message);
+
+				return false;
 			}
 		}
 
-		return $entryid;
+		return true;
+	}
+
+	/**
+	 * The counter proposal of an attendee who proposes another time, nothing without one.
+	 */
+	private function getCounterProposalProperties(mixed $newProposedStartTime, mixed $newProposedEndTime): array {
+		$proposeNewTimeProps = [];
+		if ($newProposedStartTime && $newProposedEndTime) {
+			$proposeNewTimeProps[$this->proptags['proposed_start_whole']] = $newProposedStartTime;
+			$proposeNewTimeProps[$this->proptags['proposed_end_whole']] = $newProposedEndTime;
+			$proposeNewTimeProps[$this->proptags['proposed_duration']] = round($newProposedEndTime - $newProposedStartTime) / 60;
+			$proposeNewTimeProps[$this->proptags['counter_proposal']] = true;
+		}
+
+		return $proposeNewTimeProps;
+	}
+
+	/**
+	 * Whether the user received the message from themselves.
+	 */
+	private function isSentToSelf(array $messageprops): bool {
+		$senderEntryId = $messageprops[PR_SENT_REPRESENTING_ENTRYID] ?? $messageprops[PR_SENDER_ENTRYID];
+
+		return isset($messageprops[PR_RECEIVED_BY_ENTRYID]) && compareEntryIds($senderEntryId, $messageprops[PR_RECEIVED_BY_ENTRYID]);
+	}
+
+	/**
+	 * Marks a meeting request as processed once it was processed automatically for the
+	 * first time; an imported one is not marked, nor one that is already.
+	 *
+	 * @param array $messageprops properties of the message
+	 * @param mixed $userAction   false when the request is processed automatically on opening
+	 * @param bool  $isImported   true for a request imported from an .ics or .vcs file
+	 */
+	private function setRequestProcessed(array $messageprops, mixed $userAction, bool $isImported): void {
+		if ($this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS]) && $userAction === false && $isImported === false) {
+			if (!isset($messageprops[PR_PROCESSED]) || $messageprops[PR_PROCESSED] != true) {
+				// set processed flag
+				$this->setProcessed();
+			}
+		}
 	}
 
 	/**
