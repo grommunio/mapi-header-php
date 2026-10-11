@@ -24,7 +24,7 @@ class RecurrenceWriterTest extends TestCase {
 
 	private function writeCases(array $cases): array {
 		$process = proc_open([
-			PHP_BINARY, '-n',
+			PHP_BINARY, '-n', '-d', 'display_errors=stderr',
 			__DIR__ . '/fixtures/recurrence_writer.php', dirname(__DIR__),
 		], [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
 		$this->assertIsResource($process);
@@ -35,8 +35,14 @@ class RecurrenceWriterTest extends TestCase {
 		fclose($pipes[1]);
 		fclose($pipes[2]);
 		$this->assertSame(0, proc_close($process), $errors . $output);
+		$this->assertSame('', $errors);
 
-		return json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+		try {
+			return json_decode($output, true, 512, JSON_THROW_ON_ERROR);
+		}
+		catch (JsonException $e) {
+			$this->fail("The writer did not print JSON:\n" . $output);
+		}
 	}
 
 	public function testPatternSerialization(): void {
@@ -63,10 +69,10 @@ class RecurrenceWriterTest extends TestCase {
 
 	public function testExceptionSerialization(): void {
 		$fields = [
-			1 => ['subject', "SäΩ\0", "S\0\xe4\0\xa9\x03\0\0"],
+			1 => ['subject', "Sä€\0", "S\0\xe4\0\xac\x20\0\0", "S\xe4\x80\0"],
 			4 => ['remind_before', 15],
 			8 => ['reminder_set', 0],
-			16 => ['location', "LöΩ\0", "L\0\xf6\0\xa9\x03\0\0"],
+			16 => ['location', "Lö€\0", "L\0\xf6\0\xac\x20\0\0", "L\xf6\x80\0"],
 			32 => ['busystatus', 2],
 			128 => ['alldayevent', 1],
 			256 => ['label', 7],
@@ -85,8 +91,7 @@ class RecurrenceWriterTest extends TestCase {
 					$flags |= $flag;
 					$item[$field[0]] = $field[1];
 					if (isset($field[2])) {
-						// CP1252 transliteration is locale dependent; convert it independently.
-						$text = iconv('UTF-8', 'windows-1252//TRANSLIT', $field[1]);
+						$text = $field[3];
 						$ansi .= pack('v2', strlen($text) + 1, strlen($text)) . $text;
 						$unicode .= pack('v', 4) . $field[2];
 					}
