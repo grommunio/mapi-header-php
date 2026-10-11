@@ -41,7 +41,9 @@ function fetchAndGenerateStubs(string $url): string {
 		$stubFunctions .= "{$phpDoc}\n";
 		$stubFunctions .= "function {$functionName}({$parameters}): {$nativeReturnType} {\n";
 		if ($returnType !== 'void') {
-			$stubFunctions .= "\treturn {$returnValue};\n";
+			// scriptable by tests; the default keeps static analysis from
+			// taking it for the only possible result
+			$stubFunctions .= "\treturn \$GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? {$returnValue};\n";
 		}
 		$stubFunctions .= "}\n\n";
 	}
@@ -124,6 +126,9 @@ try {
 	$autoloaderContent .= "\treturn;\n";
 	$autoloaderContent .= "}\n";
 	$autoloaderContent .= "define('MAPI_STUB_LOADED', true);\n\n";
+	$autoloaderContent .= "// Every function returns what a test put into \$GLOBALS['MAPI_STUB_RESULTS']\n";
+	$autoloaderContent .= "// under its name, else the default below; the analysers cannot take the\n";
+	$autoloaderContent .= "// default for the only possible result that way.\n";
 	$autoloaderContent .= $stubFunctions;
 
 	if (extension_loaded('mapi')) {
