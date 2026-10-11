@@ -641,15 +641,8 @@ class Meetingrequest {
 			PR_RCVD_REPRESENTING_ENTRYID,
 		]);
 
-		if (!empty($messageprops[PR_PROCESSED]) || empty($messageprops[$this->proptags['goid']])) {
+		if (!$this->isForwardNotificationToProcess($messageprops)) {
 			return false;
-		}
-
-		// the copy in the forwarder's own mailbox is not processed
-		foreach ([PR_IPM_SENTMAIL_ENTRYID, PR_IPM_OUTBOX_ENTRYID] as $folder) {
-			if (compareEntryIds($this->getBaseEntryID($folder), $messageprops[PR_PARENT_ENTRYID] ?? false)) {
-				return false;
-			}
 		}
 
 		$calendarItem = $this->getCorrespondentCalendarItem(true);
@@ -668,28 +661,7 @@ class Meetingrequest {
 		$recurringItem = false;
 		$attach = false;
 		if (!empty($basedate) && !empty($calendarItemProps[$this->proptags['recurring']])) {
-			$recurr = new Recurrence($store, $calendarItem);
-			// a deleted occurrence is never brought back
-			if ($recurr->isDeleteException($basedate)) {
-				$this->setProcessed();
-
-				return false;
-			}
-			if (!$recurr->isException($basedate)) {
-				$exception_props = [
-					$this->proptags['startdate'] => $recurr->getOccurrenceStart($basedate),
-					$this->proptags['duedate'] => $recurr->getOccurrenceEnd($basedate),
-				];
-				// fails when the series has no occurrence on that day
-				if (!$recurr->createException($exception_props, $basedate, false, $this->getMessageRecipients($calendarItem))) {
-					$this->setProcessed();
-
-					return false;
-				}
-				mapi_savechanges($calendarItem);
-			}
-
-			$attach = $recurr->getExceptionAttachment($basedate);
+			$attach = $this->getForwardedOccurrenceAttachment($store, $calendarItem, $basedate);
 			if (!$attach) {
 				return false;
 			}
@@ -697,6 +669,77 @@ class Meetingrequest {
 			$calendarItem = mapi_attach_openobj($attach, MAPI_MODIFY);
 		}
 
+		$added = $this->addForwardedAttendees($calendarItem, $recurringItem, $attach, $messageprops);
+		$this->setProcessed();
+
+		return $added;
+	}
+
+	/**
+	 * Whether a meeting forward notification is still to be processed: not once it was,
+	 * not without the meeting's GlobalObjectId, and not the forwarder's own copy.
+	 */
+	private function isForwardNotificationToProcess(array $messageprops): bool {
+		if (!empty($messageprops[PR_PROCESSED]) || empty($messageprops[$this->proptags['goid']])) {
+			return false;
+		}
+
+		// the copy in the forwarder's own mailbox is not processed
+		foreach ([PR_IPM_SENTMAIL_ENTRYID, PR_IPM_OUTBOX_ENTRYID] as $folder) {
+			if (compareEntryIds($this->getBaseEntryID($folder), $messageprops[PR_PARENT_ENTRYID] ?? false)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * The exception attachment of the occurrence a meeting was forwarded for, created when
+	 * the occurrence has none yet. False when there is nothing to add the attendees to; a
+	 * deleted occurrence and a day without one are marked processed.
+	 *
+	 * @param mixed $store        store of the calendar item
+	 * @param mixed $calendarItem the series in the organizer's calendar
+	 * @param int   $basedate     basedate of the forwarded occurrence
+	 */
+	private function getForwardedOccurrenceAttachment(mixed $store, mixed $calendarItem, int $basedate): mixed {
+		$recurr = new Recurrence($store, $calendarItem);
+		// a deleted occurrence is never brought back
+		if ($recurr->isDeleteException($basedate)) {
+			$this->setProcessed();
+
+			return false;
+		}
+		if (!$recurr->isException($basedate)) {
+			$exception_props = [
+				$this->proptags['startdate'] => $recurr->getOccurrenceStart($basedate),
+				$this->proptags['duedate'] => $recurr->getOccurrenceEnd($basedate),
+			];
+			// fails when the series has no occurrence on that day
+			if (!$recurr->createException($exception_props, $basedate, false, $this->getMessageRecipients($calendarItem))) {
+				$this->setProcessed();
+
+				return false;
+			}
+			mapi_savechanges($calendarItem);
+		}
+
+		return $recurr->getExceptionAttachment($basedate);
+	}
+
+	/**
+	 * Adds the attendees a meeting forward notification lists to the meeting or the
+	 * occurrence, as far as they are not attendees yet.
+	 *
+	 * @param mixed $calendarItem  the meeting, or the exception of the occurrence
+	 * @param mixed $recurringItem the series when an occurrence is updated, else false
+	 * @param mixed $attach        the exception attachment of the occurrence, else false
+	 * @param array $messageprops  properties of the meeting forward notification
+	 *
+	 * @return bool true if attendees were added
+	 */
+	private function addForwardedAttendees(mixed $calendarItem, mixed $recurringItem, mixed $attach, array $messageprops): bool {
 		$existing = $this->getMessageRecipients($calendarItem);
 		$seriesRecipients = [];
 		// an exception without recipients of its own has those of the series
@@ -716,7 +759,6 @@ class Meetingrequest {
 				mapi_savechanges($recurringItem);
 			}
 		}
-		$this->setProcessed();
 
 		return !empty($added);
 	}
