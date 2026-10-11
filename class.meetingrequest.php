@@ -1922,18 +1922,7 @@ class Meetingrequest {
 			return;
 		}
 
-		$addresses = $names = $forwardedTo = [];
-		foreach ($recipients as $recip) {
-			$smtp = $this->getRecipientSMTPAddress($recip);
-			// Bcc recipients stay hidden from the organizer
-			if ($smtp === '' || ($recip[PR_RECIPIENT_TYPE] ?? MAPI_TO) == MAPI_BCC) {
-				continue;
-			}
-			$name = $recip[PR_DISPLAY_NAME] ?? '';
-			$addresses[] = $smtp;
-			$names[] = $name !== '' ? $name : $smtp;
-			$forwardedTo[] = $name !== '' && strcasecmp($name, $smtp) != 0 ? $name . ' <' . $smtp . '>' : $smtp;
-		}
+		[$addresses, $names, $forwardedTo] = $this->getForwardedAddresses($recipients);
 		if (empty($addresses)) {
 			return;
 		}
@@ -1951,10 +1940,59 @@ class Meetingrequest {
 			$this->proptags['timezone_data'],
 			$this->proptags['tzdefstart'],
 		]);
+		$body = $this->getForwardNotificationBody($messageprops, $userDetails[0], $forwardedTo);
+		$props = $this->getForwardNotificationProperties($messageprops, $body, $addresses, $names);
+
+		$new = $this->createOutgoingMessage();
+		mapi_setprops($new, $props);
+		mapi_message_modifyrecipients($new, MODRECIP_ADD, [[
+			PR_ENTRYID => $organizer[PR_ENTRYID],
+			PR_DISPLAY_NAME => $organizer[PR_DISPLAY_NAME] ?? '',
+			PR_EMAIL_ADDRESS => $organizer[PR_EMAIL_ADDRESS] ?? '',
+			PR_ADDRTYPE => $organizer[PR_ADDRTYPE] ?? 'SMTP',
+			PR_SEARCH_KEY => $organizer[PR_SEARCH_KEY] ?? '',
+			PR_RECIPIENT_TYPE => MAPI_TO,
+		]]);
+		mapi_savechanges($new);
+		mapi_message_submitmessage($new);
+	}
+
+	/**
+	 * The attendees a meeting was forwarded to, as a forward notification lists them.
+	 *
+	 * @param array $recipients recipient rows of the attendees the meeting was forwarded to
+	 *
+	 * @return array their SMTP addresses, their names, and how the body shows them
+	 */
+	private function getForwardedAddresses(array $recipients): array {
+		$addresses = $names = $forwardedTo = [];
+		foreach ($recipients as $recip) {
+			$smtp = $this->getRecipientSMTPAddress($recip);
+			// Bcc recipients stay hidden from the organizer
+			if ($smtp === '' || ($recip[PR_RECIPIENT_TYPE] ?? MAPI_TO) == MAPI_BCC) {
+				continue;
+			}
+			$name = $recip[PR_DISPLAY_NAME] ?? '';
+			$addresses[] = $smtp;
+			$names[] = $name !== '' ? $name : $smtp;
+			$forwardedTo[] = $name !== '' && strcasecmp($name, $smtp) != 0 ? $name . ' <' . $smtp . '>' : $smtp;
+		}
+
+		return [$addresses, $names, $forwardedTo];
+	}
+
+	/**
+	 * The text of a meeting forward notification: who forwarded which meeting to whom.
+	 *
+	 * @param array $messageprops properties of the forwarded meeting or occurrence
+	 * @param mixed $forwarder    name of the user who forwarded the meeting
+	 * @param array $forwardedTo  the attendees as getForwardedAddresses() shows them
+	 */
+	private function getForwardNotificationBody(array $messageprops, mixed $forwarder, array $forwardedTo): string {
 		$subject = $messageprops[PR_SUBJECT] ?? '';
 		$location = $messageprops[$this->proptags['location']] ?? '';
 
-		$body = sprintf(_('%s has forwarded your meeting request to additional recipients.'), $userDetails[0]) . "\n\n";
+		$body = sprintf(_('%s has forwarded your meeting request to additional recipients.'), $forwarder) . "\n\n";
 		$body .= _('Meeting') . ': ' . $subject . "\n";
 		if (isset($messageprops[$this->proptags['startdate']], $messageprops[$this->proptags['duedate']])) {
 			[$tz, $zone] = $this->getMeetingTimezone($messageprops);
@@ -1963,7 +2001,22 @@ class Meetingrequest {
 		if ($location !== '') {
 			$body .= _('Location') . ': ' . $location . "\n";
 		}
-		$body .= _('Recipients') . ': ' . implode(', ', $forwardedTo) . "\n";
+
+		return $body . _('Recipients') . ': ' . implode(', ', $forwardedTo) . "\n";
+	}
+
+	/**
+	 * The properties of a meeting forward notification, with those of the forwarded
+	 * meeting or occurrence that it has.
+	 *
+	 * @param array  $messageprops properties of the forwarded meeting or occurrence
+	 * @param string $body         text of the notification
+	 * @param array  $addresses    SMTP addresses of the attendees the meeting was forwarded to
+	 * @param array  $names        their names
+	 */
+	private function getForwardNotificationProperties(array $messageprops, string $body, array $addresses, array $names): array {
+		$subject = $messageprops[PR_SUBJECT] ?? '';
+		$location = $messageprops[$this->proptags['location']] ?? '';
 
 		$props = [
 			PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Notification.Forward',
@@ -1990,18 +2043,7 @@ class Meetingrequest {
 			$props[$this->proptags['location']] = $location;
 		}
 
-		$new = $this->createOutgoingMessage();
-		mapi_setprops($new, $props);
-		mapi_message_modifyrecipients($new, MODRECIP_ADD, [[
-			PR_ENTRYID => $organizer[PR_ENTRYID],
-			PR_DISPLAY_NAME => $organizer[PR_DISPLAY_NAME] ?? '',
-			PR_EMAIL_ADDRESS => $organizer[PR_EMAIL_ADDRESS] ?? '',
-			PR_ADDRTYPE => $organizer[PR_ADDRTYPE] ?? 'SMTP',
-			PR_SEARCH_KEY => $organizer[PR_SEARCH_KEY] ?? '',
-			PR_RECIPIENT_TYPE => MAPI_TO,
-		]]);
-		mapi_savechanges($new);
-		mapi_message_submitmessage($new);
+		return $props;
 	}
 
 	/**
