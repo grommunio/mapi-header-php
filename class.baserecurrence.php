@@ -1788,7 +1788,6 @@ abstract class BaseRecurrence {
 
 	private function getMonthlyItems(int $start, int $end, int $daystart, int $dayend, mixed $limit, mixed $remindersonly): array {
 		$items = [];
-		$firstday = 0;
 
 		if ($this->recur["everyn"] <= 0) {
 			$this->recur["everyn"] = 1;
@@ -1800,66 +1799,99 @@ abstract class BaseRecurrence {
 
 		// Loop through all months from start to end of occurrence, starting at beginning of first month
 		for ($now = $this->monthStartOf($daystart); $now <= $dayend && ($limit == 0 || count($items) < $limit); $now += $this->daysInMonth($now, $this->recur["everyn"]) * 24 * 60 * 60) {
-			if (isset($this->recur["monthday"]) && ($this->recur['monthday'] != "undefined") && !$this->recur['regen']) { // Day M of every N months
-				$difference = 1;
-				if ($this->daysInMonth($now, $this->recur["everyn"]) < $this->recur["monthday"]) {
-					$difference = $this->recur["monthday"] - $this->daysInMonth($now, $this->recur["everyn"]) + 1;
-				}
-				$daynow = $now + (($this->recur["monthday"] - $difference) * 24 * 60 * 60);
-				// checks weather the next coming day in recurrence pattern is less than or equal to end day of the recurring item
-				if ($daynow <= $dayend) {
-					$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-				}
-			}
-			elseif (isset($this->recur["nday"], $this->recur["weekdays"])) { // Nth [weekday] of every N months
-				// Sanitize input
-				if ($this->recur["weekdays"] == 0) {
-					$this->recur["weekdays"] = 1;
-				}
-
-				// If nday is not set to the last day in the month
-				if ($this->recur["nday"] < 5) {
-					// keep the track of no. of time correct selection pattern (like 2nd weekday, 4th friday, etc.) is matched
-					$ndaycounter = 0;
-					// Find matching weekday in this month
-					for ($day = 0, $total = $this->daysInMonth($now, 1); $day < $total; ++$day) {
-						$daynow = $now + $day * 60 * 60 * 24;
-						$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
-
-						if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
-							++$ndaycounter;
-						}
-						// check the selected pattern is same as asked Nth weekday,If so set the firstday
-						if ($this->recur["nday"] == $ndaycounter) {
-							$firstday = $day;
-							break;
-						}
-					}
-					// $firstday is the day of the month on which the asked pattern of nth weekday matches
-					$daynow = $now + $firstday * 60 * 60 * 24;
-				}
-				else {
-					// Find last day in the month ($now is the firstday of the month)
-					$NumDaysInMonth = $this->daysInMonth($now, 1);
-					$daynow = $now + (($NumDaysInMonth - 1) * 24 * 60 * 60);
-
-					$nowtime = $this->gmtime($daynow);
-					while (($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) == 0) {
-						$daynow -= SECONDS_PER_DAY;
-						$nowtime = $this->gmtime($daynow);
-					}
-				}
-
-				/*
-				* checks weather the next coming day in recurrence pattern is less than or equal to end day of the			* recurring item.Also check weather the coming day in recurrence pattern is greater than or equal to start * of recurring pattern, so that appointment that fall under the recurrence range are only displayed.
-				*/
-				if ($daynow <= $dayend && $daynow >= $daystart) {
-					$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
-				}
+			$daynow = $this->getMonthlyOccurrence($now, $daystart, $dayend);
+			if ($daynow !== null) {
+				$this->processOccurrenceItem($items, $start, $end, $daynow, $this->recur["startocc"], $this->recur["endocc"], $this->tz, $remindersonly);
 			}
 		}
 
 		return $items;
+	}
+
+	/**
+	 * Returns the day of the series in the month starting at $now, or null
+	 * when the pattern yields none in range.
+	 */
+	private function getMonthlyOccurrence(int $now, int $daystart, int $dayend): float|int|null {
+		if (isset($this->recur["monthday"]) && ($this->recur['monthday'] != "undefined") && !$this->recur['regen']) { // Day M of every N months
+			$daynow = $this->getMonthDay($now);
+			// checks weather the next coming day in recurrence pattern is less than or equal to end day of the recurring item
+			if ($daynow <= $dayend) {
+				return $daynow;
+			}
+		}
+		elseif (isset($this->recur["nday"], $this->recur["weekdays"])) { // Nth [weekday] of every N months
+			$daynow = $this->getMonthWeekday($now);
+
+			/*
+			* checks weather the next coming day in recurrence pattern is less than or equal to end day of the			* recurring item.Also check weather the coming day in recurrence pattern is greater than or equal to start * of recurring pattern, so that appointment that fall under the recurrence range are only displayed.
+			*/
+			if ($daynow <= $dayend && $daynow >= $daystart) {
+				return $daynow;
+			}
+		}
+
+		return null;
+	}
+
+	private function getMonthDay(int $now): float|int {
+		$difference = 1;
+		if ($this->daysInMonth($now, $this->recur["everyn"]) < $this->recur["monthday"]) {
+			$difference = $this->recur["monthday"] - $this->daysInMonth($now, $this->recur["everyn"]) + 1;
+		}
+
+		return $now + (($this->recur["monthday"] - $difference) * 24 * 60 * 60);
+	}
+
+	private function getMonthWeekday(int $now): float|int {
+		// Sanitize input
+		if ($this->recur["weekdays"] == 0) {
+			$this->recur["weekdays"] = 1;
+		}
+
+		// If nday is not set to the last day in the month
+		if ($this->recur["nday"] < 5) {
+			return $this->getNthWeekday($now);
+		}
+
+		return $this->getLastWeekday($now);
+	}
+
+	private function getNthWeekday(int $now): float|int {
+		$firstday = 0;
+		// keep the track of no. of time correct selection pattern (like 2nd weekday, 4th friday, etc.) is matched
+		$ndaycounter = 0;
+		// Find matching weekday in this month
+		for ($day = 0, $total = $this->daysInMonth($now, 1); $day < $total; ++$day) {
+			$daynow = $now + $day * 60 * 60 * 24;
+			$nowtime = $this->gmtime($daynow); // Get the weekday of the current day
+
+			if ($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) { // Selected ?
+				++$ndaycounter;
+			}
+			// check the selected pattern is same as asked Nth weekday,If so set the firstday
+			if ($this->recur["nday"] == $ndaycounter) {
+				$firstday = $day;
+				break;
+			}
+		}
+
+		// $firstday is the day of the month on which the asked pattern of nth weekday matches
+		return $now + $firstday * 60 * 60 * 24;
+	}
+
+	private function getLastWeekday(int $now): float|int {
+		// Find last day in the month ($now is the firstday of the month)
+		$NumDaysInMonth = $this->daysInMonth($now, 1);
+		$daynow = $now + (($NumDaysInMonth - 1) * 24 * 60 * 60);
+
+		$nowtime = $this->gmtime($daynow);
+		while (($this->recur["weekdays"] & (1 << $nowtime["tm_wday"])) == 0) {
+			$daynow -= SECONDS_PER_DAY;
+			$nowtime = $this->gmtime($daynow);
+		}
+
+		return $daynow;
 	}
 
 	private function getYearlyItems(int $start, int $end, int $daystart, int $dayend, mixed $limit, mixed $remindersonly): array {

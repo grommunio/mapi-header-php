@@ -102,6 +102,18 @@ class RecurrenceExpansionTest extends TestCase {
 				['type' => 12, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 0x20, 'nday' => 5],
 				'2024-01-01', ['2024-01-26', '2024-02-23', '2024-03-29'],
 			],
+			'every second month' => [
+				['type' => 12, 'subtype' => rptMonth, 'everyn' => 2, 'monthday' => 15],
+				'2024-01-15', ['2024-01-15', '2024-03-15', '2024-05-15'],
+			],
+			'second Monday before the start' => [
+				['type' => 12, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 2, 'nday' => 2],
+				'2024-01-15', ['2024-02-12', '2024-03-11', '2024-04-08'],
+			],
+			'last workday' => [
+				['type' => 12, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 0x3E, 'nday' => 5],
+				'2024-01-01', ['2024-01-31', '2024-02-29', '2024-03-29'],
+			],
 			'yearly leap day' => [
 				['type' => 13, 'subtype' => rptMonth, 'everyn' => 1, 'monthday' => 29, 'month' => 31 * 1440],
 				'2024-01-01', ['2024-02-29', '2025-02-28', '2026-02-28'],
@@ -115,6 +127,18 @@ class RecurrenceExpansionTest extends TestCase {
 				'2024-01-01', ['2024-07-04', '2026-07-04', '2028-07-04'],
 			],
 		];
+	}
+
+	public function testNthWeekdayBeforeTheStartIsLeftOut(): void {
+		$base = strtotime('2024-01-15 UTC');
+		$r = $this->makeRecurrence([
+			'type' => 12, 'subtype' => rptMonthNth, 'everyn' => 1, 'weekdays' => 2, 'nday' => 2, 'regen' => 0,
+			'term' => 0x23, 'start' => $base, 'end' => gmmktime(0, 0, 0, 1, 1, 2030), 'startocc' => 600, 'endocc' => 660,
+		]);
+		// viewed from before the series starts, so the range check of the pattern drops 2024-01-08 by itself
+		$items = $r->getItems($base - 60 * 86400, $r->recur['end'], 3);
+
+		$this->assertSame(['2024-02-12', '2024-03-11', '2024-04-08'], array_map(fn ($item) => gmdate('Y-m-d', $item[$r->proptags['startdate']]), $items));
 	}
 
 	public function testYearlyIntervalIsNotChangedByExpansion(): void {
