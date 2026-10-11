@@ -131,6 +131,9 @@ class Meetingrequest {
 	// SMTP addresses by address book entryid, looked up once per request
 	private array $smtpAddresses = [];
 
+	// response prepared by createResponse() and sent once the meeting is stored
+	private mixed $pendingResponse = null;
+
 	/**
 	 * Constructor.
 	 *
@@ -832,11 +835,17 @@ class Meetingrequest {
 
 		// While sender is receiver then we have to process the meeting request as per the intended busy status
 		// instead of tentative, and accept the same as per the intended busystatus.
-		if ($this->isSentToSelf($messageprops)) {
-			$entryid = $this->accept(false, $sendresponse, $move, $proposeNewTimeProps, $body, true, $store, $calFolder, $basedate);
+		try {
+			if ($this->isSentToSelf($messageprops)) {
+				$entryid = $this->accept(false, $sendresponse, $move, $proposeNewTimeProps, $body, true, $store, $calFolder, $basedate);
+			}
+			else {
+				$entryid = $this->accept($tentative, $sendresponse, $move, $proposeNewTimeProps, $body, $userAction, $store, $calFolder, $basedate);
+			}
 		}
-		else {
-			$entryid = $this->accept($tentative, $sendresponse, $move, $proposeNewTimeProps, $body, $userAction, $store, $calFolder, $basedate);
+		finally {
+			// accept() clears this once it has sent; anything left means it threw
+			$this->discardPendingResponse();
 		}
 
 		// Opt-in; by default the request mail stays in the inbox.
@@ -954,17 +963,64 @@ class Meetingrequest {
 		$isDelegate = $this->isMessageFromDelegate($messageprops);
 
 		if ($sendresponse) {
-			$this->createResponse($tentative ? olResponseTentative : olResponseAccepted, $proposeNewTimeProps, $body, $store, $basedate, $calFolder);
+			// The response is built from the request, which the move below
+			// copies and removes, so it is prepared now. It only goes out once
+			// the calendar item exists: a failure in between must not leave the
+			// organizer with an acceptance of a meeting the attendee never got.
+			$this->pendingResponse = $this->createResponse($tentative ? olResponseTentative : olResponseAccepted, $proposeNewTimeProps, $body, $store, $basedate, $calFolder, true);
 		}
 
 		if (!$this->isMeetingRequest($messageprops[PR_MESSAGE_CLASS])) {
-			return $this->acceptCalendarResponse($messageprops, $tentative, $proposeNewTimeProps, $store, $basedate);
+			$entryid = $this->acceptCalendarResponse($messageprops, $tentative, $proposeNewTimeProps, $store, $basedate);
 		}
-		if (!empty($messageprops[$this->proptags['recurring']]) && $basedate === false) {
-			return $this->acceptRecurringRequest($messageprops, $tentative, $move, $userAction, $store, $calFolder, $isDelegate);
+		elseif (!empty($messageprops[$this->proptags['recurring']]) && $basedate === false) {
+			$entryid = $this->acceptRecurringRequest($messageprops, $tentative, $move, $userAction, $store, $calFolder, $isDelegate);
 		}
+		else {
+			$entryid = $this->acceptSingleRequest($messageprops, $tentative, $move, $proposeNewTimeProps, $userAction, $store, $calFolder, $basedate, $isDelegate);
+		}
+		$this->submitPendingResponse($entryid);
 
-		return $this->acceptSingleRequest($messageprops, $tentative, $move, $proposeNewTimeProps, $userAction, $store, $calFolder, $basedate, $isDelegate);
+		return $entryid;
+	}
+
+	/**
+	 * Sends the response prepared by createResponse(), unless nothing was
+	 * stored: an acceptance of a meeting that does not exist would be a lie.
+	 */
+	private function submitPendingResponse(mixed $entryid): void {
+		$message = $this->pendingResponse;
+		$this->pendingResponse = null;
+		if ($message === null) {
+			return;
+		}
+		if (empty($entryid)) {
+			$this->deleteOutgoingMessage($message);
+
+			return;
+		}
+		mapi_message_submitmessage($message);
+	}
+
+	/**
+	 * Drops a response that was prepared but never sent, so that accept()
+	 * throwing does not leave an unsent message in the outbox.
+	 */
+	private function discardPendingResponse(): void {
+		$message = $this->pendingResponse;
+		$this->pendingResponse = null;
+		if ($message !== null) {
+			$this->deleteOutgoingMessage($message);
+		}
+	}
+
+	private function deleteOutgoingMessage(mixed $message): void {
+		$props = mapi_getprops($message, [PR_ENTRYID, PR_PARENT_ENTRYID]);
+		if (!isset($props[PR_ENTRYID], $props[PR_PARENT_ENTRYID])) {
+			return;
+		}
+		$parent = mapi_msgstore_openentry($this->openDefaultStore(), $props[PR_PARENT_ENTRYID]);
+		mapi_folder_deletemessages($parent, [$props[PR_ENTRYID]]);
 	}
 
 	private function acceptRecurringRequest(array $messageprops, bool $tentative, bool $move, bool $userAction, mixed $store, mixed $calFolder, bool $isDelegate): mixed {
@@ -2421,8 +2477,11 @@ class Meetingrequest {
 	 * @param mixed     $store
 	 * @param false|int $basedate            date of occurrence which attendee has responded
 	 * @param mixed     $calFolder
+	 * @param bool      $defer               hand the saved response back instead of sending it
+	 *
+	 * @return mixed the unsent response when deferred, null otherwise
 	 */
-	public function createResponse($status, $proposeNewTimeProps, $body, $store, $basedate, $calFolder): void {
+	public function createResponse($status, $proposeNewTimeProps, $body, $store, $basedate, $calFolder, bool $defer = false): mixed {
 		$messageprops = mapi_getprops($this->message, [
 			PR_SENT_REPRESENTING_ENTRYID,
 			PR_SENT_REPRESENTING_EMAIL_ADDRESS,
@@ -2459,7 +2518,12 @@ class Meetingrequest {
 		mapi_setprops($message, $props);
 		mapi_message_modifyrecipients($message, MODRECIP_ADD, [$recip]);
 		mapi_savechanges($message);
+		if ($defer) {
+			return $message;
+		}
 		mapi_message_submitmessage($message);
+
+		return null;
 	}
 
 	/**

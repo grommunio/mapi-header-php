@@ -314,4 +314,39 @@ class MeetingWorkflowModelTest extends TestCase {
 		$this->assertCount(1, $opened);
 		$this->assertCount($case['count'], $resolved);
 	}
+
+	public function testTheResponseGoesOutOnceTheMeetingIsStored(): void {
+		$cases = $this->runCases('accept-response');
+		$this->assertCount(5, $cases);
+		foreach ($cases as $case) {
+			$label = $case['name'];
+			$calls = $case['calls'];
+			$submitted = array_keys(array_filter($calls, static fn ($call) => str_starts_with($call, 'mapi_message_submitmessage(')));
+			// the first created message is the response itself, the later ones are calendar items
+			$created = array_keys(array_filter($calls, static fn ($call) => str_starts_with($call, 'mapi_folder_createmessage(') || str_starts_with($call, 'mapi_folder_copymessages(')));
+			$this->assertGreaterThan(1, count($created), $label);
+			if (str_starts_with($case['name'], 'calendar-refuses')) {
+				$this->assertSame('MAPIException: calendar refused the message', $case['error'] ?? null, $label);
+				$this->assertSame([], $submitted, $label);
+				// the prepared response is gone from the outbox, not left behind unsent
+				$this->assertSame([], $case['outbox'], $label);
+				$this->assertSame([], $case['calendar'], $label);
+
+				continue;
+			}
+			$this->assertArrayNotHasKey('error', $case, $label);
+			$this->assertNoWarnings($case);
+			$this->assertStringStartsWith('EID:message:', $case['result'], $label);
+			$this->assertCount(1, $case['calendar'], $label);
+			$this->assertCount(1, $case['outbox'], $label);
+			$this->assertSame('IPM.Schedule.Meeting.Resp.Pos', $case['outbox'][0]['props'][PR_MESSAGE_CLASS], $label);
+			// the response goes out after the calendar item was created and saved
+			$this->assertCount(1, $submitted, $label);
+			$this->assertGreaterThan(max($created), $submitted[0], $label);
+			$item = 'mapi_savechanges(' . $case['calendar'][0] . ')';
+			$saved = array_keys(array_filter($calls, static fn ($call) => $call === $item));
+			$this->assertNotEmpty($saved, $label);
+			$this->assertLessThan($submitted[0], max($saved), $label);
+		}
+	}
 }
