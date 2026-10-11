@@ -1301,7 +1301,7 @@ abstract class BaseRecurrence {
 		foreach (["subject", "location"] as $field) {
 			if (isset($item[$field])) {
 				$value = iconv("UTF-8", "UCS-2LE", $item[$field]);
-				$length = iconv_strlen($value, "UCS-2LE");
+				$length = intdiv(strlen($value), 2);
 				$rdata .= pack("v", $length) . $value;
 			}
 		}
