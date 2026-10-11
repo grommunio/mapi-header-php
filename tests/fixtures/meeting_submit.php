@@ -7,12 +7,17 @@
 
 // Run with php -n: messages live in memory and behave like gromox does for
 // the subject, which is what submitMeetingRequest() has to get right.
-function _(string $text): string {
-	return $text;
+// A PHP with gettext compiled in brings _() and ngettext() along.
+if (!function_exists('_')) {
+	function _(string $text): string {
+		return $text;
+	}
 }
 
-function ngettext(string $singular, string $plural, int $count): string {
-	return $count == 1 ? $singular : $plural;
+if (!function_exists('ngettext')) {
+	function ngettext(string $singular, string $plural, int $count): string {
+		return $count == 1 ? $singular : $plural;
+	}
 }
 
 function mapi_load_mapidefs($flags): void {}
