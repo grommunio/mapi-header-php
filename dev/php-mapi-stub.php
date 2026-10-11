@@ -10,6 +10,10 @@ if (defined('MAPI_STUB_LOADED') || extension_loaded('mapi')) {
 }
 define('MAPI_STUB_LOADED', true);
 
+// Every function returns what a test put into $GLOBALS['MAPI_STUB_RESULTS']
+// under its name, else the default below; the analysers cannot take the
+// default for the only possible result that way.
+
 /**
  * @param ?int $level
  * @return void
@@ -21,7 +25,7 @@ function mapi_load_mapidefs(?int $level): void {
  * @return int
  */
 function mapi_last_hresult(): int {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -29,7 +33,7 @@ function mapi_last_hresult(): int {
  * @return int|false
  */
 function mapi_prop_type(int $proptag): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -37,7 +41,7 @@ function mapi_prop_type(int $proptag): int|bool {
  * @return int|false
  */
 function mapi_prop_id(int $proptag): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -45,7 +49,7 @@ function mapi_prop_id(int $proptag): int|bool {
  * @return bool
  */
 function mapi_is_error(int $errcode): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -54,7 +58,7 @@ function mapi_is_error(int $errcode): bool {
  * @return int|false
  */
 function mapi_make_scode(int $sev, int $code): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -63,7 +67,7 @@ function mapi_make_scode(int $sev, int $code): int|bool {
  * @return int|false
  */
 function mapi_prop_tag(int $proptype, int $propid): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -74,7 +78,7 @@ function mapi_prop_tag(int $proptype, int $propid): int|bool {
  * @return string|false
  */
 function mapi_createoneoff(?string $displayname, string $type, string $address, ?int $flags = 0): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -82,7 +86,7 @@ function mapi_createoneoff(?string $displayname, string $type, string $address, 
  * @return array|false
  */
 function mapi_parseoneoff(string $entryid): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -97,7 +101,7 @@ function mapi_parseoneoff(string $entryid): array|bool {
  * @return resource|false
  */
 function mapi_logon_zarafa(string $username, string $password, ?string $server = null, ?string $sslcert = null, ?string $sslpass = null, ?int $flags = 0, ?string $wa_version = null, ?string $misc_version = null): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -107,7 +111,7 @@ function mapi_logon_zarafa(string $username, string $password, ?string $server =
  * @return resource|false
  */
 function mapi_logon_ex(string $username, string $password, int $flags): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -116,7 +120,7 @@ function mapi_logon_ex(string $username, string $password, int $flags): mixed {
  * @return resource|false
  */
 function mapi_logon_np(string $username, int $flags): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -124,7 +128,7 @@ function mapi_logon_np(string $username, int $flags): mixed {
  * @return resource|false
  */
 function mapi_logon_token(string $token): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -132,7 +136,7 @@ function mapi_logon_token(string $token): mixed {
  * @return resource|false
  */
 function mapi_getmsgstorestable(mixed $session): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -141,7 +145,7 @@ function mapi_getmsgstorestable(mixed $session): mixed {
  * @return resource|false
  */
 function mapi_openmsgstore(mixed $ses, string $entryid): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -150,7 +154,7 @@ function mapi_openmsgstore(mixed $ses, string $entryid): mixed {
  * @return resource|false
  */
 function mapi_openprofilesection(mixed $ses, string $uid): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -158,7 +162,7 @@ function mapi_openprofilesection(mixed $ses, string $uid): mixed {
  * @return resource|false
  */
 function mapi_openaddressbook(mixed $session): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -168,7 +172,7 @@ function mapi_openaddressbook(mixed $session): mixed {
  * @return resource|false
  */
 function mapi_openentry(mixed $ses, ?string $entryid = null, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -178,7 +182,7 @@ function mapi_openentry(mixed $ses, ?string $entryid = null, ?int $flags = 0): m
  * @return resource|false
  */
 function mapi_ab_openentry(mixed $abk, ?string $entryid = null, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -188,7 +192,7 @@ function mapi_ab_openentry(mixed $abk, ?string $entryid = null, ?int $flags = 0)
  * @return array|false
  */
 function mapi_ab_resolvename(mixed $abk, array $names, ?int $flags = 0): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -196,7 +200,7 @@ function mapi_ab_resolvename(mixed $abk, array $names, ?int $flags = 0): mixed {
  * @return string|false
  */
 function mapi_ab_getdefaultdir(mixed $abk): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -205,7 +209,7 @@ function mapi_ab_getdefaultdir(mixed $abk): string|bool {
  * @return string|false
  */
 function mapi_msgstore_createentryid(mixed $store, string $mailbox_dn): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -215,7 +219,7 @@ function mapi_msgstore_createentryid(mixed $store, string $mailbox_dn): string|b
  * @return bool
  */
 function mapi_msgstore_getarchiveentryid(mixed $store, string $user, string $server): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -225,7 +229,7 @@ function mapi_msgstore_getarchiveentryid(mixed $store, string $user, string $ser
  * @return resource|false
  */
 function mapi_msgstore_openentry(mixed $store, ?string $entryid = null, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -233,7 +237,7 @@ function mapi_msgstore_openentry(mixed $store, ?string $entryid = null, ?int $fl
  * @return resource|false
  */
 function mapi_msgstore_getreceivefolder(mixed $store): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -243,7 +247,7 @@ function mapi_msgstore_getreceivefolder(mixed $store): mixed {
  * @return string|false
  */
 function mapi_msgstore_entryidfromsourcekey(mixed $store, string $sk_fld, ?string $sk_msg = null): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -254,7 +258,7 @@ function mapi_msgstore_entryidfromsourcekey(mixed $store, string $sk_fld, ?strin
  * @return int|false
  */
 function mapi_msgstore_advise(mixed $store, string $entryid, int $event_mask, mixed $sink): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -263,7 +267,7 @@ function mapi_msgstore_advise(mixed $store, string $entryid, int $event_mask, mi
  * @return bool
  */
 function mapi_msgstore_unadvise(mixed $store, int $sub_id): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -272,14 +276,14 @@ function mapi_msgstore_unadvise(mixed $store, int $sub_id): bool {
  * @return bool
  */
 function mapi_msgstore_abortsubmit(mixed $store, ?string $entryid = null): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
  * @return resource|false
  */
 function mapi_sink_create(): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -288,7 +292,7 @@ function mapi_sink_create(): mixed {
  * @return mixed
  */
 function mapi_sink_timedwait(mixed $sink, int $time): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -298,7 +302,7 @@ function mapi_sink_timedwait(mixed $sink, int $time): mixed {
  * @return mixed
  */
 function mapi_table_queryallrows(mixed $table, ?array $proptags = null, ?array $restrict = null): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -309,7 +313,7 @@ function mapi_table_queryallrows(mixed $table, ?array $proptags = null, ?array $
  * @return mixed
  */
 function mapi_table_queryrows(mixed $table, ?array $proptags = null, ?int $start = 0, ?int $limit = 0): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -317,7 +321,7 @@ function mapi_table_queryrows(mixed $table, ?array $proptags = null, ?int $start
  * @return int|false
  */
 function mapi_table_getrowcount(mixed $table): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -327,7 +331,7 @@ function mapi_table_getrowcount(mixed $table): int|bool {
  * @return bool
  */
 function mapi_table_setcolumns(mixed $table, array $columns, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -337,7 +341,7 @@ function mapi_table_setcolumns(mixed $table, array $columns, ?int $flags = 0): b
  * @return int|false
  */
 function mapi_table_seekrow(mixed $table, int $bookmark, int $rowcount): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -347,7 +351,7 @@ function mapi_table_seekrow(mixed $table, int $bookmark, int $rowcount): int|boo
  * @return bool
  */
 function mapi_table_sort(mixed $table, array $sortcrit, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -357,7 +361,7 @@ function mapi_table_sort(mixed $table, array $sortcrit, ?int $flags = 0): bool {
  * @return bool
  */
 function mapi_table_restrict(mixed $table, array $restrict, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -368,7 +372,7 @@ function mapi_table_restrict(mixed $table, array $restrict, ?int $flags = 0): bo
  * @return int|false
  */
 function mapi_table_findrow(mixed $table, array $restrict, ?int $bookmark = 0, ?int $flags = 0): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -376,7 +380,7 @@ function mapi_table_findrow(mixed $table, array $restrict, ?int $bookmark = 0, ?
  * @return int|false
  */
 function mapi_table_createbookmark(mixed $table): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -385,7 +389,7 @@ function mapi_table_createbookmark(mixed $table): int|bool {
  * @return bool
  */
 function mapi_table_freebookmark(mixed $table, int $bookmark): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -394,7 +398,7 @@ function mapi_table_freebookmark(mixed $table, int $bookmark): bool {
  * @return resource|false
  */
 function mapi_folder_gethierarchytable(mixed $fld, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -403,7 +407,7 @@ function mapi_folder_gethierarchytable(mixed $fld, ?int $flags = 0): mixed {
  * @return resource|false
  */
 function mapi_folder_getcontentstable(mixed $fld, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -411,7 +415,7 @@ function mapi_folder_getcontentstable(mixed $fld, ?int $flags = 0): mixed {
  * @return resource|false
  */
 function mapi_folder_getrulestable(mixed $fld): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -420,7 +424,7 @@ function mapi_folder_getrulestable(mixed $fld): mixed {
  * @return resource|false
  */
 function mapi_folder_createmessage(mixed $fld, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -432,7 +436,7 @@ function mapi_folder_createmessage(mixed $fld, ?int $flags = 0): mixed {
  * @return resource|false
  */
 function mapi_folder_createfolder(mixed $fld, string $fname, ?string $comment = null, ?int $flags = 0, ?int $folder_type = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -442,7 +446,7 @@ function mapi_folder_createfolder(mixed $fld, string $fname, ?string $comment = 
  * @return bool
  */
 function mapi_folder_deletemessages(mixed $fld, array $entryids, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -453,7 +457,7 @@ function mapi_folder_deletemessages(mixed $fld, array $entryids, ?int $flags = 0
  * @return bool
  */
 function mapi_folder_copymessages(mixed $srcfld, array $entryids, mixed $dstfld, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -462,7 +466,7 @@ function mapi_folder_copymessages(mixed $srcfld, array $entryids, mixed $dstfld,
  * @return bool
  */
 function mapi_folder_emptyfolder(mixed $fld, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -474,7 +478,7 @@ function mapi_folder_emptyfolder(mixed $fld, ?int $flags = 0): bool {
  * @return bool
  */
 function mapi_folder_copyfolder(mixed $srcfld, string $entryid, mixed $dstfld, ?string $name, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -484,7 +488,7 @@ function mapi_folder_copyfolder(mixed $srcfld, string $entryid, mixed $dstfld, ?
  * @return bool
  */
 function mapi_folder_deletefolder(mixed $fld, string $entryid, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -494,7 +498,7 @@ function mapi_folder_deletefolder(mixed $fld, string $entryid, ?int $flags = 0):
  * @return bool
  */
 function mapi_folder_setreadflags(mixed $fld, array $entryids, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -505,7 +509,7 @@ function mapi_folder_setreadflags(mixed $fld, array $entryids, ?int $flags = 0):
  * @return bool
  */
 function mapi_folder_setsearchcriteria(mixed $fld, array $restriction, array $folderlist, int $flags): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -514,7 +518,7 @@ function mapi_folder_setsearchcriteria(mixed $fld, array $restriction, array $fo
  * @return mixed
  */
 function mapi_folder_getsearchcriteria(mixed $fld, ?int $flags = 0): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -524,7 +528,7 @@ function mapi_folder_getsearchcriteria(mixed $fld, ?int $flags = 0): mixed {
  * @return bool
  */
 function mapi_folder_modifyrules(mixed $fld, array $rows, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -532,7 +536,7 @@ function mapi_folder_modifyrules(mixed $fld, array $rows, ?int $flags = 0): bool
  * @return resource|false
  */
 function mapi_message_getattachmenttable(mixed $msg): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -540,7 +544,7 @@ function mapi_message_getattachmenttable(mixed $msg): mixed {
  * @return resource|false
  */
 function mapi_message_getrecipienttable(mixed $msg): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -549,7 +553,7 @@ function mapi_message_getrecipienttable(mixed $msg): mixed {
  * @return resource|false
  */
 function mapi_message_openattach(mixed $msg, int $id): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -558,7 +562,7 @@ function mapi_message_openattach(mixed $msg, int $id): mixed {
  * @return resource|false
  */
 function mapi_message_createattach(mixed $msg, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -568,7 +572,7 @@ function mapi_message_createattach(mixed $msg, ?int $flags = 0): mixed {
  * @return bool
  */
 function mapi_message_deleteattach(mixed $msg, int $id = 0, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -578,7 +582,7 @@ function mapi_message_deleteattach(mixed $msg, int $id = 0, ?int $flags = 0): bo
  * @return bool
  */
 function mapi_message_modifyrecipients(mixed $msg, int $flags, array $adrlist): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -586,7 +590,7 @@ function mapi_message_modifyrecipients(mixed $msg, int $flags, array $adrlist): 
  * @return bool
  */
 function mapi_message_submitmessage(mixed $msg): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -595,7 +599,7 @@ function mapi_message_submitmessage(mixed $msg): bool {
  * @return bool
  */
 function mapi_message_setreadflag(mixed $msg, int $flags): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -606,7 +610,7 @@ function mapi_message_setreadflag(mixed $msg, int $flags): bool {
  * @return resource|false
  */
 function mapi_openpropertytostream(mixed $any, int $proptag, ?int $flags = 0, ?string $guid = null): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -615,7 +619,7 @@ function mapi_openpropertytostream(mixed $any, int $proptag, ?int $flags = 0, ?s
  * @return int|false
  */
 function mapi_stream_write(mixed $stream, string $data): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -624,7 +628,7 @@ function mapi_stream_write(mixed $stream, string $data): int|bool {
  * @return string|false
  */
 function mapi_stream_read(mixed $stream, int $size): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -632,7 +636,7 @@ function mapi_stream_read(mixed $stream, int $size): string|bool {
  * @return array|false
  */
 function mapi_stream_stat(mixed $stream): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -642,7 +646,7 @@ function mapi_stream_stat(mixed $stream): array|bool {
  * @return bool
  */
 function mapi_stream_seek(mixed $stream, int $offset, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -650,7 +654,7 @@ function mapi_stream_seek(mixed $stream, int $offset, ?int $flags = 0): bool {
  * @return bool
  */
 function mapi_stream_commit(mixed $stream): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -659,14 +663,14 @@ function mapi_stream_commit(mixed $stream): bool {
  * @return bool
  */
 function mapi_stream_setsize(mixed $stream, int $size): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
  * @return resource|false
  */
 function mapi_stream_create(): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -675,7 +679,7 @@ function mapi_stream_create(): mixed {
  * @return resource|false
  */
 function mapi_attach_openobj(mixed $attach, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -684,7 +688,7 @@ function mapi_attach_openobj(mixed $attach, ?int $flags = 0): mixed {
  * @return bool
  */
 function mapi_savechanges(mixed $any, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -693,7 +697,7 @@ function mapi_savechanges(mixed $any, ?int $flags = 0): bool {
  * @return array|false
  */
 function mapi_getprops(mixed $any, ?array $proptags = null): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -702,7 +706,7 @@ function mapi_getprops(mixed $any, ?array $proptags = null): mixed {
  * @return bool
  */
 function mapi_setprops(mixed $any, array $propvals): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -714,7 +718,7 @@ function mapi_setprops(mixed $any, array $propvals): bool {
  * @return bool
  */
 function mapi_copyto(mixed $src, array $excliid, array $exclprop, mixed $dst, ?int $flags = 0): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -726,7 +730,7 @@ function mapi_copyto(mixed $src, array $excliid, array $exclprop, mixed $dst, ?i
  * @return resource|false
  */
 function mapi_openproperty(mixed $any, int $proptag, ?string $iid = null, ?int $interfaceflags = 0, ?int $flags = 0): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -735,7 +739,7 @@ function mapi_openproperty(mixed $any, int $proptag, ?string $iid = null, ?int $
  * @return bool
  */
 function mapi_deleteprops(mixed $any, array $proptags): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -744,7 +748,7 @@ function mapi_deleteprops(mixed $any, array $proptags): bool {
  * @return array|false
  */
 function mapi_getnamesfromids(mixed $any, ?array $names = null): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -754,7 +758,7 @@ function mapi_getnamesfromids(mixed $any, ?array $names = null): array|bool {
  * @return array|false
  */
 function mapi_getidsfromnames(mixed $store, array $names, ?array $guids = null): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -762,7 +766,7 @@ function mapi_getidsfromnames(mixed $store, array $names, ?array $guids = null):
  * @return string|false
  */
 function mapi_decompressrtf(string $data): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -771,7 +775,7 @@ function mapi_decompressrtf(string $data): string|bool {
  * @return array|false
  */
 function mapi_zarafa_getpermissionrules(mixed $any, int $type): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -780,7 +784,7 @@ function mapi_zarafa_getpermissionrules(mixed $any, int $type): array|bool {
  * @return bool
  */
 function mapi_zarafa_setpermissionrules(mixed $any, array $perms): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -791,7 +795,7 @@ function mapi_zarafa_setpermissionrules(mixed $any, array $perms): bool {
  * @return array|false
  */
 function mapi_getuserfreebusy(mixed $ses, string $entryid, int $start, int $end): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -802,7 +806,7 @@ function mapi_getuserfreebusy(mixed $ses, string $entryid, int $start, int $end)
  * @return string|false
  */
 function mapi_getuserfreebusyical(mixed $ses, string $entryid, int $start, int $end): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -817,7 +821,7 @@ function mapi_getuserfreebusyical(mixed $ses, string $entryid, int $start, int $
  * @return bool
  */
 function mapi_exportchanges_config(mixed $e, mixed $stream, int $flags, mixed $i, mixed $restrict, mixed $inclprop, mixed $exclprop, int $bufsize): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -825,7 +829,7 @@ function mapi_exportchanges_config(mixed $e, mixed $stream, int $flags, mixed $i
  * @return mixed
  */
 function mapi_exportchanges_synchronize(mixed $x): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -834,7 +838,7 @@ function mapi_exportchanges_synchronize(mixed $x): mixed {
  * @return bool
  */
 function mapi_exportchanges_updatestate(mixed $e, mixed $stream): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -842,7 +846,7 @@ function mapi_exportchanges_updatestate(mixed $e, mixed $stream): bool {
  * @return int|false
  */
 function mapi_exportchanges_getchangecount(mixed $r): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -852,7 +856,7 @@ function mapi_exportchanges_getchangecount(mixed $r): int|bool {
  * @return bool
  */
 function mapi_importcontentschanges_config(mixed $i, mixed $stream, int $flags): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -861,7 +865,7 @@ function mapi_importcontentschanges_config(mixed $i, mixed $stream, int $flags):
  * @return bool
  */
 function mapi_importcontentschanges_updatestate(mixed $i, mixed $stream = null): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -872,7 +876,7 @@ function mapi_importcontentschanges_updatestate(mixed $i, mixed $stream = null):
  * @return bool
  */
 function mapi_importcontentschanges_importmessagechange(mixed $i, array $props, int $flags, mixed &$msg): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -882,7 +886,7 @@ function mapi_importcontentschanges_importmessagechange(mixed $i, array $props, 
  * @return bool
  */
 function mapi_importcontentschanges_importmessagedeletion(mixed $i, int $flags, array $msgs): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -891,7 +895,7 @@ function mapi_importcontentschanges_importmessagedeletion(mixed $i, int $flags, 
  * @return bool
  */
 function mapi_importcontentschanges_importperuserreadstatechange(mixed $i, array $readst): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -904,7 +908,7 @@ function mapi_importcontentschanges_importperuserreadstatechange(mixed $i, array
  * @return bool
  */
 function mapi_importcontentschanges_importmessagemove(mixed $r, string $a, string $b, string $c, string $d, string $e): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -914,7 +918,7 @@ function mapi_importcontentschanges_importmessagemove(mixed $r, string $a, strin
  * @return bool
  */
 function mapi_importhierarchychanges_config(mixed $i, mixed $stream, int $flags): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -923,7 +927,7 @@ function mapi_importhierarchychanges_config(mixed $i, mixed $stream, int $flags)
  * @return bool
  */
 function mapi_importhierarchychanges_updatestate(mixed $i, mixed $stream): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -932,7 +936,7 @@ function mapi_importhierarchychanges_updatestate(mixed $i, mixed $stream): bool 
  * @return bool
  */
 function mapi_importhierarchychanges_importfolderchange(mixed $i, array $props): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -942,7 +946,7 @@ function mapi_importhierarchychanges_importfolderchange(mixed $i, array $props):
  * @return bool
  */
 function mapi_importhierarchychanges_importfolderdeletion(mixed $i, int $flags, array $folders): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -950,7 +954,7 @@ function mapi_importhierarchychanges_importfolderdeletion(mixed $i, int $flags, 
  * @return resource|false
  */
 function mapi_wrap_importcontentschanges(object &$object): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -958,7 +962,7 @@ function mapi_wrap_importcontentschanges(object &$object): mixed {
  * @return resource|false
  */
 function mapi_wrap_importhierarchychanges(object &$object): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -969,7 +973,7 @@ function mapi_wrap_importhierarchychanges(object &$object): mixed {
  * @return resource|false
  */
 function mapi_inetmapi_imtoinet(mixed $ses, mixed $abk, mixed $msg, array $opts): mixed {
-	return fopen('php://memory', 'r+');
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? fopen('php://memory', 'r+');
 }
 
 /**
@@ -982,7 +986,7 @@ function mapi_inetmapi_imtoinet(mixed $ses, mixed $abk, mixed $msg, array $opts)
  * @return bool
  */
 function mapi_inetmapi_imtomapi(mixed $ses, mixed $store, mixed $abk, mixed $msg, string $str, array $opts): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -995,7 +999,7 @@ function mapi_inetmapi_imtomapi(mixed $ses, mixed $store, mixed $abk, mixed $msg
  * @return bool
  */
 function mapi_icaltomapi(mixed $ses, mixed $store, mixed $abk, mixed $msg, string $str, bool $norecip): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -1005,7 +1009,7 @@ function mapi_icaltomapi(mixed $ses, mixed $store, mixed $abk, mixed $msg, strin
  * @return array|false
  */
 function mapi_icaltomapi2(mixed $abk, mixed $fld, string $ics): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -1016,7 +1020,7 @@ function mapi_icaltomapi2(mixed $abk, mixed $fld, string $ics): array|bool {
  * @return string|false
  */
 function mapi_mapitoical(mixed $ses, mixed $abk, mixed $msg, array $opts): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -1027,7 +1031,7 @@ function mapi_mapitoical(mixed $ses, mixed $abk, mixed $msg, array $opts): strin
  * @return bool
  */
 function mapi_vcftomapi(mixed $ses, mixed $store, mixed $msg, string $str): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -1036,7 +1040,7 @@ function mapi_vcftomapi(mixed $ses, mixed $store, mixed $msg, string $str): bool
  * @return array|false
  */
 function mapi_vcftomapi2(mixed $fld, string $vcard): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -1047,7 +1051,7 @@ function mapi_vcftomapi2(mixed $fld, string $vcard): array|bool {
  * @return string|false
  */
 function mapi_mapitovcf(mixed $ses, mixed $abk, mixed $msg, array $opts): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -1055,7 +1059,7 @@ function mapi_mapitovcf(mixed $ses, mixed $abk, mixed $msg, array $opts): string
  * @return bool
  */
 function mapi_enable_exceptions(string $cls): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -1063,7 +1067,7 @@ function mapi_enable_exceptions(string $cls): bool {
  * @return bool
  */
 function mapi_feature(string $ft): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -1072,7 +1076,7 @@ function mapi_feature(string $ft): bool {
  * @return int
  */
 function kc_session_save(mixed $ses, string &$data): int {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -1081,7 +1085,7 @@ function kc_session_save(mixed $ses, string &$data): int {
  * @return int
  */
 function kc_session_restore(mixed $data, mixed &$res): int {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -1089,7 +1093,7 @@ function kc_session_restore(mixed $data, mixed &$res): int {
  * @return array|false
  */
 function nsp_getuserinfo(string $username): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 /**
@@ -1099,7 +1103,7 @@ function nsp_getuserinfo(string $username): array|bool {
  * @return bool
  */
 function nsp_setuserpasswd(string $username, string $oldpass, string $newpass): bool {
-	return false;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? false;
 }
 
 /**
@@ -1107,7 +1111,7 @@ function nsp_setuserpasswd(string $username, string $oldpass, string $newpass): 
  * @return string|false
  */
 function nsp_essdn_to_username(string $essdn): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -1117,7 +1121,7 @@ function nsp_essdn_to_username(string $essdn): string|bool {
  * @return mixed
  */
 function mapi_linkmessage(mixed $ses, ?string $srcheid = null, ?string $msgeid = null): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -1127,7 +1131,7 @@ function mapi_linkmessage(mixed $ses, ?string $srcheid = null, ?string $msgeid =
  * @return mixed
  */
 function mapi_linkmessages(mixed $ses, string $srcheid, array $msgeids): mixed {
-	return null;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? null;
 }
 
 /**
@@ -1135,7 +1139,7 @@ function mapi_linkmessages(mixed $ses, string $srcheid, array $msgeids): mixed {
  * @return string|false
  */
 function mapi_ianatz_to_tzdef(string $tz): string|bool {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -1143,7 +1147,7 @@ function mapi_ianatz_to_tzdef(string $tz): string|bool {
  * @return string
  */
 function mapi_strerror(int $code): string {
-	return '';
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? '';
 }
 
 /**
@@ -1152,7 +1156,7 @@ function mapi_strerror(int $code): string {
  * @return int|false
  */
 function mapi_getsendpermissions(mixed $session, string $entryid): int|bool {
-	return 0;
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? 0;
 }
 
 /**
@@ -1161,7 +1165,7 @@ function mapi_getsendpermissions(mixed $session, string $entryid): int|bool {
  * @return array|false
  */
 function mapi_getdelegates(mixed $session, int $mode): array|bool {
-	return [];
+	return $GLOBALS['MAPI_STUB_RESULTS'][__FUNCTION__] ?? [];
 }
 
 if (!defined('MAPIDEFS_LOADED')) {

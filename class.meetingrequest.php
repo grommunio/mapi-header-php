@@ -871,7 +871,6 @@ class Meetingrequest {
 	}
 
 	private function acceptRecurringRequest(array $messageprops, bool $tentative, bool $move, bool $userAction, mixed $store, mixed $calFolder, bool $isDelegate): mixed {
-		$calendarItem = false;
 		$nonRecurr2Recurr = false; // non-recurring meeting was converted to a recurring
 
 		// Find main recurring item based on GlobalID (0x3)
@@ -3363,7 +3362,7 @@ class Meetingrequest {
 		}
 
 		// Set startdate and enddate of exception
-		if ($cancel && $recurObject) {
+		if ($cancel && $recurObject instanceof Recurrence) {
 			$newmessageprops[$this->proptags['startdate']] = $recurObject->getOccurrenceStart($basedate);
 			$newmessageprops[$this->proptags['duedate']] = $recurObject->getOccurrenceEnd($basedate);
 		}
