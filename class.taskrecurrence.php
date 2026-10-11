@@ -268,23 +268,7 @@ class TaskRecurrence extends BaseRecurrence {
 	 * @param bool $markComplete true if existing occurrence has to be marked complete
 	 */
 	public function regenerateTask(bool $markComplete): array {
-		// Get all properties
-		$taskItemProps = mapi_getprops($this->message);
-
-		if (isset($this->action["subject"])) {
-			$taskItemProps[$this->proptags["subject"]] = $this->action["subject"];
-		}
-		if (isset($this->action["importance"])) {
-			$taskItemProps[$this->proptags["importance"]] = $this->action["importance"];
-		}
-		if (isset($this->action["startdate"])) {
-			$taskItemProps[$this->proptags["startdate"]] = $this->action["startdate"];
-			$taskItemProps[$this->proptags["commonstart"]] = $this->action["startdate"];
-		}
-		if (isset($this->action["duedate"])) {
-			$taskItemProps[$this->proptags["duedate"]] = $this->action["duedate"];
-			$taskItemProps[$this->proptags["commonend"]] = $this->action["duedate"];
-		}
+		$taskItemProps = $this->getOccurrenceProps();
 
 		$folder = mapi_msgstore_openentry($this->store, $taskItemProps[PR_PARENT_ENTRYID]);
 		$newMessage = mapi_folder_createmessage($folder);
@@ -310,6 +294,46 @@ class TaskRecurrence extends BaseRecurrence {
 		$taskItemProps[$this->proptags["side_effects"]] = 1296;
 		$taskItemProps[$this->proptags["icon_index"]] = 1280;
 
+		$this->copyRecipients($newMessage);
+		$this->copyAttachments($newMessage);
+
+		mapi_setprops($newMessage, $taskItemProps);
+		mapi_savechanges($newMessage);
+
+		// Update body of original message
+		$this->prependBodySeparator();
+
+		// We need these properties to notify client
+		return mapi_getprops($newMessage, [PR_ENTRYID, PR_PARENT_ENTRYID, PR_STORE_ENTRYID]);
+	}
+
+	/**
+	 * Properties of the current occurrence; the subject, importance and dates
+	 * of the action replace those of the message.
+	 */
+	private function getOccurrenceProps(): array {
+		// Get all properties
+		$taskItemProps = mapi_getprops($this->message);
+
+		if (isset($this->action["subject"])) {
+			$taskItemProps[$this->proptags["subject"]] = $this->action["subject"];
+		}
+		if (isset($this->action["importance"])) {
+			$taskItemProps[$this->proptags["importance"]] = $this->action["importance"];
+		}
+		if (isset($this->action["startdate"])) {
+			$taskItemProps[$this->proptags["startdate"]] = $this->action["startdate"];
+			$taskItemProps[$this->proptags["commonstart"]] = $this->action["startdate"];
+		}
+		if (isset($this->action["duedate"])) {
+			$taskItemProps[$this->proptags["duedate"]] = $this->action["duedate"];
+			$taskItemProps[$this->proptags["commonend"]] = $this->action["duedate"];
+		}
+
+		return $taskItemProps;
+	}
+
+	private function copyRecipients(mixed $newMessage): void {
 		// Copy recipients
 		$recipienttable = mapi_message_getrecipienttable($this->message);
 		$recipients = mapi_table_queryallrows($recipienttable, [PR_ENTRYID, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID]);
@@ -320,7 +344,9 @@ class TaskRecurrence extends BaseRecurrence {
 			mapi_message_modifyrecipients($newMessage, MODRECIP_REMOVE, [$recipient]);
 		}
 		mapi_message_modifyrecipients($newMessage, MODRECIP_ADD, $recipients);
+	}
 
+	private function copyAttachments(mixed $newMessage): void {
 		// Copy attachments
 		$attachmentTable = mapi_message_getattachmenttable($this->message);
 		if ($attachmentTable) {
@@ -334,11 +360,12 @@ class TaskRecurrence extends BaseRecurrence {
 				mapi_savechanges($attach_newResourceMsg);
 			}
 		}
+	}
 
-		mapi_setprops($newMessage, $taskItemProps);
-		mapi_savechanges($newMessage);
-
-		// Update body of original message
+	/**
+	 * Puts a separator line before the body of the recurring task, unless it has one.
+	 */
+	private function prependBodySeparator(): void {
 		// A task without a body has no PR_BODY to open
 		$msgbody = readMapiProp($this->message, PR_BODY, mapi_getprops($this->message, [PR_BODY])) ?? '';
 		$msgbody = trim((string) $msgbody, "\0");
@@ -348,9 +375,6 @@ class TaskRecurrence extends BaseRecurrence {
 			$msgbody = $separator . $msgbody;
 			writeMapiPropStream($this->message, PR_BODY, $msgbody);
 		}
-
-		// We need these properties to notify client
-		return mapi_getprops($newMessage, [PR_ENTRYID, PR_PARENT_ENTRYID, PR_STORE_ENTRYID]);
 	}
 
 	/**
