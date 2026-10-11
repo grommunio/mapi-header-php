@@ -140,7 +140,6 @@ class Recurrence extends BaseRecurrence {
 
 		$this->invalidateExceptionIndex();
 		$baseday = $this->dayStartOf($base_date);
-		$basetime = $baseday + $this->recur["startocc"] * 60;
 
 		// Remove any pre-existing exception on this base date
 		if ($this->isException($baseday)) {
@@ -148,66 +147,7 @@ class Recurrence extends BaseRecurrence {
 		}
 
 		if (!$delete) {
-			$props = [];
-			$changed_item = [];
-			// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date.
-			// The changed ones go into the recurrence blob under the names parseRecurrence() uses.
-			$changedNames = [
-				"subject" => "subject",
-				"location" => "location",
-				"label" => "label",
-				"reminder" => "reminder_set",
-				"reminder_minutes" => "remind_before",
-				"alldayevent" => "alldayevent",
-				"busystatus" => "busystatus",
-			];
-			foreach ($changedNames as $propname => $changedname) {
-				if (isset($this->messageprops[$this->proptags[$propname]])) {
-					$props[$this->proptags[$propname]] = $this->messageprops[$this->proptags[$propname]];
-					if (isset($exception_props[$this->proptags[$propname]]) &&
-						$this->messageprops[$this->proptags[$propname]] != $exception_props[$this->proptags[$propname]]) {
-						$changed_item[$changedname] = $exception_props[$this->proptags[$propname]];
-					}
-				}
-				elseif (isset($exception_props[$this->proptags[$propname]])) {
-					$changed_item[$changedname] = $exception_props[$this->proptags[$propname]];
-				}
-			}
-
-			$props[PR_MESSAGE_CLASS] = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
-			unset($exception_props[PR_MESSAGE_CLASS], $exception_props[PR_ICON_INDEX]);
-
-			$props = $exception_props + $props;
-
-			// Basedate in the exception attachment is the GMT time at which the original occurrence would have been
-			$props[$this->proptags["basedate"]] = $this->toGMT($this->tz, $basetime);
-
-			if (!isset($exception_props[$this->proptags["startdate"]])) {
-				$props[$this->proptags["startdate"]] = $this->getOccurrenceStart($base_date);
-			}
-
-			if (!isset($exception_props[$this->proptags["duedate"]])) {
-				$props[$this->proptags["duedate"]] = $this->getOccurrenceEnd($base_date);
-			}
-
-			// synchronize commonstart/commonend with startdate/duedate
-			if (isset($props[$this->proptags["startdate"]])) {
-				$props[$this->proptags["commonstart"]] = $props[$this->proptags["startdate"]];
-			}
-
-			if (isset($props[$this->proptags["duedate"]])) {
-				$props[$this->proptags["commonend"]] = $props[$this->proptags["duedate"]];
-			}
-
-			// Save the data into an attachment
-			$this->createExceptionAttachment($props, $exception_recips, $copy_attach_from);
-
-			$changed_item["basedate"] = $baseday;
-			$changed_item["start"] = $this->fromGMT($this->tz, $props[$this->proptags["startdate"]]);
-			$changed_item["end"] = $this->fromGMT($this->tz, $props[$this->proptags["duedate"]]);
-
-			// Add the changed occurrence to the list
-			$this->recur["changed_occurrences"][] = $changed_item;
+			$this->addChangedOccurrence($exception_props, $base_date, $baseday, $exception_recips, $copy_attach_from);
 		}
 		else {
 			// Delete the occurrence by placing it in the deleted occurrences list
@@ -223,6 +163,73 @@ class Recurrence extends BaseRecurrence {
 		$this->saveRecurrence();
 
 		return true;
+	}
+
+	private function addChangedOccurrence(array $exception_props, int $base_date, int $baseday, array $exception_recips, mixed $copy_attach_from): void {
+		$props = [];
+		$changed_item = [];
+		// Properties in the attachment are the properties of the base object, plus $exception_props plus the base date.
+		// The changed ones go into the recurrence blob under the names parseRecurrence() uses.
+		$changedNames = [
+			"subject" => "subject",
+			"location" => "location",
+			"label" => "label",
+			"reminder" => "reminder_set",
+			"reminder_minutes" => "remind_before",
+			"alldayevent" => "alldayevent",
+			"busystatus" => "busystatus",
+		];
+		foreach ($changedNames as $propname => $changedname) {
+			if (isset($this->messageprops[$this->proptags[$propname]])) {
+				$props[$this->proptags[$propname]] = $this->messageprops[$this->proptags[$propname]];
+				if (isset($exception_props[$this->proptags[$propname]]) &&
+					$this->messageprops[$this->proptags[$propname]] != $exception_props[$this->proptags[$propname]]) {
+					$changed_item[$changedname] = $exception_props[$this->proptags[$propname]];
+				}
+			}
+			elseif (isset($exception_props[$this->proptags[$propname]])) {
+				$changed_item[$changedname] = $exception_props[$this->proptags[$propname]];
+			}
+		}
+
+		$props[PR_MESSAGE_CLASS] = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
+		unset($exception_props[PR_MESSAGE_CLASS], $exception_props[PR_ICON_INDEX]);
+
+		$props = $exception_props + $props;
+
+		// Basedate in the exception attachment is the GMT time at which the original occurrence would have been
+		$props[$this->proptags["basedate"]] = $this->toGMT($this->tz, $baseday + $this->recur["startocc"] * 60);
+
+		if (!isset($exception_props[$this->proptags["startdate"]])) {
+			$props[$this->proptags["startdate"]] = $this->getOccurrenceStart($base_date);
+		}
+
+		if (!isset($exception_props[$this->proptags["duedate"]])) {
+			$props[$this->proptags["duedate"]] = $this->getOccurrenceEnd($base_date);
+		}
+
+		$this->syncCommonStartEnd($props);
+
+		// Save the data into an attachment
+		$this->createExceptionAttachment($props, $exception_recips, $copy_attach_from);
+
+		$changed_item["basedate"] = $baseday;
+		$changed_item["start"] = $this->fromGMT($this->tz, $props[$this->proptags["startdate"]]);
+		$changed_item["end"] = $this->fromGMT($this->tz, $props[$this->proptags["duedate"]]);
+
+		// Add the changed occurrence to the list
+		$this->recur["changed_occurrences"][] = $changed_item;
+	}
+
+	private function syncCommonStartEnd(array &$props): void {
+		// synchronize commonstart/commonend with startdate/duedate
+		if (isset($props[$this->proptags["startdate"]])) {
+			$props[$this->proptags["commonstart"]] = $props[$this->proptags["startdate"]];
+		}
+
+		if (isset($props[$this->proptags["duedate"]])) {
+			$props[$this->proptags["commonend"]] = $props[$this->proptags["duedate"]];
+		}
 	}
 
 	/**
