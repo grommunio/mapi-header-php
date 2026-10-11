@@ -125,6 +125,12 @@ class Meetingrequest {
 	private $nonAcceptingResources;
 	private $recipientDisplayname;
 
+	// the address book of the session, opened once per request
+	private mixed $addressBook = null;
+
+	// SMTP addresses by address book entryid, looked up once per request
+	private array $smtpAddresses = [];
+
 	/**
 	 * Constructor.
 	 *
@@ -2386,7 +2392,7 @@ class Meetingrequest {
 	 * @return mixed store of the user, null if the user cannot be resolved
 	 */
 	public function openCustomUserStore(string $ownerentryid): mixed {
-		$ab = mapi_openaddressbook($this->session);
+		$ab = $this->openAddressBook();
 
 		try {
 			$mailuser = mapi_ab_openentry($ab, $ownerentryid);
@@ -2745,14 +2751,25 @@ class Meetingrequest {
 		return $this->getSMTPAddress($entryid1) == $this->getSMTPAddress($entryid2);
 	}
 
+	private function openAddressBook(): mixed {
+		return $this->addressBook ??= mapi_openaddressbook($this->session);
+	}
+
 	// Gets the SMTP address of the passed addressbook entryid
 	public function getSMTPAddress(string $entryid): false|string {
 		if (!$this->session) {
 			return false;
 		}
+		if (!array_key_exists($entryid, $this->smtpAddresses)) {
+			$this->smtpAddresses[$entryid] = $this->lookupSMTPAddress($entryid);
+		}
 
+		return $this->smtpAddresses[$entryid];
+	}
+
+	private function lookupSMTPAddress(string $entryid): false|string {
 		try {
-			$ab = mapi_openaddressbook($this->session);
+			$ab = $this->openAddressBook();
 			$abitem = mapi_ab_openentry($ab, $entryid);
 
 			if (!$abitem) {
@@ -2834,7 +2851,7 @@ class Meetingrequest {
 			return false;
 		}
 
-		$ab = mapi_openaddressbook($this->session);
+		$ab = $this->openAddressBook();
 
 		$zarafaUser = mapi_ab_openentry($ab, $ownerEntryId);
 		if (!$zarafaUser) {
@@ -4785,7 +4802,7 @@ class Meetingrequest {
 		}
 
 		try {
-			$rows = mapi_ab_resolvename(mapi_openaddressbook($this->session), [[PR_DISPLAY_NAME => $smtp]], EMS_AB_ADDRESS_LOOKUP);
+			$rows = mapi_ab_resolvename($this->openAddressBook(), [[PR_DISPLAY_NAME => $smtp]], EMS_AB_ADDRESS_LOOKUP);
 		}
 		catch (MAPIException $e) {
 			$e->setHandled();
@@ -4836,13 +4853,22 @@ class Meetingrequest {
 	 * @return array rows of $forwarded, each address once
 	 */
 	private function getNewForwardRecipients(array $existing, array $forwarded): array {
+		// the forwarded rows carry an SMTP address and no entryid, so
+		// compareRecipients() would match them by that address alone
+		$known = [];
+		foreach ($existing as $recip) {
+			$smtp = $this->getRecipientSMTPAddress($recip);
+			if ($smtp !== '') {
+				$known[strtolower($smtp)] = true;
+			}
+		}
 		$new = [];
 		foreach ($forwarded as $recip) {
-			foreach (array_merge($existing, $new) as $known) {
-				if ($this->compareRecipients($known, $recip)) {
-					continue 2;
-				}
+			$smtp = strtolower($recip[PR_SMTP_ADDRESS]);
+			if (isset($known[$smtp])) {
+				continue;
 			}
+			$known[$smtp] = true;
 			$new[] = $recip;
 		}
 
