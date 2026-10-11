@@ -918,11 +918,11 @@ abstract class BaseRecurrence {
 	private function getMonthWeekdayEndDate(float|int $occenddate, int $nday, int $weekdays): float|int {
 		if ($nday == 5) {
 			// Set date on the last day of the last month
-			$occenddate += ((int) gmdate("t", $occenddate) - (int) gmdate("j", $occenddate)) * 24 * 60 * 60;
+			$occenddate += ((int) gmdate("t", (int) $occenddate) - (int) gmdate("j", (int) $occenddate)) * 24 * 60 * 60;
 		}
 		else {
 			// Set date on the first day of the last month
-			$occenddate -= ((int) gmdate("j", $occenddate) - 1) * 24 * 60 * 60;
+			$occenddate -= ((int) gmdate("j", (int) $occenddate) - 1) * 24 * 60 * 60;
 		}
 
 		$dayofweek = (int) gmdate("w", (int) $occenddate);
@@ -1249,7 +1249,7 @@ abstract class BaseRecurrence {
 	}
 
 	private function serializeRecurrenceExceptions(array $items): string {
-		if (!$items) {
+		if ($items === []) {
 			return pack("vVV", 0, 0, 0);
 		}
 		$rdata = pack("v", count($items));
