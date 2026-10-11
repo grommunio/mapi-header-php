@@ -1,0 +1,429 @@
+== create: subject differs from the series
+return true
+mapi_message_createattach(message) = message/attach0
+mapi_setprops(message/attach0, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach0, 3)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Changed", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, busystatus: 2, location: "Room", commonstart: 1901433600, commonend: 1901437200, basedate: 1901433600})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_message_modifyrecipients(message/attach0/message, 4, [{PR_EMAIL_ADDRESS: "a@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1, PR_ROWID: 1}, {PR_EMAIL_ADDRESS: "b@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1, PR_ROWID: 2}])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:153:e957d82373c58bcb12131e9cc685cf4c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Changed"}]
+deleted []
+
+== create: the series values are not a change
+return true
+mapi_message_createattach(message) = message/attach0
+mapi_setprops(message/attach0, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach0, 3)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Series", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, label: 3, location: "Elsewhere", reminder: false, reminder_minutes: 15, commonstart: 1901433600, commonend: 1901437200, basedate: 1901433600})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:167:4059a5eaaa7f70b2086a626f847a8d6a, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", flagdueby: 1901259900, side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, label: 3, location: "Elsewhere", reminder_set: false, start: 1901440800}]
+deleted []
+
+== create: moved within its day
+return true
+mapi_message_createattach(message) = message/attach0
+mapi_setprops(message/attach0, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901442600, PR_EXCEPTION_ENDTIME: 1901446200, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach0, 3)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Series", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901442600, PR_EXCEPTION_ENDTIME: 1901446200, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901435400, duedate: 1901439000, commonstart: 1901435400, commonend: 1901439000, basedate: 1901433600})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:110:828302d61df45a1fd231cdbc9dc580e5, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901446200, start: 1901442600}]
+deleted []
+
+== create: moved onto the next occurrence
+return false
+changed []
+deleted []
+
+== create: deletes the occurrence and its exception
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 0)
+mapi_getprops(message/attach0/message, [basedate])
+mapi_message_deleteattach(message, 0)
+mapi_message_openattach(message, 1)
+mapi_attach_openobj(message/attach1, 0)
+mapi_getprops(message/attach1/message, [basedate])
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:151:df83a8f149541aee5fe473b930dc2fd1, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901491200, end: 1901530800, start: 1901527200, subject: "Other"}]
+deleted [1901404800]
+
+== create: replaces the exception of its day
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 0)
+mapi_getprops(message/attach0/message, [basedate])
+mapi_message_deleteattach(message, 0)
+mapi_message_createattach(message) = message/attach1
+mapi_setprops(message/attach1, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach1, 3)
+mapi_setprops(message/attach1/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Series", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, location: "Elsewhere", commonstart: 1901433600, commonend: 1901437200, basedate: 1901433600})
+mapi_message_getrecipienttable(message/attach1/message)
+mapi_table_queryallrows(message/attach1/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach1/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach1/message)
+mapi_savechanges(message/attach1)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:159:15eb5a5087ec9439e3dd249d40ddab4b, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, location: "Elsewhere", start: 1901440800}]
+deleted []
+
+== create: categories go to the series
+return true
+mapi_setprops(message, {categories: ["Green"]})
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 1)
+mapi_deleteprops(message/attach0/message, [categories])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+changed [{basedate: 1901491200, end: 1901530800, start: 1901527200, subject: "Other"}]
+deleted []
+
+== create: removed categories with a subject
+return true
+mapi_deleteprops(message, [categories])
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_createattach(message) = message/attach0
+mapi_setprops(message/attach0, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach0, 3)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Changed", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, commonstart: 1901433600, commonend: 1901437200, basedate: 1901433600})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:153:e957d82373c58bcb12131e9cc685cf4c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Changed"}]
+deleted []
+
+== create: with the attachments of a source message
+return true
+mapi_message_createattach(message) = message/attach0
+mapi_setprops(message/attach0, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach0, 3)
+mapi_message_getattachmenttable(source)
+mapi_table_queryallrows(source.attachments, [PR_ATTACH_NUM, PR_ATTACH_SIZE, PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_HIDDEN, PR_DISPLAY_NAME, PR_ATTACH_METHOD], all)
+mapi_message_openattach(source, 0)
+mapi_message_createattach(message/attach0/message) = message/attach0/message/attach0
+mapi_copyto(source/attach0, [], message/attach0/message/attach0, 0)
+mapi_savechanges(message/attach0/message/attach0)
+mapi_message_openattach(source, 1)
+mapi_message_createattach(message/attach0/message) = message/attach0/message/attach1
+mapi_copyto(source/attach1, [], message/attach0/message/attach1, 0)
+mapi_savechanges(message/attach0/message/attach1)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Changed", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, commonstart: 1901433600, commonend: 1901437200, basedate: 1901433600})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:153:e957d82373c58bcb12131e9cc685cf4c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Changed"}]
+deleted []
+
+== create: recipient delta
+return true
+mapi_message_createattach(message) = message/attach0
+mapi_setprops(message/attach0, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach0, 3)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Changed", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, commonstart: 1901433600, commonend: 1901437200, basedate: 1901433600})
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_modifyrecipients(message/attach0/message, 2, [{PR_EMAIL_ADDRESS: "a@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1, PR_ROWID: 1}, {PR_EMAIL_ADDRESS: "b@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1, PR_ROWID: 2}])
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_message_modifyrecipients(message/attach0/message, 8, [{PR_EMAIL_ADDRESS: "a@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 33, PR_RECIPIENT_TRACKSTATUS: 0}])
+mapi_message_modifyrecipients(message/attach0/message, 2, [{PR_EMAIL_ADDRESS: "c@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1}])
+mapi_message_modifyrecipients(message/attach0/message, 4, [{PR_EMAIL_ADDRESS: "b@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1}])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:153:e957d82373c58bcb12131e9cc685cf4c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Changed"}]
+deleted []
+
+== create: drops a null multi-value property
+return true
+mapi_message_createattach(message) = message/attach0
+mapi_setprops(message/attach0, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach0, 3)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Changed", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, commonstart: 1901433600, commonend: 1901437200, basedate: 1901433600})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_message_modifyrecipients(message/attach0/message, 4, [{PR_EMAIL_ADDRESS: "a@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1}, {PR_EMAIL_ADDRESS: "c@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1}])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:153:e957d82373c58bcb12131e9cc685cf4c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Changed"}]
+deleted []
+
+== create: without a timezone
+return true
+mapi_message_createattach(message) = message/attach0
+mapi_setprops(message/attach0, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901314800, PR_EXCEPTION_ENDTIME: 1901316600, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach0, 3)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Changed", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901314800, PR_EXCEPTION_ENDTIME: 1901316600, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901314800, duedate: 1901316600, reminder: true, reminder_minutes: 15, commonstart: 1901314800, commonend: 1901316600, basedate: 1901268000})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901268000, duedate: 1901271600, recurring: true, recurring_data: binary:153:f0fed1552590fc863798970a88370ff8, startdate_recurring: 1901232000, enddate_recurring: 1902009600, recurrencetype: 1, reminder_time: 1901268000, commonstart: 1901268000, commonend: 1901271600, flagdueby: 1901267100, side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901232000, end: 1901316600, start: 1901314800, subject: "Changed"}]
+deleted []
+
+== modify: subject and location of an exception
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 0)
+mapi_getprops(message/attach0/message, [basedate])
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 1)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Changed again", location: "Elsewhere"})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:204:7a2712a5906a1f82f2b97295aeb36597, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, location: "Elsewhere", start: 1901440800, subject: "Changed again"}]
+deleted []
+
+== modify: moved within its day
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 0)
+mapi_getprops(message/attach0/message, [basedate])
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 1)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", startdate: 1901437200, duedate: 1901440800, commonstart: 1901437200, commonend: 1901440800})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach0/message)
+mapi_setprops(message/attach0, {PR_EXCEPTION_STARTTIME: 1901444400, PR_EXCEPTION_ENDTIME: 1901448000})
+mapi_savechanges(message/attach0)
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:153:e6062c8bc484ac67548a369a3e029f9f, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901448000, start: 1901444400, subject: "Changed"}]
+deleted []
+
+== modify: moved onto the next occurrence
+return false
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Changed"}]
+deleted []
+
+== modify: no exception on that day
+return false
+changed [{basedate: 1901491200, end: 1901530800, start: 1901527200, subject: "Other"}]
+deleted [1901404800]
+
+== modify: categories only
+return true
+mapi_setprops(message, {categories: ["Green"]})
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 1)
+mapi_deleteprops(message/attach0/message, [categories])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_message_openattach(message, 1)
+mapi_attach_openobj(message/attach1, 1)
+mapi_deleteprops(message/attach1/message, [categories])
+mapi_savechanges(message/attach1/message)
+mapi_savechanges(message/attach1)
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Changed"}, {basedate: 1901491200, end: 1901530800, start: 1901527200, subject: "Other"}]
+deleted []
+
+== modify: picks the exception of its day
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 0)
+mapi_getprops(message/attach0/message, [basedate])
+mapi_message_openattach(message, 1)
+mapi_attach_openobj(message/attach1, 0)
+mapi_getprops(message/attach1/message, [basedate])
+mapi_message_openattach(message, 2)
+mapi_attach_openobj(message/attach2, 0)
+mapi_getprops(message/attach2/message, [basedate])
+mapi_message_openattach(message, 1)
+mapi_attach_openobj(message/attach1, 1)
+mapi_setprops(message/attach1/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", label: 5})
+mapi_message_getrecipienttable(message/attach1/message)
+mapi_table_queryallrows(message/attach1/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach1/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach1/message)
+mapi_savechanges(message/attach1)
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:296:d04fd070b03269657da072efa4205fb9, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901318400, end: 1901358000, start: 1901354400, subject: "First"}, {basedate: 1901404800, end: 1901444400, label: 5, start: 1901440800, subject: "Second"}, {basedate: 1901491200, end: 1901530800, start: 1901527200, subject: "Third"}]
+deleted []
+
+== modify: restores a missing attachment from the source
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_createattach(message) = message/attach1
+mapi_setprops(message/attach1, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach1, 3)
+mapi_message_getattachmenttable(source)
+mapi_table_queryallrows(source.attachments, [PR_ATTACH_NUM, PR_ATTACH_SIZE, PR_ATTACH_LONG_FILENAME, PR_ATTACHMENT_HIDDEN, PR_DISPLAY_NAME, PR_ATTACH_METHOD], all)
+mapi_message_openattach(source, 0)
+mapi_message_createattach(message/attach1/message) = message/attach1/message/attach0
+mapi_copyto(source/attach0, [], message/attach1/message/attach0, 0)
+mapi_savechanges(message/attach1/message/attach0)
+mapi_message_openattach(source, 1)
+mapi_message_createattach(message/attach1/message) = message/attach1/message/attach1
+mapi_copyto(source/attach1, [], message/attach1/message/attach1, 0)
+mapi_savechanges(message/attach1/message/attach1)
+mapi_setprops(message/attach1/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Restored", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, commonstart: 1901433600, commonend: 1901437200, basedate: 1901433600})
+mapi_message_getrecipienttable(message/attach1/message)
+mapi_table_queryallrows(message/attach1/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach1/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach1/message)
+mapi_savechanges(message/attach1)
+mapi_setprops(message, {hideattachments: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:156:2203546d81ef68299d07aa2f21827a5c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:156:2203546d81ef68299d07aa2f21827a5c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Restored"}]
+deleted []
+
+== modify: recreates a missing attachment
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_createattach(message) = message/attach1
+mapi_setprops(message/attach1, {PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true})
+mapi_attach_openobj(message/attach1, 3)
+mapi_setprops(message/attach1/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", subject: "Restored", PR_DISPLAY_NAME: "Exception", PR_ATTACH_METHOD: 5, PR_ATTACH_FLAGS: 0, PR_ATTACHMENT_LINKID: 0, PR_EXCEPTION_STARTTIME: 1901440800, PR_EXCEPTION_ENDTIME: 1901444400, PR_ATTACHMENT_FLAGS: 2, PR_ATTACHMENT_HIDDEN: true, startdate: 1901433600, duedate: 1901437200, commonstart: 1901433600, commonend: 1901437200})
+mapi_message_getrecipienttable(message/attach1/message)
+mapi_table_queryallrows(message/attach1/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach1/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach1/message)
+mapi_savechanges(message/attach1)
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:156:2203546d81ef68299d07aa2f21827a5c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Restored"}]
+deleted []
+
+== modify: recipient delta
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 0)
+mapi_getprops(message/attach0/message, [basedate])
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 1)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}"})
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_message_modifyrecipients(message/attach0/message, 8, [{PR_EMAIL_ADDRESS: "a@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 33, PR_RECIPIENT_TRACKSTATUS: 0}])
+mapi_message_modifyrecipients(message/attach0/message, 2, [{PR_EMAIL_ADDRESS: "c@x.invalid", PR_RECIPIENT_TYPE: 1, PR_RECIPIENT_FLAGS: 1}])
+mapi_savechanges(message/attach0/message)
+mapi_savechanges(message/attach0)
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901260800, duedate: 1901264400, recurring: true, recurring_data: binary:153:e957d82373c58bcb12131e9cc685cf4c, startdate_recurring: 1901224800, enddate_recurring: 1902002400, recurrencetype: 1, reminder_time: 1901260800, commonstart: 1901260800, commonend: 1901264400, timezone_data: binary:48:e3d661f8263bfc230e2778ad05aa5993, timezone: "(GMT +01:00)", side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901404800, end: 1901444400, start: 1901440800, subject: "Changed"}]
+deleted []
+
+== modify: without a timezone
+return true
+mapi_message_getattachmenttable(message)
+mapi_table_queryallrows(message.attachments, [PR_ATTACH_NUM], PR_ATTACH_METHOD == 5)
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 0)
+mapi_getprops(message/attach0/message, [basedate])
+mapi_message_openattach(message, 0)
+mapi_attach_openobj(message/attach0, 1)
+mapi_setprops(message/attach0/message, {message_class: "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}", startdate: 1901314800, duedate: 1901316600, reminder: false, commonstart: 1901314800, commonend: 1901316600})
+mapi_message_getrecipienttable(message/attach0/message)
+mapi_table_queryallrows(message/attach0/message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_message_getrecipienttable(message)
+mapi_table_queryallrows(message.recipients, [entryid, PR_SEARCH_KEY, PR_DISPLAY_NAME, PR_EMAIL_ADDRESS, PR_RECIPIENT_ENTRYID, PR_RECIPIENT_TYPE, PR_SEND_INTERNET_ENCODING, PR_SEND_RICH_INFO, PR_RECIPIENT_DISPLAY_NAME, PR_ADDRTYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX, PR_RECIPIENT_TRACKSTATUS, PR_RECIPIENT_TRACKSTATUS_TIME, PR_RECIPIENT_FLAGS, PR_ROWID, PR_SMTP_ADDRESS], all)
+mapi_getprops(message/attach0/message, [PR_SENT_REPRESENTING_ENTRYID, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_SEARCH_KEY, responsestatus])
+mapi_savechanges(message/attach0/message)
+mapi_setprops(message/attach0, {PR_EXCEPTION_STARTTIME: 1901314800, PR_EXCEPTION_ENDTIME: 1901316600})
+mapi_savechanges(message/attach0)
+mapi_getprops(message, [reminder_minutes, flagdueby])
+mapi_setprops(message, {startdate: 1901268000, duedate: 1901271600, recurring: true, recurring_data: binary:157:b3a8a713e266b584fb810b8c8fa6b506, startdate_recurring: 1901232000, enddate_recurring: 1902009600, recurrencetype: 1, reminder_time: 1901268000, commonstart: 1901268000, commonend: 1901271600, flagdueby: 1901267100, side_effects: 369, meetingrecurring: true})
+changed [{basedate: 1901232000, end: 1901316600, reminder_set: false, start: 1901314800, subject: "Changed"}]
+deleted []

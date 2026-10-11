@@ -422,55 +422,68 @@ function fuzzyLevelToString(mixed $fuzzyLevel): string {
 }
 
 /**
- * Converts all constants of restriction into a human readable strings.
+ * Converts BMR constant to human readable string.
  */
-function simplifyRestriction(mixed $restriction): mixed {
-	if (!is_array($restriction)) {
-		return $restriction;
+function bitmaskTypeToString(mixed $maskType): string {
+	// relop flags
+	$maskTypeFlags = "";
+	if ($maskType == BMR_EQZ) {
+		$maskTypeFlags = "BMR_EQZ";
+	}
+	elseif ($maskType == BMR_NEZ) {
+		$maskTypeFlags = "BMR_NEZ";
 	}
 
-	$type = $restriction[0];
+	return $maskTypeFlags;
+}
 
-	switch ($type) {
-		case RES_AND:
-		case RES_OR:
-			$restriction[0] = $type == RES_AND ? "RES_AND" : "RES_OR";
-			if (isset($restriction[1][0]) && is_array($restriction[1][0])) {
-				foreach ($restriction[1] as &$res) {
-					$res = simplifyRestriction($res);
-				}
-				unset($res);
-			}
-			elseif (isset($restriction[1]) && $restriction[1]) {
-				$restriction[1] = simplifyRestriction($restriction[1]);
-			}
-			break;
+/**
+ * Returns the value of a restriction property, given directly or as a property array.
+ */
+function restrictionPropValue(mixed $propTag, mixed $propValue): mixed {
+	return is_array($propValue) ? $propValue[$propTag] : $propValue;
+}
 
-		case RES_NOT:
-			$restriction[0] = "RES_NOT";
-			$restriction[1][0] = simplifyRestriction($restriction[1][0]);
-			break;
+/**
+ * Converts the properties of a RES_COMMENT into human readable form.
+ */
+function simplifyCommentProps(mixed $props): mixed {
+	foreach ($props as &$prop) {
+		$propTag = $prop[ULPROPTAG];
+		$propValue = $prop[VALUE];
 
-		case RES_COMMENT:
-			$restriction[0] = "RES_COMMENT";
-			$res = simplifyRestriction($restriction[1][RESTRICTION]);
-			$props = $restriction[1][PROPS];
+		$prop = [
+			"ULPROPTAG" => prop2Str($propTag),
+			"VALUE" => restrictionPropValue($propTag, $propValue),
+		];
+	}
+	unset($prop);
 
-			foreach ($props as &$prop) {
-				$propTag = $prop[ULPROPTAG];
-				$propValue = $prop[VALUE];
+	return $props;
+}
 
-				$prop = [
-					"ULPROPTAG" => prop2Str($propTag),
-					"VALUE" => is_array($propValue) ? $propValue[$propTag] : $propValue,
-				];
-			}
-			unset($prop, $restriction[1]);
+/**
+ * Converts the operands of a RES_AND or RES_OR.
+ */
+function simplifyRestrictionOperands(array $restriction): array {
+	if (isset($restriction[1][0]) && is_array($restriction[1][0])) {
+		foreach ($restriction[1] as &$res) {
+			$res = simplifyRestriction($res);
+		}
+		unset($res);
+	}
+	elseif (isset($restriction[1]) && $restriction[1]) {
+		$restriction[1] = simplifyRestriction($restriction[1]);
+	}
 
-			$restriction[1]["RESTRICTION"] = $res;
-			$restriction[1]["PROPS"] = $props;
-			break;
+	return $restriction;
+}
 
+/**
+ * Converts the constants of a restriction on a property into human readable strings.
+ */
+function simplifyPropertyRestriction(array $restriction): array {
+	switch ($restriction[0]) {
 		case RES_PROPERTY:
 			$restriction[0] = "RES_PROPERTY";
 			$propTag = $restriction[1][ULPROPTAG];
@@ -481,7 +494,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			$restriction[1]["RELOP"] = relOpToString($relOp);
 			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
-			$restriction[1]["VALUE"] = is_array($propValue) ? $propValue[$propTag] : $propValue;
+			$restriction[1]["VALUE"] = restrictionPropValue($propTag, $propValue);
 			break;
 
 		case RES_CONTENT:
@@ -494,7 +507,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			$restriction[1]["FUZZYLEVEL"] = fuzzyLevelToString($fuzzyLevel);
 			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
-			$restriction[1]["VALUE"] = is_array($propValue) ? $propValue[$propTag] : $propValue;
+			$restriction[1]["VALUE"] = restrictionPropValue($propTag, $propValue);
 			break;
 
 		case RES_COMPAREPROPS:
@@ -515,14 +528,7 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			unset($restriction[1]);
 
-			// relop flags
-			$maskTypeFlags = "";
-			if ($maskType == BMR_EQZ) {
-				$maskTypeFlags = "BMR_EQZ";
-			}
-			elseif ($maskType == BMR_NEZ) {
-				$maskTypeFlags = "BMR_NEZ";
-			}
+			$maskTypeFlags = bitmaskTypeToString($maskType);
 
 			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			$restriction[1]["ULTYPE"] = $maskTypeFlags;
@@ -549,6 +555,43 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			break;
+	}
+
+	return $restriction;
+}
+
+/**
+ * Converts all constants of restriction into a human readable strings.
+ */
+function simplifyRestriction(mixed $restriction): mixed {
+	if (!is_array($restriction)) {
+		return $restriction;
+	}
+
+	$type = $restriction[0];
+
+	switch ($type) {
+		case RES_AND:
+		case RES_OR:
+			$restriction[0] = $type == RES_AND ? "RES_AND" : "RES_OR";
+			$restriction = simplifyRestrictionOperands($restriction);
+			break;
+
+		case RES_NOT:
+			$restriction[0] = "RES_NOT";
+			$restriction[1][0] = simplifyRestriction($restriction[1][0]);
+			break;
+
+		case RES_COMMENT:
+			$restriction[0] = "RES_COMMENT";
+			$res = simplifyRestriction($restriction[1][RESTRICTION]);
+			$props = simplifyCommentProps($restriction[1][PROPS]);
+
+			unset($restriction[1]);
+
+			$restriction[1]["RESTRICTION"] = $res;
+			$restriction[1]["PROPS"] = $props;
+			break;
 
 		case RES_SUBRESTRICTION:
 			$propTag = $restriction[1][ULPROPTAG];
@@ -558,6 +601,10 @@ function simplifyRestriction(mixed $restriction): mixed {
 
 			$restriction[1]["ULPROPTAG"] = prop2Str($propTag);
 			$restriction[1]["RESTRICTION"] = $res;
+			break;
+
+		default:
+			$restriction = simplifyPropertyRestriction($restriction);
 			break;
 	}
 

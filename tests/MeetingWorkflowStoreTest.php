@@ -457,4 +457,123 @@ class MeetingWorkflowStoreTest extends TestCase {
 			}
 		}
 	}
+
+	public function testDoAcceptSingleMeeting(): void {
+		foreach ([false, true] as $userAction) {
+			// doAccept() works on the default calendar; the organizer is resolved with the session
+			$request = new Meetingrequest($this->store, $this->newRequest()->message, $this->session);
+			$tags = $request->proptags;
+			$goid = getGoidFromUid(bin2hex(random_bytes(8)));
+			mapi_setprops($request->message, [$tags['goid'] => $goid, $tags['goid2'] => $goid]);
+			mapi_savechanges($request->message);
+			$restriction = [RES_PROPERTY, [RELOP => RELOP_EQ, ULPROPTAG => $tags['goid2'], VALUE => $goid]];
+
+			try {
+				$entryid = $request->doAccept(true, false, false, false, false, false, $userAction);
+				$this->assertIsString($entryid);
+				$appointment = mapi_msgstore_openentry($this->store, $entryid);
+				$props = mapi_getprops($appointment, [PR_MESSAGE_CLASS, PR_PARENT_ENTRYID, $tags['responsestatus'], $tags['goid']]);
+				$this->assertSame('IPM.Appointment', $props[PR_MESSAGE_CLASS]);
+				$this->assertSame(mapi_getprops($this->parent, [PR_ENTRYID])[PR_ENTRYID], $props[PR_PARENT_ENTRYID]);
+				$this->assertSame($userAction ? olResponseTentative : olResponseNotResponded, $props[$tags['responsestatus']]);
+				$this->assertSame($goid, $props[$tags['goid']]);
+				// only the automatic processing marks the request, and happens once
+				$this->assertSame($userAction ? null : true, mapi_getprops($request->message, [PR_PROCESSED])[PR_PROCESSED] ?? null);
+				if (!$userAction) {
+					$this->assertFalse($request->doAccept(true, false, false));
+				}
+			}
+			finally {
+				$left = mapi_table_queryallrows(mapi_folder_getcontentstable($this->parent), [PR_ENTRYID], $restriction);
+				if ($left) {
+					mapi_folder_deletemessages($this->parent, array_column($left, PR_ENTRYID), DELETE_HARD_DELETE);
+				}
+			}
+		}
+	}
+
+	public function testProcessMeetingForwardNotification(): void {
+		foreach ([false, true] as $recurring) {
+			// the forwarded attendee is resolved with the session
+			$request = new Meetingrequest($this->store, $this->newRequest()->message, $this->session);
+			$tags = $request->proptags;
+			$goid = getGoidFromUid(bin2hex(random_bytes(8)));
+			$restriction = [RES_PROPERTY, [RELOP => RELOP_EQ, ULPROPTAG => $tags['goid2'], VALUE => $goid]];
+			// the organizer's meeting in the calendar
+			$meeting = mapi_folder_createmessage($this->parent);
+			mapi_setprops($meeting, [
+				PR_MESSAGE_CLASS => 'IPM.Appointment',
+				$tags['goid'] => $goid,
+				$tags['goid2'] => $goid,
+				$tags['meetingstatus'] => olMeeting,
+				$tags['responsestatus'] => olResponseOrganized,
+				$tags['recurring'] => false,
+				$tags['startdate'] => 1774864800,
+				$tags['duedate'] => 1774868400,
+			]);
+			mapi_message_modifyrecipients($meeting, MODRECIP_ADD, [[
+				PR_ENTRYID => mapi_createoneoff('Attendee', 'SMTP', 'attendee@example.invalid'),
+				PR_DISPLAY_NAME => 'Attendee',
+				PR_EMAIL_ADDRESS => 'attendee@example.invalid',
+				PR_ADDRTYPE => 'SMTP',
+				PR_RECIPIENT_TYPE => MAPI_TO,
+				PR_RECIPIENT_FLAGS => recipSendable,
+			]]);
+			$basedate = false;
+			if ($recurring) {
+				(new Recurrence($this->store, $meeting))->setRecurrence(null, [
+					'type' => 10, 'subtype' => rptDay, 'everyn' => 1440, 'regen' => 0,
+					'term' => 0x22, 'numoccur' => 3, 'start' => 1774828800,
+					'end' => 1775001600, 'startocc' => 600, 'endocc' => 660,
+				]);
+				mapi_setprops($meeting, [
+					$tags['clipstart'] => 1774828800,
+					$tags['clipend'] => 1775088000,
+				]);
+				$basedate = 1774915200;
+			}
+			mapi_savechanges($meeting);
+			$entryid = mapi_getprops($meeting, [PR_ENTRYID])[PR_ENTRYID];
+			mapi_setprops($request->message, [
+				PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Notification.Forward',
+				$tags['goid'] => $recurring ? $request->setBasedateInGlobalID($goid, $basedate) : $goid,
+				$tags['goid2'] => $goid,
+				$tags['forward_recipients'] => ['attendee@example.invalid', 'forwarded@example.invalid'],
+				$tags['forward_recipient_names'] => ['Attendee', 'Forwarded'],
+			]);
+			mapi_savechanges($request->message);
+
+			try {
+				$this->assertTrue($request->processMeetingForwardNotification());
+				$this->assertTrue(mapi_getprops($request->message, [PR_PROCESSED])[PR_PROCESSED]);
+				$meeting = mapi_msgstore_openentry($this->store, $entryid);
+				$updated = $meeting;
+				if ($recurring) {
+					// the occurrence got an exception of its own, the series stays as it was
+					$attach = (new Recurrence($this->store, $meeting))->getExceptionAttachment($basedate);
+					$this->assertNotFalse($attach);
+					$updated = mapi_attach_openobj($attach);
+					$this->assertSame(
+						['attendee@example.invalid'],
+						array_column(mapi_table_queryallrows(mapi_message_getrecipienttable($meeting), [PR_EMAIL_ADDRESS]), PR_EMAIL_ADDRESS)
+					);
+				}
+				$recipients = mapi_table_queryallrows(
+					mapi_message_getrecipienttable($updated),
+					[PR_EMAIL_ADDRESS, PR_DISPLAY_NAME, PR_RECIPIENT_TYPE]
+				);
+				$this->assertSame(['attendee@example.invalid', 'forwarded@example.invalid'], array_column($recipients, PR_EMAIL_ADDRESS));
+				$this->assertSame('Forwarded', $recipients[1][PR_DISPLAY_NAME]);
+				$this->assertSame(MAPI_CC, $recipients[1][PR_RECIPIENT_TYPE]);
+				// a processed notification is not processed again
+				$this->assertFalse($request->processMeetingForwardNotification());
+			}
+			finally {
+				$left = mapi_table_queryallrows(mapi_folder_getcontentstable($this->parent), [PR_ENTRYID], $restriction);
+				if ($left) {
+					mapi_folder_deletemessages($this->parent, array_column($left, PR_ENTRYID), DELETE_HARD_DELETE);
+				}
+			}
+		}
+	}
 }
