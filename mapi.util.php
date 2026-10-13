@@ -883,3 +883,146 @@ function getCalendarRestriction(array $props, int $start, int $end): array {
 		]],
 	]];
 }
+
+/**
+ * PidLidForwardNotificationRecipients of a meeting forward notification, a
+ * RecipientRow list as in MS-OXOCAL v22.1 §2.2.1.25. Each row carries the
+ * SMTP address and the name and no further properties.
+ *
+ * @param array $addresses SMTP addresses
+ * @param array $names     display names, by the index of $addresses
+ */
+function packForwardNotificationRecipients(array $addresses, array $names): string {
+	$utf16 = static fn (string $s): string => (string) iconv('UTF-8', 'UTF-16LE', $s) . "\0\0";
+	// SMTP type, E, D and U flags
+	$flags = 0x0003 | 0x0008 | 0x0010 | 0x0200;
+	$rows = '';
+	foreach (array_values($addresses) as $i => $smtp) {
+		$name = (string) ($names[$i] ?? '');
+		$rows .= pack('v', $flags) . $utf16((string) $smtp) .
+			$utf16($name !== '' ? $name : (string) $smtp) . pack('vC', 0, 0);
+	}
+
+	return pack('VV', 1, count($addresses)) . $rows;
+}
+
+/**
+ * The recipients in a PidLidForwardNotificationRecipients value. Rows that
+ * carry properties end the list, as their size depends on columns the value
+ * does not name.
+ *
+ * @return array rows of [address type, address, display name]
+ */
+function unpackForwardNotificationRecipients(string $blob): array {
+	$len = strlen($blob);
+	$pos = 8;
+	if ($len < $pos || unpack('V', $blob)[1] != 1) {
+		return [];
+	}
+	$str8 = static function () use ($blob, &$pos): ?string {
+		$end = strpos($blob, "\0", $pos);
+		if ($end === false) {
+			return null;
+		}
+		$s = substr($blob, $pos, $end - $pos);
+		$pos = $end + 1;
+
+		return $s;
+	};
+	$wstr = static function () use ($blob, $len, &$pos): ?string {
+		for ($end = $pos; $end + 1 < $len; $end += 2) {
+			if ($blob[$end] === "\0" && $blob[$end + 1] === "\0") {
+				$s = (string) iconv('UTF-16LE', 'UTF-8', substr($blob, $pos, $end - $pos));
+				$pos = $end + 2;
+
+				return $s;
+			}
+		}
+
+		return null;
+	};
+	$u16 = static function () use ($blob, $len, &$pos): ?int {
+		if ($pos + 2 > $len) {
+			return null;
+		}
+		$v = unpack('v', $blob, $pos)[1];
+		$pos += 2;
+
+		return $v;
+	};
+
+	$rows = [];
+	for ($n = unpack('V', $blob, 4)[1]; $n > 0; --$n) {
+		$flags = $u16();
+		if ($flags === null) {
+			break;
+		}
+		$type = $flags & 0x0007;
+		$string = $flags & 0x0200 ? $wstr : $str8;
+		$addrtype = match ($type) {
+			0x1 => 'EX',
+			0x3 => 'SMTP',
+			default => '',
+		};
+		$addr = null;
+		if ($type == 0x1) {
+			// prefix length and display type, the DN is whole only without a prefix
+			if ($pos + 2 > $len) {
+				break;
+			}
+			$prefix = ord($blob[$pos]);
+			$pos += 2;
+			$addr = $str8();
+			if ($addr === null) {
+				break;
+			}
+			if ($prefix != 0) {
+				$addr = null;
+			}
+		}
+		elseif ($type == 0x6 || $type == 0x7) {
+			// entryid and search key
+			for ($i = 0; $i < 2; ++$i) {
+				$size = $u16();
+				if ($size === null || $pos + $size > $len) {
+					break 2;
+				}
+				$pos += $size;
+			}
+		}
+		if ($type == 0x0 && $flags & 0x8000) {
+			$addrtype = $str8();
+			if ($addrtype === null) {
+				break;
+			}
+		}
+		$fields = [];
+		foreach ([0x0008, 0x0010, 0x0400, 0x0020] as $bit) {
+			if (!($flags & $bit)) {
+				$fields[$bit] = null;
+
+				continue;
+			}
+			$fields[$bit] = $string();
+			if ($fields[$bit] === null) {
+				break 2;
+			}
+		}
+		$addr ??= $fields[0x0008];
+		$name = $fields[0x0010] ?? $fields[0x0020] ?? $fields[0x0400] ?? '';
+		$columns = $u16();
+		if ($columns === null) {
+			break;
+		}
+		if ($addr !== null && $addr !== '') {
+			$rows[] = [$addrtype, $addr, $name];
+		}
+		if ($columns != 0 || $pos >= $len) {
+			break;
+		}
+		// the flag byte of the empty property row
+		++$pos;
+	}
+
+	return $rows;
+}
