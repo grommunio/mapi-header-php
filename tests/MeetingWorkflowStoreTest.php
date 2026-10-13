@@ -538,8 +538,7 @@ class MeetingWorkflowStoreTest extends TestCase {
 				PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Notification.Forward',
 				$tags['goid'] => $recurring ? $request->setBasedateInGlobalID($goid, $basedate) : $goid,
 				$tags['goid2'] => $goid,
-				$tags['forward_recipients'] => ['attendee@example.invalid', 'forwarded@example.invalid'],
-				$tags['forward_recipient_names'] => ['Attendee', 'Forwarded'],
+				$tags['forward_notification_recipients'] => packForwardNotificationRecipients(['attendee@example.invalid', 'forwarded@example.invalid'], ['Attendee', 'Forwarded']),
 			]);
 			mapi_savechanges($request->message);
 
