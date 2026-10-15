@@ -219,8 +219,7 @@ class Meetingrequest {
 		$properties['auxiliary_flags'] = 'PT_LONG:PSETID_Appointment:0x8207';
 		$properties['forward_instance'] = 'PT_BOOLEAN:PSETID_Appointment:0x820A';
 		$properties['tzdefstart'] = 'PT_BINARY:PSETID_Appointment:0x825E';
-		$properties['forward_recipients'] = 'PT_MV_STRING8:PS_PUBLIC_STRINGS:GrommunioForwardRecipients';
-		$properties['forward_recipient_names'] = 'PT_MV_STRING8:PS_PUBLIC_STRINGS:GrommunioForwardRecipientNames';
+		$properties['forward_notification_recipients'] = 'PT_BINARY:PSETID_Appointment:0x8261';
 
 		$this->proptags = getPropIdsFromStrings($this->store, $properties);
 	}
@@ -643,8 +642,7 @@ class Meetingrequest {
 
 		$messageprops = mapi_getprops($this->message, [
 			$this->proptags['goid'],
-			$this->proptags['forward_recipients'],
-			$this->proptags['forward_recipient_names'],
+			$this->proptags['forward_notification_recipients'],
 			PR_PARENT_ENTRYID,
 			PR_PROCESSED,
 			PR_RCVD_REPRESENTING_ENTRYID,
@@ -2133,8 +2131,7 @@ class Meetingrequest {
 			PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Notification.Forward',
 			PR_SUBJECT => _('Meeting Forward Notification') . ': ' . $subject,
 			PR_BODY => $body,
-			$this->proptags['forward_recipients'] => $addresses,
-			$this->proptags['forward_recipient_names'] => $names,
+			$this->proptags['forward_notification_recipients'] => packForwardNotificationRecipients($addresses, $names),
 			$this->proptags['attendee_critical_change'] => time(),
 		];
 		if (isset($messageprops[$this->proptags['goid']])) {
@@ -4885,14 +4882,14 @@ class Meetingrequest {
 	 * @return array optional attendees addressed by SMTP
 	 */
 	private function getForwardRecipientRows(array $messageprops): array {
-		$names = array_values($messageprops[$this->proptags['forward_recipient_names']] ?? []);
+		$blob = (string) ($messageprops[$this->proptags['forward_notification_recipients']] ?? '');
 		$rows = [];
-		foreach (array_values($messageprops[$this->proptags['forward_recipients']] ?? []) as $i => $smtp) {
-			$smtp = trim((string) $smtp);
-			if ($smtp === '') {
+		foreach (unpackForwardNotificationRecipients($blob) as [$addrtype, $smtp, $name]) {
+			$smtp = trim($smtp);
+			if ($smtp === '' || strcasecmp($addrtype, 'SMTP') != 0) {
 				continue;
 			}
-			$name = trim((string) ($names[$i] ?? ''));
+			$name = trim($name);
 			$rows[] = [
 				PR_DISPLAY_NAME => $name !== '' ? $name : $smtp,
 				PR_RECIPIENT_DISPLAY_NAME => $name !== '' ? $name : $smtp,

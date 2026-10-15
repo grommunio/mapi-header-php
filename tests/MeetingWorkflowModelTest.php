@@ -209,8 +209,7 @@ class MeetingWorkflowModelTest extends TestCase {
 					'Named Person <named@example.invalid>, same@example.invalid, Colleague <colleague@example.invalid>',
 				],
 			};
-			$this->assertSame($addresses, $props[$tags['forward_recipients']], $label);
-			$this->assertSame($names, $props[$tags['forward_recipient_names']], $label);
+			$this->assertSame(array_map(null, array_fill(0, count($addresses), 'SMTP'), $addresses, $names), unpackForwardNotificationRecipients(hex2bin(substr($props[$tags['forward_notification_recipients']], 4))), $label);
 			$this->assertStringStartsWith('Test User has forwarded your meeting request to additional recipients.', $props[PR_BODY], $label);
 			$this->assertStringEndsWith("\nRecipients: " . $listed . "\n", $props[PR_BODY], $label);
 			$this->assertStringContainsString("\nWhen: ", $props[PR_BODY], $label);

@@ -62,8 +62,8 @@ class MeetingRequestTest extends TestCase {
 	}
 
 	public function testForwardRecipientRows(): void {
-		$this->mr->proptags = ['forward_recipients' => 1, 'forward_recipient_names' => 2];
-		$rows = $this->invoke('getForwardRecipientRows', [1 => ['a@example.com', ' ', 'b@example.com'], 2 => ['Anna', '', '']]);
+		$this->mr->proptags = ['forward_notification_recipients' => 3];
+		$rows = $this->invoke('getForwardRecipientRows', [3 => packForwardNotificationRecipients(['a@example.com', ' ', 'b@example.com'], ['Anna', '', ''])]);
 		$this->assertCount(2, $rows);
 		$this->assertSame('Anna', $rows[0][PR_DISPLAY_NAME]);
 		$this->assertSame('a@example.com', $rows[0][PR_SMTP_ADDRESS]);
@@ -76,12 +76,12 @@ class MeetingRequestTest extends TestCase {
 	}
 
 	public function testNewForwardRecipients(): void {
-		$this->mr->proptags = ['forward_recipients' => 1, 'forward_recipient_names' => 2];
+		$this->mr->proptags = ['forward_notification_recipients' => 3];
 		$existing = [
 			[PR_ENTRYID => 'abc', PR_SMTP_ADDRESS => 'Anna@example.com'],
 			[PR_ENTRYID => 'def', PR_ADDRTYPE => 'SMTP', PR_EMAIL_ADDRESS => 'bert@example.com'],
 		];
-		$forwarded = $this->invoke('getForwardRecipientRows', [1 => ['anna@example.com', 'carl@example.com', 'BERT@example.com', 'Carl@example.com']]);
+		$forwarded = $this->invoke('getForwardRecipientRows', [3 => packForwardNotificationRecipients(['anna@example.com', 'carl@example.com', 'BERT@example.com', 'Carl@example.com'], [])]);
 		$new = $this->invoke('getNewForwardRecipients', $existing, $forwarded);
 		$this->assertSame(['carl@example.com'], array_column($new, PR_SMTP_ADDRESS));
 		$this->assertSame([], $this->invoke('getNewForwardRecipients', $existing, []));

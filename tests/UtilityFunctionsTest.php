@@ -181,4 +181,34 @@ class UtilityFunctionsTest extends TestCase {
 		$this->assertSame(RES_NOT, $open[1][0][0]);
 		$this->assertSame([RELOP => RELOP_EQ, ULPROPTAG => 3, VALUE => true], $open[1][2][1]);
 	}
+
+	public function testForwardNotificationRecipients(): void {
+		$blob = packForwardNotificationRecipients(['a@example.com', 'b@example.com'], ['Änne', '']);
+		// version, row count, then the first row: SMTP type with E, D and U flags
+		$this->assertSame(pack('VVv', 1, 2, 0x021B), substr($blob, 0, 10));
+		$this->assertSame([
+			['SMTP', 'a@example.com', 'Änne'],
+			['SMTP', 'b@example.com', 'b@example.com'],
+		], unpackForwardNotificationRecipients($blob));
+		$this->assertSame(pack('VV', 1, 0), packForwardNotificationRecipients([], []));
+		$this->assertSame([], unpackForwardNotificationRecipients(pack('VV', 1, 0)));
+	}
+
+	public function testForwardNotificationRecipientsOfOtherWriters(): void {
+		// 8-bit strings, an X500 row, an address type of its own
+		$x500 = pack('vCC', 0x0011, 0, 0) . "/o=org/cn=anna\0" . "Anna\0" . pack('vC', 0, 0);
+		$other = pack('v', 0x8018) . "SMTP\0" . "carl@example.com\0" . "Carl\0" . pack('vC', 0, 0);
+		$this->assertSame([
+			['EX', '/o=org/cn=anna', 'Anna'],
+			['SMTP', 'carl@example.com', 'Carl'],
+		], unpackForwardNotificationRecipients(pack('VV', 1, 2) . $x500 . $other));
+		// a row with properties ends the list
+		$props = pack('v', 0x0018) . "dora@example.com\0Dora\0" . pack('vCV', 1, 0, 7);
+		$this->assertSame([['', 'dora@example.com', 'Dora']], unpackForwardNotificationRecipients(pack('VV', 1, 2) . $props . $other));
+		// cut short, a different version, nothing at all
+		$blob = packForwardNotificationRecipients(['a@example.com', 'b@example.com'], ['A', 'B']);
+		$this->assertSame([['SMTP', 'a@example.com', 'A']], unpackForwardNotificationRecipients(substr($blob, 0, -6)));
+		$this->assertSame([], unpackForwardNotificationRecipients(pack('VV', 2, 0)));
+		$this->assertSame([], unpackForwardNotificationRecipients(''));
+	}
 }

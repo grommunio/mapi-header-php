@@ -27,6 +27,46 @@ if (!function_exists('ngettext')) {
 	}
 }
 
+// php -n has no iconv, the forward notification needs UTF-16LE
+if (!function_exists('iconv')) {
+	function iconv(string $from, string $to, string $s): false|string {
+		$cps = [];
+		if ($from === 'UTF-8') {
+			foreach (preg_split('//u', $s, -1, PREG_SPLIT_NO_EMPTY) as $ch) {
+				$b = array_values(unpack('C*', $ch));
+				$cps[] = match (count($b)) {
+					1 => $b[0],
+					2 => ($b[0] & 0x1F) << 6 | $b[1] & 0x3F,
+					3 => ($b[0] & 0x0F) << 12 | ($b[1] & 0x3F) << 6 | $b[2] & 0x3F,
+					default => ($b[0] & 0x07) << 18 | ($b[1] & 0x3F) << 12 | ($b[2] & 0x3F) << 6 | $b[3] & 0x3F,
+				};
+			}
+			$out = '';
+			foreach ($cps as $cp) {
+				$out .= $cp < 0x10000 ? pack('v', $cp) : pack('vv', 0xD800 | ($cp - 0x10000) >> 10, 0xDC00 | ($cp - 0x10000) & 0x3FF);
+			}
+
+			return $out;
+		}
+		$units = array_values(unpack('v*', $s) ?: []);
+		$out = '';
+		for ($i = 0; $i < count($units); ++$i) {
+			$cp = $units[$i];
+			if ($cp >= 0xD800 && $cp < 0xDC00 && isset($units[$i + 1])) {
+				$cp = 0x10000 + (($cp & 0x3FF) << 10 | $units[++$i] & 0x3FF);
+			}
+			$out .= match (true) {
+				$cp < 0x80 => chr($cp),
+				$cp < 0x800 => chr(0xC0 | $cp >> 6) . chr(0x80 | $cp & 0x3F),
+				$cp < 0x10000 => chr(0xE0 | $cp >> 12) . chr(0x80 | $cp >> 6 & 0x3F) . chr(0x80 | $cp & 0x3F),
+				default => chr(0xF0 | $cp >> 18) . chr(0x80 | $cp >> 12 & 0x3F) . chr(0x80 | $cp >> 6 & 0x3F) . chr(0x80 | $cp & 0x3F),
+			};
+		}
+
+		return $out;
+	}
+}
+
 class MapiObject {
 	public function __construct(public string $type, public int $id) {}
 }
@@ -1059,7 +1099,7 @@ switch ($argv[2] ?? '') {
 		$names[] = 'Attendee';
 		$addresses[] = 'colleague@example.invalid';
 		$names[] = 'Colleague';
-		mapi_setprops($request->message, [$tags['forward_recipients'] => $addresses, $tags['forward_recipient_names'] => $names]);
+		mapi_setprops($request->message, [$tags['forward_notification_recipients'] => packForwardNotificationRecipients($addresses, $names)]);
 		$attendees = [$mailbox->recipient('Attendee', 'attendee@example.invalid'), $mailbox->recipient('Person 5', 'person5@example.invalid')];
 		$item = $mailbox->calendarItem([
 			$tags['goid'] => $mailbox->goid('A'),
@@ -1118,12 +1158,12 @@ switch ($argv[2] ?? '') {
 				PR_MESSAGE_CLASS => $name === 'not-notification' ? 'IPM.Note' : 'IPM.Schedule.Meeting.Notification.Forward',
 			], $name === 'no-goid' ? ['goid'] : []);
 			$tags = $request->proptags;
-			$forwarded = [$tags['forward_recipients'] => ['new1@example.invalid', 'new2@example.invalid'], $tags['forward_recipient_names'] => ['New One', 'New Two']];
+			$forwarded = [$tags['forward_notification_recipients'] => packForwardNotificationRecipients(['new1@example.invalid', 'new2@example.invalid'], ['New One', 'New Two'])];
 			if ($name === 'single-local') {
-				$forwarded = [$tags['forward_recipients'] => ['colleague@example.invalid'], $tags['forward_recipient_names'] => ['Colleague']];
+				$forwarded = [$tags['forward_notification_recipients'] => packForwardNotificationRecipients(['colleague@example.invalid'], ['Colleague'])];
 			}
 			elseif ($name === 'single-no-names') {
-				$forwarded = [$tags['forward_recipients'] => ['new1@example.invalid', ' ', 'new2@example.invalid'], $tags['forward_recipient_names'] => []];
+				$forwarded = [$tags['forward_notification_recipients'] => packForwardNotificationRecipients(['new1@example.invalid', ' ', 'new2@example.invalid'], [])];
 			}
 			mapi_setprops($request->message, $forwarded + ($name === 'processed' ? [PR_PROCESSED => true] : []));
 			$basedate = str_starts_with($name, 'occurrence') ? ($name === 'occurrence-off-pattern' ? 1774828800 + 10 * 86400 : 1774915200) : false;
