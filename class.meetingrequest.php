@@ -3667,7 +3667,11 @@ class Meetingrequest {
 		// Set basedate in guid (0x3)
 		$newmessageprops[$this->proptags['goid']] = $this->setBasedateInGlobalID($messageprops[$this->proptags['goid2']], $basedateUtc, $recurObject instanceof BaseRecurrence ? $recurObject : null);
 		$newmessageprops[$this->proptags['goid2']] = $messageprops[$this->proptags['goid2']];
-		$newmessageprops[PR_OWNER_APPT_ID] = $messageprops[PR_OWNER_APPT_ID];
+		// optional per MS-OXOCAL v22.1 §2.2.1.29, EWS and iCalendar series lack it
+		unset($newmessageprops[PR_OWNER_APPT_ID]);
+		if (isset($messageprops[PR_OWNER_APPT_ID])) {
+			$newmessageprops[PR_OWNER_APPT_ID] = $messageprops[PR_OWNER_APPT_ID];
+		}
 
 		return $newmessageprops;
 	}
