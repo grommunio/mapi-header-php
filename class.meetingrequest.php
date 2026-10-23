@@ -2490,6 +2490,7 @@ class Meetingrequest {
 			$this->proptags['location'],
 			$this->proptags['startdate'],
 			$this->proptags['duedate'],
+			$this->proptags['alldayevent'],
 			$this->proptags['recurring'],
 			$this->proptags['recurring_pattern'],
 			$this->proptags['recurrence_data'],
@@ -2577,6 +2578,9 @@ class Meetingrequest {
 			// Update $messageprops with timings of occurrence
 			$messageprops[$this->proptags['startdate']] = $imsgprops[$this->proptags['startdate']];
 			$messageprops[$this->proptags['duedate']] = $imsgprops[$this->proptags['duedate']];
+			if (isset($imsgprops[$this->proptags['alldayevent']])) {
+				$messageprops[$this->proptags['alldayevent']] = $imsgprops[$this->proptags['alldayevent']];
+			}
 
 			// Meeting related properties
 			$props[$this->proptags['meetingstatus']] = $imsgprops[$this->proptags['meetingstatus']];
@@ -2752,6 +2756,10 @@ class Meetingrequest {
 		// Set startdate and duedate in response mail.
 		$props[$this->proptags['startdate']] = $messageprops[$this->proptags['startdate']];
 		$props[$this->proptags['duedate']] = $messageprops[$this->proptags['duedate']];
+		// Without it the iCal reply of an all-day meeting is a timed one
+		if (isset($messageprops[$this->proptags['alldayevent']])) {
+			$props[$this->proptags['alldayevent']] = $messageprops[$this->proptags['alldayevent']];
+		}
 
 		// responselocation is used in the UI in Outlook on the response message
 		if (isset($messageprops[$this->proptags['location']])) {
