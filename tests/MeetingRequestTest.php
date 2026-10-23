@@ -144,6 +144,25 @@ class MeetingRequestTest extends TestCase {
 		$this->assertFalse($this->mr->getBasedateFromGlobalID($this->mr->setBasedateInGlobalID($goid)));
 	}
 
+	public function testExceptionOwnerApptIdOptional(): void {
+		$this->mr->proptags = ['basedate' => 1, 'recurring' => 2, 'meetingrecurring' => 3, 'recurrence_data' => 4, 'is_exception' => 5, 'goid' => 6, 'goid2' => 7];
+		$goid = hex2bin('040000008200E00074C5B7101A82E00800000000' . str_repeat('00', 16) . '10000000' . bin2hex('abcdefghijklmnop'));
+		$day = gmmktime(0, 0, 0, 3, 10, 2026);
+		// a series from EWS or iCalendar has none, the exception's own goes too
+		$GLOBALS['MAPI_STUB_RESULTS']['mapi_getprops'] = [PR_OWNER_APPT_ID => 42];
+
+		try {
+			$props = $this->invoke('getOutgoingExceptionProperties', null, false, $day, false, [7 => $goid]);
+			$this->assertArrayNotHasKey(PR_OWNER_APPT_ID, $props);
+			$this->assertSame($day, $this->mr->getBasedateFromGlobalID($props[6]));
+			$props = $this->invoke('getOutgoingExceptionProperties', null, false, $day, false, [7 => $goid, PR_OWNER_APPT_ID => 7]);
+			$this->assertSame(7, $props[PR_OWNER_APPT_ID]);
+		}
+		finally {
+			unset($GLOBALS['MAPI_STUB_RESULTS']['mapi_getprops']);
+		}
+	}
+
 	public function testRecurDatesIgnoreServerTimezone(): void {
 		$serverTimezone = date_default_timezone_get();
 		$this->mr->proptags = ['startdate' => 1, 'duedate' => 2, 'start_recur_date' => 3, 'start_recur_time' => 4, 'end_recur_date' => 5, 'end_recur_time' => 6];
