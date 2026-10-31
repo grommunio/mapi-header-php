@@ -184,8 +184,7 @@ class UtilityFunctionsTest extends TestCase {
 
 	public function testForwardNotificationRecipients(): void {
 		$blob = packForwardNotificationRecipients(['a@example.com', 'b@example.com'], ['Änne', '']);
-		// version, row count, then the first row: SMTP type with E, D and U flags
-		$this->assertSame(pack('VVv', 1, 2, 0x021B), substr($blob, 0, 10));
+		$this->assertSame(pack('VVVV', 1, 2, 17, 0), substr($blob, 0, 16));
 		$this->assertSame([
 			['SMTP', 'a@example.com', 'Änne'],
 			['SMTP', 'b@example.com', 'b@example.com'],
@@ -194,17 +193,45 @@ class UtilityFunctionsTest extends TestCase {
 		$this->assertSame([], unpackForwardNotificationRecipients(pack('VV', 1, 0)));
 	}
 
-	public function testForwardNotificationRecipientsOfOtherWriters(): void {
-		// 8-bit strings, an X500 row, an address type of its own
-		$x500 = pack('vCC', 0x0011, 0, 0) . "/o=org/cn=anna\0" . "Anna\0" . pack('vC', 0, 0);
-		$other = pack('v', 0x8018) . "SMTP\0" . "carl@example.com\0" . "Carl\0" . pack('vC', 0, 0);
+	public function testForwardNotificationRecipientsOfExchange(): void {
+		// written by Exchange SE 15.2.2562
+		$exchange = (string) file_get_contents(__DIR__ . '/fixtures/forward_notification_recipients.bin');
 		$this->assertSame([
-			['EX', '/o=org/cn=anna', 'Anna'],
-			['SMTP', 'carl@example.com', 'Carl'],
-		], unpackForwardNotificationRecipients(pack('VV', 1, 2) . $x500 . $other));
-		// a row with properties ends the list
-		$props = pack('v', 0x0018) . "dora@example.com\0Dora\0" . pack('vCV', 1, 0, 7);
-		$this->assertSame([['', 'dora@example.com', 'Dora']], unpackForwardNotificationRecipients(pack('VV', 1, 2) . $props . $other));
+			['SMTP', 'fwdtest1@gromm.at', 'Fwd Target One'],
+			['SMTP', 'fwdtest2@gromm.at', 'fwdtest2@gromm.at'],
+		], unpackForwardNotificationRecipients($exchange));
+		// PR_ENTRYID aside
+		$utf16 = static fn (string $s): string => (string) iconv('UTF-8', 'UTF-16LE', $s) . "\0\0";
+		$oneoff = static fn (int $flags, string $name, string $addr, callable $str): string => pack('V', 0) .
+			hex2bin('812b1fa4bea310199d6e00dd010f5402') . pack('vv', 0, $flags) . $str($name) . $str('SMTP') . $str($addr);
+		$expected = $exchange;
+		foreach ([['Fwd Target One', 'fwdtest1@gromm.at'], ['fwdtest2@gromm.at', 'fwdtest2@gromm.at']] as [$name, $addr]) {
+			$ansi = $oneoff(0x0001, $name, $addr, static fn (string $s): string => $s . "\0");
+			$wide = $oneoff(0x8001, $name, $addr, $utf16);
+			$expected = str_replace(pack('Vv', 0x0FFF0102, strlen($ansi)) . $ansi, pack('Vv', 0x0FFF0102, strlen($wide)) . $wide, $expected);
+		}
+		$this->assertSame(bin2hex($expected), bin2hex(packForwardNotificationRecipients(['fwdtest1@gromm.at', 'fwdtest2@gromm.at'], ['Fwd Target One', ''])));
+	}
+
+	public function testForwardNotificationRecipientsOfOtherWriters(): void {
+		$row = static function (array $props): string {
+			$out = pack('VV', count($props), 0);
+			foreach ($props as [$tag, $value]) {
+				$out .= pack('V', $tag) . (is_int($value) ? pack('V', $value) : pack('v', strlen($value)) . $value);
+			}
+
+			return $out;
+		};
+		// 8-bit strings, an X500 row with and one without an SMTP address
+		$anna = $row([[0x3001001E, "Anna\0"], [0x3002001E, "EX\0"], [0x3003001E, "/o=org/cn=anna\0"], [0x39FE001E, "anna@example.com\0"]]);
+		$bert = $row([[0x3002001E, "EX\0"], [0x3003001E, "/o=org/cn=bert\0"], [0x3A20001E, "Bert\0"], [0x0C150003, 1]]);
+		$this->assertSame([
+			['SMTP', 'anna@example.com', 'Anna'],
+			['EX', '/o=org/cn=bert', 'Bert'],
+		], unpackForwardNotificationRecipients(pack('VV', 1, 2) . $anna . $bert));
+		// a property of unknown size ends the list
+		$carl = $row([[0x3003001E, "carl@example.com\0"], [0x1234101F, "x"]]);
+		$this->assertSame([['SMTP', 'anna@example.com', 'Anna']], unpackForwardNotificationRecipients(pack('VV', 1, 3) . $anna . $carl . $bert));
 		// cut short, a different version, nothing at all
 		$blob = packForwardNotificationRecipients(['a@example.com', 'b@example.com'], ['A', 'B']);
 		$this->assertSame([['SMTP', 'a@example.com', 'A']], unpackForwardNotificationRecipients(substr($blob, 0, -6)));
