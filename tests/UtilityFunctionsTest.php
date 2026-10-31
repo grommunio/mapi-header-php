@@ -197,20 +197,20 @@ class UtilityFunctionsTest extends TestCase {
 		// written by Exchange SE 15.2.2562
 		$exchange = (string) file_get_contents(__DIR__ . '/fixtures/forward_notification_recipients.bin');
 		$this->assertSame([
-			['SMTP', 'fwdtest1@gromm.at', 'Fwd Target One'],
-			['SMTP', 'fwdtest2@gromm.at', 'fwdtest2@gromm.at'],
+			['SMTP', 'fwdtest1@example.com', 'Fwd Target One'],
+			['SMTP', 'fwdtest2@example.com', 'fwdtest2@example.com'],
 		], unpackForwardNotificationRecipients($exchange));
 		// PR_ENTRYID aside
 		$utf16 = static fn (string $s): string => (string) iconv('UTF-8', 'UTF-16LE', $s) . "\0\0";
 		$oneoff = static fn (int $flags, string $name, string $addr, callable $str): string => pack('V', 0) .
 			hex2bin('812b1fa4bea310199d6e00dd010f5402') . pack('vv', 0, $flags) . $str($name) . $str('SMTP') . $str($addr);
 		$expected = $exchange;
-		foreach ([['Fwd Target One', 'fwdtest1@gromm.at'], ['fwdtest2@gromm.at', 'fwdtest2@gromm.at']] as [$name, $addr]) {
+		foreach ([['Fwd Target One', 'fwdtest1@example.com'], ['fwdtest2@example.com', 'fwdtest2@example.com']] as [$name, $addr]) {
 			$ansi = $oneoff(0x0001, $name, $addr, static fn (string $s): string => $s . "\0");
 			$wide = $oneoff(0x8001, $name, $addr, $utf16);
 			$expected = str_replace(pack('Vv', 0x0FFF0102, strlen($ansi)) . $ansi, pack('Vv', 0x0FFF0102, strlen($wide)) . $wide, $expected);
 		}
-		$this->assertSame(bin2hex($expected), bin2hex(packForwardNotificationRecipients(['fwdtest1@gromm.at', 'fwdtest2@gromm.at'], ['Fwd Target One', ''])));
+		$this->assertSame(bin2hex($expected), bin2hex(packForwardNotificationRecipients(['fwdtest1@example.com', 'fwdtest2@example.com'], ['Fwd Target One', ''])));
 	}
 
 	public function testForwardNotificationRecipientsOfOtherWriters(): void {
