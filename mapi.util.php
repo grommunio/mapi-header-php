@@ -889,8 +889,9 @@ function getCalendarRestriction(array $props, int $start, int $end): array {
  *
  * @param array $addresses SMTP addresses
  * @param array $names     display names, by the index of $addresses
+ * @param array $types     recipient types, by the index of $addresses, MAPI_TO if missing
  */
-function packForwardNotificationRecipients(array $addresses, array $names): string {
+function packForwardNotificationRecipients(array $addresses, array $names, array $types = []): string {
 	$utf16 = static fn (string $s): string => (string) iconv('UTF-8', 'UTF-16LE', $s) . "\0\0";
 	$rows = '';
 	foreach (array_values($addresses) as $i => $smtp) {
@@ -907,7 +908,7 @@ function packForwardNotificationRecipients(array $addresses, array $names): stri
 			0x3003001F => $utf16($smtp),                    // PR_EMAIL_ADDRESS
 			0x30000003 => $i,                               // PR_ROWID
 			0x0FF60102 => pack('V', $i),                    // PR_INSTANCE_KEY
-			0x0C150003 => MAPI_TO,                          // PR_RECIPIENT_TYPE
+			0x0C150003 => (int) ($types[$i] ?? MAPI_TO),    // PR_RECIPIENT_TYPE
 			0x0FFF0102 => $eid,                             // PR_ENTRYID
 			0x300B0102 => 'SMTP:' . strtoupper($smtp) . "\0", // PR_SEARCH_KEY
 			0x3A20001F => $utf16($name),                    // PR_TRANSMITABLE_DISPLAY_NAME
@@ -936,7 +937,7 @@ function packForwardNotificationRecipients(array $addresses, array $names): stri
 /**
  * The recipients in a PidLidForwardNotificationRecipients value.
  *
- * @return array rows of [address type, address, display name]
+ * @return array rows of [address type, address, display name, recipient type]
  */
 function unpackForwardNotificationRecipients(string $blob): array {
 	$len = strlen($blob);
@@ -996,11 +997,12 @@ function unpackForwardNotificationRecipients(string $blob): array {
 		}
 		$smtp = $string(0x39FE);
 		$addr = $string(0x3003);
+		$type = isset($props[0x0C150003]) ? unpack('V', $props[0x0C150003])[1] : MAPI_TO;
 		if ($smtp !== '') {
-			$rows[] = ['SMTP', $smtp, $name];
+			$rows[] = ['SMTP', $smtp, $name, $type];
 		}
 		elseif ($addr !== '') {
-			$rows[] = [$string(0x3002), $addr, $name];
+			$rows[] = [$string(0x3002), $addr, $name, $type];
 		}
 	}
 
