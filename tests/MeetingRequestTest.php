@@ -73,6 +73,9 @@ class MeetingRequestTest extends TestCase {
 		// a missing name falls back to the address
 		$this->assertSame('b@example.com', $rows[1][PR_DISPLAY_NAME]);
 		$this->assertSame([], $this->invoke('getForwardRecipientRows', []));
+		// Bcc rows are not added, a Cc row is
+		$rows = $this->invoke('getForwardRecipientRows', [3 => packForwardNotificationRecipients(['a@example.com', 'h@example.com', 'c@example.com'], [], [MAPI_TO, MAPI_BCC, MAPI_CC])]);
+		$this->assertSame(['a@example.com', 'c@example.com'], array_column($rows, PR_SMTP_ADDRESS));
 	}
 
 	public function testNewForwardRecipients(): void {
@@ -85,6 +88,8 @@ class MeetingRequestTest extends TestCase {
 		$new = $this->invoke('getNewForwardRecipients', $existing, $forwarded);
 		$this->assertSame(['carl@example.com'], array_column($new, PR_SMTP_ADDRESS));
 		$this->assertSame([], $this->invoke('getNewForwardRecipients', $existing, []));
+		// nor the organizer
+		$this->assertSame(['carl@example.com', 'BERT@example.com'], array_column($this->invoke('getNewForwardRecipients', [], $forwarded, 'ANNA@example.com'), PR_SMTP_ADDRESS));
 	}
 
 	private function timezone(string $zone): array {

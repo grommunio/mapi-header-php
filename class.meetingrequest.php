@@ -663,6 +663,8 @@ class Meetingrequest {
 
 		$store = $this->resolveDelegateStoreAndCalendar($messageprops)['store'];
 		$this->ensureCalendarWriteAccess($store);
+		$owner = $this->getOwnerAddress($store, false);
+		$organizer = $owner !== false ? (string) $this->getSMTPAddress($owner[3]) : '';
 
 		$basedate = $this->getBasedateFromGlobalID($messageprops[$this->proptags['goid']]);
 		$recurringItem = false;
@@ -676,7 +678,7 @@ class Meetingrequest {
 			$calendarItem = mapi_attach_openobj($attach, MAPI_MODIFY);
 		}
 
-		$added = $this->addForwardedAttendees($calendarItem, $recurringItem, $attach, $messageprops);
+		$added = $this->addForwardedAttendees($calendarItem, $recurringItem, $attach, $messageprops, $organizer);
 		$this->setProcessed();
 
 		return $added;
@@ -746,7 +748,7 @@ class Meetingrequest {
 	 *
 	 * @return bool true if attendees were added
 	 */
-	private function addForwardedAttendees(mixed $calendarItem, mixed $recurringItem, mixed $attach, array $messageprops): bool {
+	private function addForwardedAttendees(mixed $calendarItem, mixed $recurringItem, mixed $attach, array $messageprops, string $organizer): bool {
 		$existing = $this->getMessageRecipients($calendarItem);
 		$seriesRecipients = [];
 		// an exception without recipients of its own has those of the series
@@ -754,7 +756,7 @@ class Meetingrequest {
 			$existing = $seriesRecipients = $this->getMessageRecipients($recurringItem);
 		}
 		$added = [];
-		foreach ($this->getNewForwardRecipients($existing, $this->getForwardRecipientRows($messageprops)) as $recip) {
+		foreach ($this->getNewForwardRecipients($existing, $this->getForwardRecipientRows($messageprops), $organizer) as $recip) {
 			$added[] = $this->resolveForwardRecipient($recip);
 		}
 
@@ -2031,7 +2033,7 @@ class Meetingrequest {
 			return;
 		}
 
-		[$addresses, $names, $forwardedTo] = $this->getForwardedAddresses($recipients);
+		[$addresses, $names, $types, $forwardedTo] = $this->getForwardedAddresses($recipients);
 		if (empty($addresses)) {
 			return;
 		}
@@ -2050,7 +2052,7 @@ class Meetingrequest {
 			$this->proptags['tzdefstart'],
 		]);
 		$body = $this->getForwardNotificationBody($messageprops, $userDetails[0], $forwardedTo);
-		$props = $this->getForwardNotificationProperties($messageprops, $body, $addresses, $names);
+		$props = $this->getForwardNotificationProperties($messageprops, $body, $addresses, $names, $types);
 
 		$new = $this->createOutgoingMessage();
 		mapi_setprops($new, $props);
@@ -2068,26 +2070,27 @@ class Meetingrequest {
 
 	/**
 	 * The attendees a meeting was forwarded to, as a forward notification lists them.
+	 * Like Exchange SE it has Bcc recipients too, which the organizer does not add.
 	 *
 	 * @param array $recipients recipient rows of the attendees the meeting was forwarded to
 	 *
-	 * @return array their SMTP addresses, their names, and how the body shows them
+	 * @return array their SMTP addresses, names, recipient types, and how the body shows them
 	 */
 	private function getForwardedAddresses(array $recipients): array {
-		$addresses = $names = $forwardedTo = [];
+		$addresses = $names = $types = $forwardedTo = [];
 		foreach ($recipients as $recip) {
 			$smtp = $this->getRecipientSMTPAddress($recip);
-			// Bcc recipients stay hidden from the organizer
-			if ($smtp === '' || ($recip[PR_RECIPIENT_TYPE] ?? MAPI_TO) == MAPI_BCC) {
+			if ($smtp === '') {
 				continue;
 			}
 			$name = $recip[PR_DISPLAY_NAME] ?? '';
 			$addresses[] = $smtp;
 			$names[] = $name !== '' ? $name : $smtp;
+			$types[] = $recip[PR_RECIPIENT_TYPE] ?? MAPI_TO;
 			$forwardedTo[] = $name !== '' && strcasecmp($name, $smtp) != 0 ? $name . ' <' . $smtp . '>' : $smtp;
 		}
 
-		return [$addresses, $names, $forwardedTo];
+		return [$addresses, $names, $types, $forwardedTo];
 	}
 
 	/**
@@ -2122,8 +2125,9 @@ class Meetingrequest {
 	 * @param string $body         text of the notification
 	 * @param array  $addresses    SMTP addresses of the attendees the meeting was forwarded to
 	 * @param array  $names        their names
+	 * @param array  $types        their recipient types
 	 */
-	private function getForwardNotificationProperties(array $messageprops, string $body, array $addresses, array $names): array {
+	private function getForwardNotificationProperties(array $messageprops, string $body, array $addresses, array $names, array $types): array {
 		$subject = $messageprops[PR_SUBJECT] ?? '';
 		$location = $messageprops[$this->proptags['location']] ?? '';
 
@@ -2131,7 +2135,7 @@ class Meetingrequest {
 			PR_MESSAGE_CLASS => 'IPM.Schedule.Meeting.Notification.Forward',
 			PR_SUBJECT => _('Meeting Forward Notification') . ': ' . $subject,
 			PR_BODY => $body,
-			$this->proptags['forward_notification_recipients'] => packForwardNotificationRecipients($addresses, $names),
+			$this->proptags['forward_notification_recipients'] => packForwardNotificationRecipients($addresses, $names, $types),
 			$this->proptags['attendee_critical_change'] => time(),
 		];
 		if (isset($messageprops[$this->proptags['goid']])) {
@@ -4896,9 +4900,10 @@ class Meetingrequest {
 	private function getForwardRecipientRows(array $messageprops): array {
 		$blob = (string) ($messageprops[$this->proptags['forward_notification_recipients']] ?? '');
 		$rows = [];
-		foreach (unpackForwardNotificationRecipients($blob) as [$addrtype, $smtp, $name]) {
+		foreach (unpackForwardNotificationRecipients($blob) as [$addrtype, $smtp, $name, $type]) {
 			$smtp = trim($smtp);
-			if ($smtp === '' || strcasecmp($addrtype, 'SMTP') != 0) {
+			// Bcc rows are not added, MS-OXOCAL v22.1 §3.1.4.10.2.2
+			if ($smtp === '' || strcasecmp($addrtype, 'SMTP') != 0 || $type == MAPI_BCC) {
 				continue;
 			}
 			$name = trim($name);
@@ -4918,17 +4923,18 @@ class Meetingrequest {
 	}
 
 	/**
-	 * The forwarded attendees that are not attendees of the meeting yet.
+	 * The forwarded attendees that are not attendees of the meeting yet, nor its organizer.
 	 *
-	 * @param array $existing  recipient rows of the meeting
-	 * @param array $forwarded recipient rows of the forwarded attendees
+	 * @param array  $existing  recipient rows of the meeting
+	 * @param array  $forwarded recipient rows of the forwarded attendees
+	 * @param string $organizer SMTP address of the organizer
 	 *
 	 * @return array rows of $forwarded, each address once
 	 */
-	private function getNewForwardRecipients(array $existing, array $forwarded): array {
+	private function getNewForwardRecipients(array $existing, array $forwarded, string $organizer = ''): array {
 		// the forwarded rows carry an SMTP address and no entryid, so
 		// compareRecipients() would match them by that address alone
-		$known = [];
+		$known = $organizer !== '' ? [strtolower($organizer) => true] : [];
 		foreach ($existing as $recip) {
 			$smtp = $this->getRecipientSMTPAddress($recip);
 			if ($smtp !== '') {

@@ -889,9 +889,12 @@ function getCalendarRestriction(array $props, int $start, int $end): array {
  *
  * @param array $addresses SMTP addresses
  * @param array $names     display names, by the index of $addresses
+ * @param array $types     recipient types, by the index of $addresses, MAPI_TO if missing
  */
-function packForwardNotificationRecipients(array $addresses, array $names): string {
+function packForwardNotificationRecipients(array $addresses, array $names, array $types = []): string {
 	$utf16 = static fn (string $s): string => (string) iconv('UTF-8', 'UTF-16LE', $s) . "\0\0";
+	// php-mapi defines string tags as PT_STRING8, Exchange writes PT_UNICODE
+	$wide = static fn (int $tag): int => mapi_prop_tag(PT_UNICODE, mapi_prop_id($tag));
 	$rows = '';
 	foreach (array_values($addresses) as $i => $smtp) {
 		$smtp = (string) $smtp;
@@ -899,32 +902,34 @@ function packForwardNotificationRecipients(array $addresses, array $names): stri
 		if ($name === '') {
 			$name = $smtp;
 		}
-		$eid = pack('V', 0) . hex2bin('812b1fa4bea310199d6e00dd010f5402') . pack('vv', 0, 0x8001) .
+		// one-off entry ID, MUIDOOP is the provider
+		$eid = pack('V', 0) . hex2bin('812b1fa4bea310199d6e00dd010f5402') .
+			pack('vv', 0, MAPI_ONE_OFF_UNICODE | MAPI_ONE_OFF_NO_RICH_INFO) .
 			$utf16($name) . $utf16('SMTP') . $utf16($smtp);
 		$props = [
-			0x3001001F => $utf16($name),                    // PR_DISPLAY_NAME
-			0x3002001F => $utf16('SMTP'),                   // PR_ADDRTYPE
-			0x3003001F => $utf16($smtp),                    // PR_EMAIL_ADDRESS
-			0x30000003 => $i,                               // PR_ROWID
-			0x0FF60102 => pack('V', $i),                    // PR_INSTANCE_KEY
-			0x0C150003 => MAPI_TO,                          // PR_RECIPIENT_TYPE
-			0x0FFF0102 => $eid,                             // PR_ENTRYID
-			0x300B0102 => 'SMTP:' . strtoupper($smtp) . "\0", // PR_SEARCH_KEY
-			0x3A20001F => $utf16($name),                    // PR_TRANSMITABLE_DISPLAY_NAME
-			0x0E0F000B => true,                             // PR_RESPONSIBILITY
-			0x3A40000B => false,                            // PR_SEND_RICH_INFO
-			0x0FF90102 => $eid,                             // PR_RECORD_KEY
-			0x5FF70102 => $eid,                             // PR_RECIPIENT_ENTRYID
-			0x39000003 => DT_MAILUSER,                      // PR_DISPLAY_TYPE
-			0x0FFE0003 => MAPI_MAILUSER,                    // PR_OBJECT_TYPE
-			0x39FE001F => $utf16($smtp),                    // PR_SMTP_ADDRESS
-			0x5FFD0003 => recipSendable,                    // PR_RECIPIENT_FLAGS
+			$wide(PR_DISPLAY_NAME) => $utf16($name),
+			$wide(PR_ADDRTYPE) => $utf16('SMTP'),
+			$wide(PR_EMAIL_ADDRESS) => $utf16($smtp),
+			PR_ROWID => $i,
+			PR_INSTANCE_KEY => pack('V', $i),
+			PR_RECIPIENT_TYPE => (int) ($types[$i] ?? MAPI_TO),
+			PR_ENTRYID => $eid,
+			PR_SEARCH_KEY => 'SMTP:' . strtoupper($smtp) . "\0",
+			$wide(PR_TRANSMITABLE_DISPLAY_NAME) => $utf16($name),
+			PR_RESPONSIBILITY => true,
+			PR_SEND_RICH_INFO => false,
+			PR_RECORD_KEY => $eid,
+			PR_RECIPIENT_ENTRYID => $eid,
+			PR_DISPLAY_TYPE => DT_MAILUSER,
+			PR_OBJECT_TYPE => MAPI_MAILUSER,
+			$wide(PR_SMTP_ADDRESS) => $utf16($smtp),
+			PR_RECIPIENT_FLAGS => recipSendable,
 		];
 		$rows .= pack('VV', count($props), 0);
 		foreach ($props as $tag => $value) {
-			$rows .= pack('V', $tag) . match ($tag & 0xFFFF) {
-				0x0003 => pack('V', $value),
-				0x000B => pack('v', $value ? 1 : 0),
+			$rows .= pack('V', $tag) . match (mapi_prop_type($tag)) {
+				PT_LONG => pack('V', $value),
+				PT_BOOLEAN => pack('v', $value ? 1 : 0),
 				default => pack('v', strlen($value)) . $value,
 			};
 		}
@@ -936,7 +941,7 @@ function packForwardNotificationRecipients(array $addresses, array $names): stri
 /**
  * The recipients in a PidLidForwardNotificationRecipients value.
  *
- * @return array rows of [address type, address, display name]
+ * @return array rows of [address type, address, display name, recipient type]
  */
 function unpackForwardNotificationRecipients(string $blob): array {
 	$len = strlen($blob);
@@ -959,12 +964,12 @@ function unpackForwardNotificationRecipients(string $blob): array {
 			}
 			$tag = unpack('V', $blob, $pos)[1];
 			$pos += 4;
-			$size = match ($tag & 0xFFFF) {
-				0x0002, 0x000B => 2,
-				0x0003, 0x0004, 0x000A => 4,
-				0x0005, 0x0006, 0x0007, 0x0014, 0x0040 => 8,
-				0x0048 => 16,
-				0x001E, 0x001F, 0x0102 => null,
+			$size = match (mapi_prop_type($tag)) {
+				PT_SHORT, PT_BOOLEAN => 2,
+				PT_LONG, PT_FLOAT, PT_ERROR => 4,
+				PT_DOUBLE, PT_CURRENCY, PT_APPTIME, PT_I8, PT_SYSTIME => 8,
+				PT_CLSID => 16,
+				PT_STRING8, PT_UNICODE, PT_BINARY => null,
 				default => -1,
 			};
 			if ($size === -1) {
@@ -983,24 +988,26 @@ function unpackForwardNotificationRecipients(string $blob): array {
 			$props[$tag] = substr($blob, $pos, $size);
 			$pos += $size;
 		}
-		$string = static function (int $id) use ($props): string {
-			if (isset($props[$id << 16 | 0x001F])) {
-				return rtrim((string) iconv('UTF-16LE', 'UTF-8', $props[$id << 16 | 0x001F]), "\0");
+		$string = static function (int $tag) use ($props): string {
+			$wide = mapi_prop_tag(PT_UNICODE, mapi_prop_id($tag));
+			if (isset($props[$wide])) {
+				return rtrim((string) iconv('UTF-16LE', 'UTF-8', $props[$wide]), "\0");
 			}
 
-			return rtrim($props[$id << 16 | 0x001E] ?? '', "\0");
+			return rtrim($props[mapi_prop_tag(PT_STRING8, mapi_prop_id($tag))] ?? '', "\0");
 		};
-		$name = $string(0x3001);
+		$name = $string(PR_DISPLAY_NAME);
 		if ($name === '') {
-			$name = $string(0x3A20);
+			$name = $string(PR_TRANSMITABLE_DISPLAY_NAME);
 		}
-		$smtp = $string(0x39FE);
-		$addr = $string(0x3003);
+		$smtp = $string(PR_SMTP_ADDRESS);
+		$addr = $string(PR_EMAIL_ADDRESS);
+		$type = isset($props[PR_RECIPIENT_TYPE]) ? unpack('V', $props[PR_RECIPIENT_TYPE])[1] : MAPI_TO;
 		if ($smtp !== '') {
-			$rows[] = ['SMTP', $smtp, $name];
+			$rows[] = ['SMTP', $smtp, $name, $type];
 		}
 		elseif ($addr !== '') {
-			$rows[] = [$string(0x3002), $addr, $name];
+			$rows[] = [$string(PR_ADDRTYPE), $addr, $name, $type];
 		}
 	}
 

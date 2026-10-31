@@ -183,11 +183,11 @@ class UtilityFunctionsTest extends TestCase {
 	}
 
 	public function testForwardNotificationRecipients(): void {
-		$blob = packForwardNotificationRecipients(['a@example.com', 'b@example.com'], ['Änne', '']);
+		$blob = packForwardNotificationRecipients(['a@example.com', 'b@example.com'], ['Änne', ''], [1 => MAPI_CC]);
 		$this->assertSame(pack('VVVV', 1, 2, 17, 0), substr($blob, 0, 16));
 		$this->assertSame([
-			['SMTP', 'a@example.com', 'Änne'],
-			['SMTP', 'b@example.com', 'b@example.com'],
+			['SMTP', 'a@example.com', 'Änne', MAPI_TO],
+			['SMTP', 'b@example.com', 'b@example.com', MAPI_CC],
 		], unpackForwardNotificationRecipients($blob));
 		$this->assertSame(pack('VV', 1, 0), packForwardNotificationRecipients([], []));
 		$this->assertSame([], unpackForwardNotificationRecipients(pack('VV', 1, 0)));
@@ -197,20 +197,37 @@ class UtilityFunctionsTest extends TestCase {
 		// written by Exchange SE 15.2.2562
 		$exchange = (string) file_get_contents(__DIR__ . '/fixtures/forward_notification_recipients.bin');
 		$this->assertSame([
-			['SMTP', 'fwdtest1@gromm.at', 'Fwd Target One'],
-			['SMTP', 'fwdtest2@gromm.at', 'fwdtest2@gromm.at'],
+			['SMTP', 'fwdtest1@example.com', 'Fwd Target One', MAPI_TO],
+			['SMTP', 'fwdtest2@example.com', 'fwdtest2@example.com', MAPI_TO],
 		], unpackForwardNotificationRecipients($exchange));
-		// PR_ENTRYID aside
+		$this->assertSame(bin2hex(self::wideEntryIds($exchange, [['Fwd Target One', 'fwdtest1@example.com'], ['fwdtest2@example.com', 'fwdtest2@example.com']])),
+			bin2hex(packForwardNotificationRecipients(['fwdtest1@example.com', 'fwdtest2@example.com'], ['Fwd Target One', ''])));
+		// a forward to To, Cc and Bcc recipients
+		$exchange = (string) file_get_contents(__DIR__ . '/fixtures/forward_notification_recipients_types.bin');
+		$this->assertSame([
+			['SMTP', 'fwdtest7@example.com', 'To Seven', MAPI_TO],
+			['SMTP', 'fwdtest8@example.com', 'Cc Eight', MAPI_CC],
+			['SMTP', 'fwdtest9@example.com', 'Bcc Nine', MAPI_BCC],
+		], unpackForwardNotificationRecipients($exchange));
+		$this->assertSame(bin2hex(self::wideEntryIds($exchange, [['To Seven', 'fwdtest7@example.com'], ['Cc Eight', 'fwdtest8@example.com'], ['Bcc Nine', 'fwdtest9@example.com']])),
+			bin2hex(packForwardNotificationRecipients(['fwdtest7@example.com', 'fwdtest8@example.com', 'fwdtest9@example.com'], ['To Seven', 'Cc Eight', 'Bcc Nine'], [MAPI_TO, MAPI_CC, MAPI_BCC])));
+	}
+
+	/**
+	 * A value written by Exchange with the Unicode PR_ENTRYID that
+	 * packForwardNotificationRecipients() writes in place of the 8-bit one.
+	 */
+	private static function wideEntryIds(string $exchange, array $recipients): string {
 		$utf16 = static fn (string $s): string => (string) iconv('UTF-8', 'UTF-16LE', $s) . "\0\0";
 		$oneoff = static fn (int $flags, string $name, string $addr, callable $str): string => pack('V', 0) .
 			hex2bin('812b1fa4bea310199d6e00dd010f5402') . pack('vv', 0, $flags) . $str($name) . $str('SMTP') . $str($addr);
-		$expected = $exchange;
-		foreach ([['Fwd Target One', 'fwdtest1@gromm.at'], ['fwdtest2@gromm.at', 'fwdtest2@gromm.at']] as [$name, $addr]) {
+		foreach ($recipients as [$name, $addr]) {
 			$ansi = $oneoff(0x0001, $name, $addr, static fn (string $s): string => $s . "\0");
 			$wide = $oneoff(0x8001, $name, $addr, $utf16);
-			$expected = str_replace(pack('Vv', 0x0FFF0102, strlen($ansi)) . $ansi, pack('Vv', 0x0FFF0102, strlen($wide)) . $wide, $expected);
+			$exchange = str_replace(pack('Vv', 0x0FFF0102, strlen($ansi)) . $ansi, pack('Vv', 0x0FFF0102, strlen($wide)) . $wide, $exchange);
 		}
-		$this->assertSame(bin2hex($expected), bin2hex(packForwardNotificationRecipients(['fwdtest1@gromm.at', 'fwdtest2@gromm.at'], ['Fwd Target One', ''])));
+
+		return $exchange;
 	}
 
 	public function testForwardNotificationRecipientsOfOtherWriters(): void {
@@ -226,15 +243,15 @@ class UtilityFunctionsTest extends TestCase {
 		$anna = $row([[0x3001001E, "Anna\0"], [0x3002001E, "EX\0"], [0x3003001E, "/o=org/cn=anna\0"], [0x39FE001E, "anna@example.com\0"]]);
 		$bert = $row([[0x3002001E, "EX\0"], [0x3003001E, "/o=org/cn=bert\0"], [0x3A20001E, "Bert\0"], [0x0C150003, 1]]);
 		$this->assertSame([
-			['SMTP', 'anna@example.com', 'Anna'],
-			['EX', '/o=org/cn=bert', 'Bert'],
+			['SMTP', 'anna@example.com', 'Anna', MAPI_TO],
+			['EX', '/o=org/cn=bert', 'Bert', MAPI_TO],
 		], unpackForwardNotificationRecipients(pack('VV', 1, 2) . $anna . $bert));
 		// a property of unknown size ends the list
 		$carl = $row([[0x3003001E, "carl@example.com\0"], [0x1234101F, "x"]]);
-		$this->assertSame([['SMTP', 'anna@example.com', 'Anna']], unpackForwardNotificationRecipients(pack('VV', 1, 3) . $anna . $carl . $bert));
+		$this->assertSame([['SMTP', 'anna@example.com', 'Anna', MAPI_TO]], unpackForwardNotificationRecipients(pack('VV', 1, 3) . $anna . $carl . $bert));
 		// cut short, a different version, nothing at all
 		$blob = packForwardNotificationRecipients(['a@example.com', 'b@example.com'], ['A', 'B']);
-		$this->assertSame([['SMTP', 'a@example.com', 'A']], unpackForwardNotificationRecipients(substr($blob, 0, -6)));
+		$this->assertSame([['SMTP', 'a@example.com', 'A', MAPI_TO]], unpackForwardNotificationRecipients(substr($blob, 0, -6)));
 		$this->assertSame([], unpackForwardNotificationRecipients(pack('VV', 2, 0)));
 		$this->assertSame([], unpackForwardNotificationRecipients(''));
 	}
