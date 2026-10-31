@@ -185,7 +185,7 @@ class MeetingWorkflowModelTest extends TestCase {
 			$label = json_encode(array_diff_key($case, ['calls' => 1, 'tags' => 1, 'result' => 1]));
 			$this->assertNoWarnings($case);
 			$tags = $case['tags'];
-			$told = $case['organizer'] === 'local' && !in_array($case['recipients'], ['empty', 'bcc'], true);
+			$told = $case['organizer'] === 'local' && $case['recipients'] !== 'empty';
 			if ($told && $case['source'] === 'occurrence-deleted') {
 				$this->assertSame('MAPIException: The occurrence has been deleted', $case['error'] ?? null, $label);
 
@@ -200,16 +200,18 @@ class MeetingWorkflowModelTest extends TestCase {
 			$this->assertSame('IPM.Schedule.Meeting.Notification.Forward', $props[PR_MESSAGE_CLASS], $label);
 			$exception = $case['source'] === 'occurrence-exception';
 			$this->assertSame('Meeting Forward Notification: ' . ($exception ? 'Moved occurrence' : 'Team meeting'), $props[PR_SUBJECT], $label);
-			[$addresses, $names, $listed] = match ($case['recipients']) {
-				'plain' => [['plain@example.invalid'], ['plain@example.invalid'], 'plain@example.invalid'],
-				'named' => [['named@example.invalid'], ['Named Person'], 'Named Person <named@example.invalid>'],
+			[$addresses, $names, $types, $listed] = match ($case['recipients']) {
+				'bcc' => [['hidden@example.invalid'], ['Hidden'], [MAPI_BCC], 'Hidden <hidden@example.invalid>'],
+				'plain' => [['plain@example.invalid'], ['plain@example.invalid'], [MAPI_TO], 'plain@example.invalid'],
+				'named' => [['named@example.invalid'], ['Named Person'], [MAPI_TO], 'Named Person <named@example.invalid>'],
 				'mixed' => [
-					['named@example.invalid', 'same@example.invalid', 'colleague@example.invalid'],
-					['Named Person', 'same@example.invalid', 'Colleague'],
-					'Named Person <named@example.invalid>, same@example.invalid, Colleague <colleague@example.invalid>',
+					['named@example.invalid', 'hidden@example.invalid', 'same@example.invalid', 'colleague@example.invalid'],
+					['Named Person', 'Hidden', 'same@example.invalid', 'Colleague'],
+					[MAPI_TO, MAPI_BCC, MAPI_CC, MAPI_TO],
+					'Named Person <named@example.invalid>, Hidden <hidden@example.invalid>, same@example.invalid, Colleague <colleague@example.invalid>',
 				],
 			};
-			$this->assertSame(array_map(null, array_fill(0, count($addresses), 'SMTP'), $addresses, $names, array_fill(0, count($addresses), MAPI_TO)), unpackForwardNotificationRecipients(hex2bin(substr($props[$tags['forward_notification_recipients']], 4))), $label);
+			$this->assertSame(array_map(null, array_fill(0, count($addresses), 'SMTP'), $addresses, $names, $types), unpackForwardNotificationRecipients(hex2bin(substr($props[$tags['forward_notification_recipients']], 4))), $label);
 			$this->assertStringStartsWith('Test User has forwarded your meeting request to additional recipients.', $props[PR_BODY], $label);
 			$this->assertStringEndsWith("\nRecipients: " . $listed . "\n", $props[PR_BODY], $label);
 			$this->assertStringContainsString("\nWhen: ", $props[PR_BODY], $label);
