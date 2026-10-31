@@ -249,7 +249,7 @@ class MeetingWorkflowModelTest extends TestCase {
 
 	public function testProcessMeetingForwardNotification(): void {
 		$cases = $this->runCases('notification');
-		$this->assertCount(17, $cases);
+		$this->assertCount(18, $cases);
 		$expected = [
 			'not-notification' => [false, null, [], []],
 			'processed' => [false, true, [], []],
@@ -262,6 +262,7 @@ class MeetingWorkflowModelTest extends TestCase {
 			'single-known' => [true, true, ['new2@example.invalid'], []],
 			'single-local' => [true, true, ['/o=grommunio/ou=first/cn=Recipients/cn=colleague'], []],
 			'single-no-names' => [true, true, ['new1@example.invalid', 'new2@example.invalid'], []],
+			'single-organizer' => [true, true, ['new1@example.invalid'], []],
 			'series' => [true, true, ['new1@example.invalid', 'new2@example.invalid'], []],
 			'occurrence-deleted' => [false, true, [], []],
 			'occurrence-new' => [true, true, [], ['attendee@example.invalid', 'new1@example.invalid', 'new2@example.invalid']],

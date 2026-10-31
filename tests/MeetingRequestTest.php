@@ -88,6 +88,8 @@ class MeetingRequestTest extends TestCase {
 		$new = $this->invoke('getNewForwardRecipients', $existing, $forwarded);
 		$this->assertSame(['carl@example.com'], array_column($new, PR_SMTP_ADDRESS));
 		$this->assertSame([], $this->invoke('getNewForwardRecipients', $existing, []));
+		// nor the organizer
+		$this->assertSame(['carl@example.com', 'BERT@example.com'], array_column($this->invoke('getNewForwardRecipients', [], $forwarded, 'ANNA@example.com'), PR_SMTP_ADDRESS));
 	}
 
 	private function timezone(string $zone): array {

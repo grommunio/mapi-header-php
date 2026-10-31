@@ -1145,7 +1145,7 @@ switch ($argv[2] ?? '') {
 
 	case 'notification':
 		$names = ['not-notification', 'processed', 'no-goid', 'in-sentmail', 'in-outbox', 'no-calendar-item', 'not-organized',
-			'single-new', 'single-known', 'single-local', 'single-no-names', 'series', 'occurrence-deleted', 'occurrence-new',
+			'single-new', 'single-known', 'single-local', 'single-no-names', 'single-organizer', 'series', 'occurrence-deleted', 'occurrence-new',
 			'occurrence-off-pattern', 'occurrence-exception', 'occurrence-exception-no-recipients'];
 		foreach ($names as $name) {
 			$mailbox = new Mailbox();
@@ -1161,6 +1161,9 @@ switch ($argv[2] ?? '') {
 			$forwarded = [$tags['forward_notification_recipients'] => packForwardNotificationRecipients(['new1@example.invalid', 'new2@example.invalid'], ['New One', 'New Two'])];
 			if ($name === 'single-local') {
 				$forwarded = [$tags['forward_notification_recipients'] => packForwardNotificationRecipients(['colleague@example.invalid'], ['Colleague'])];
+			}
+			elseif ($name === 'single-organizer') {
+				$forwarded = [$tags['forward_notification_recipients'] => packForwardNotificationRecipients(['User@example.invalid', 'new1@example.invalid'], ['Test User', 'New One'])];
 			}
 			elseif ($name === 'single-no-names') {
 				$forwarded = [$tags['forward_notification_recipients'] => packForwardNotificationRecipients(['new1@example.invalid', ' ', 'new2@example.invalid'], [])];
