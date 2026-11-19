@@ -123,6 +123,8 @@ class Meetingrequest {
 	 */
 	private $includesResources;
 	private $nonAcceptingResources;
+	// resources that get the request mailed instead of a direct booking
+	private array $mailedResources = [];
 	private $recipientDisplayname;
 
 	// the address book of the session, opened once per request
@@ -3150,6 +3152,7 @@ class Meetingrequest {
 		$resourceRecipients = $this->getMessageRecipients($message, $getResourcesRestriction);
 
 		$this->errorSetResource = false;
+		$this->mailedResources = [];
 		$resourceRecipData = [];
 		$resourceMsgProps = null;
 
@@ -3164,19 +3167,18 @@ class Meetingrequest {
 				$e->setHandled();
 				$userStore = null;
 			}
-			if (!$userStore) {
-				$this->errorSetResource = 1; // No access
+			$calFolder = $userStore ? $this->openResourceCalendar($userStore) : false;
+			if ($calFolder === false) {
+				// Not bookable by us: send the request and let the resource process it
+				$this->mailedResources[] = $resourceRecipients[$i][PR_ENTRYID];
+				++$i;
 
-				break;
+				continue;
 			}
 
-			$calFolder = $this->openResourceCalendar($userStore);
+			$this->checkResourceBooking($message, $messageprops, $userStore, $calFolder, $resourceRecipients[$i], $cancel);
 
-			if ($calFolder !== false) {
-				$this->checkResourceBooking($message, $messageprops, $userStore, $calFolder, $resourceRecipients[$i], $cancel);
-			}
-
-			if (empty($this->errorSetResource) && $calFolder !== false) {
+			if (empty($this->errorSetResource)) {
 				$newResourceMsg = $this->findResourceCalendarMessage($userStore, $calFolder, $messageprops, $resourceMsgProps);
 
 				$this->setResourceMessageProperties($messageprops, $prefix, $cancel);
@@ -3191,14 +3193,6 @@ class Meetingrequest {
 				$this->includesResources = true;
 			}
 			else {
-				/*
-				 * If no other errors occurred and you have no access to the
-				 * folder of the resource, throw an error=1.
-				 */
-				if (empty($this->errorSetResource)) {
-					$this->errorSetResource = 1;
-				}
-
 				for ($j = 0, $len = count($resourceRecipData); $j < $len; ++$j) {
 					// Get the EntryID
 					$props = mapi_getprops($resourceRecipData[$j]['msg']);
@@ -3275,7 +3269,6 @@ class Meetingrequest {
 		}
 		catch (MAPIException $e) {
 			$e->setHandled();
-			$this->errorSetResource = 1; // No access
 		}
 
 		// A merely visible calendar opens fine, but booking has to read and create in it
@@ -3454,7 +3447,8 @@ class Meetingrequest {
 		if (!empty($resourceRecipients)) {
 			// Set Tracking status of resource recipients to olResponseAccepted (3)
 			for ($i = 0, $len = count($resourceRecipients); $i < $len; ++$i) {
-				if (isset($resourceRecipients[$i][PR_RECIPIENT_TYPE]) && $resourceRecipients[$i][PR_RECIPIENT_TYPE] == MAPI_BCC) {
+				if (isset($resourceRecipients[$i][PR_RECIPIENT_TYPE]) && $resourceRecipients[$i][PR_RECIPIENT_TYPE] == MAPI_BCC &&
+					!in_array($resourceRecipients[$i][PR_ENTRYID] ?? null, $this->mailedResources, true)) {
 					$resourceRecipients[$i][PR_RECIPIENT_TRACKSTATUS] = olRecipientTrackStatusAccepted;
 					$resourceRecipients[$i][PR_RECIPIENT_TRACKSTATUS_TIME] = time();
 				}
@@ -3719,16 +3713,20 @@ class Meetingrequest {
 			],
 		];
 
-		// In direct-booking mode, we don't need to send cancellations to resources
+		// In direct-booking mode, only resources we could not book get mail
 		if ($this->enableDirectBooking) {
-			$restriction[1][] = [
+			$keep = [[
 				RES_PROPERTY,
 				[
 					RELOP => RELOP_NE,	// Does not equal recipient type: MAPI_BCC (Resource)
 					ULPROPTAG => PR_RECIPIENT_TYPE,
 					VALUE => [PR_RECIPIENT_TYPE => MAPI_BCC],
 				],
-			];
+			]];
+			foreach ($this->mailedResources as $entryid) {
+				$keep[] = [RES_PROPERTY, [RELOP => RELOP_EQ, ULPROPTAG => PR_ENTRYID, VALUE => [PR_ENTRYID => $entryid]]];
+			}
+			$restriction[1][] = count($keep) > 1 ? [RES_OR, $keep] : $keep[0];
 		}
 
 		return $restriction;
