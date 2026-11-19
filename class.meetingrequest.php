@@ -3278,6 +3278,12 @@ class Meetingrequest {
 			$this->errorSetResource = 1; // No access
 		}
 
+		// A merely visible calendar opens fine, but booking has to read and create in it
+		$needed = ecRightsReadAny | ecRightsCreate;
+		if ($calFolder !== false && ((mapi_getprops($calFolder, [PR_RIGHTS])[PR_RIGHTS] ?? $needed) & $needed) !== $needed) {
+			$calFolder = false;
+		}
+
 		return $calFolder;
 	}
 
