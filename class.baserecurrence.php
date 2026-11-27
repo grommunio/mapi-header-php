@@ -1997,8 +1997,16 @@ abstract class BaseRecurrence {
 		}
 
 		$days = 0;
-		for ($i = 0; $i < $months; ++$i) {
-			$days += (int) gmdate("t", $date + $days * 24 * 60 * 60);
+		if ($months > 0 && (int) gmdate("j", $date) <= 28) {
+			// same day $months later; 4800 months are always 146097 days
+			$t = $this->gmtime($date);
+			$target = gmmktime($t["tm_hour"], $t["tm_min"], $t["tm_sec"], $t["tm_mon"] + 1 + $months % 4800, $t["tm_mday"], $t["tm_year"] + 1900);
+			$days = intdiv($months, 4800) * 146097 + intdiv($target - $date, 24 * 60 * 60);
+		}
+		else {
+			for ($i = 0; $i < $months; ++$i) {
+				$days += (int) gmdate("t", $date + $days * 24 * 60 * 60);
+			}
 		}
 
 		return $this->daysInMonthCache[$key] = $days;
